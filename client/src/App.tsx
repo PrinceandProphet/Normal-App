@@ -11,6 +11,7 @@ import Contacts from "@/pages/contacts";
 import Profile from "@/pages/profile";
 import CapitalSources from "@/pages/capital-sources";
 import ActionPlan from "@/pages/action-plan";
+import Household from "@/pages/household";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/action-plan" component={ActionPlan} />
+          <Route path="/household" component={Household} />
           <Route path="/documents" component={Documents} />
           <Route path="/messages" component={Messages} />
           <Route path="/contacts" component={Contacts} />
