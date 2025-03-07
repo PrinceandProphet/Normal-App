@@ -23,37 +23,6 @@ const getRandomMessage = () => {
   return encouragingMessages[randomIndex];
 };
 
-interface SubTask {
-  text: string;
-  completed: boolean;
-}
-
-interface Task {
-  text: string;
-  completed: boolean;
-  urgent: boolean;
-  subtasks: SubTask[];
-}
-
-interface Document {
-  id: number;
-  name: string;
-}
-
-// Recovery stages data
-const recoveryStages = [
-  {
-    letter: "S",
-    title: "Secure & Stabilize",
-    tasks: [
-      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [] },
-      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [] },
-      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
-      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
-    ]
-  }
-];
-
 // Sample funding opportunities data
 const sampleFundingOpportunities = [
   {
@@ -69,6 +38,25 @@ const sampleFundingOpportunities = [
     maxAmount: 50000
   }
 ];
+
+// Recovery stages data
+const recoveryStages = [
+  {
+    letter: "S",
+    title: "Secure & Stabilize",
+    tasks: [
+      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [] },
+      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [] },
+      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
+      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
+    ]
+  }
+];
+
+interface Document {
+  id: number;
+  name: string;
+}
 
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
@@ -96,7 +84,7 @@ export default function Home() {
     "Transition to Normal";
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="space-y-3">
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
           Disaster Planning Dashboard
@@ -130,54 +118,14 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <div className="space-y-6">
-        {/* Top row with Funding and Documents */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Funding Opportunities Card */}
-          <Card className="backdrop-blur-sm bg-white/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold mb-2">{sampleFundingOpportunities.length}</div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Available grant applications
-              </p>
-              <Link href="/capital-sources#opportunities">
-                <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Documents Card */}
-          <Card className="backdrop-blur-sm bg-white/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Documents</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold mb-2">{documents.length}</div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Uploaded documents
-              </p>
-              <Link href="/documents">
-                <Button variant="link" className="px-0 font-medium">View Documents →</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* To Do's Card - Full Width */}
-        <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader 
-            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
-            onClick={() => setShowTodos(!showTodos)}
-          >
+      {/* Three cards in a row */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* To Do's Card */}
+        <Card 
+          className="backdrop-blur-sm bg-white/50 cursor-pointer"
+          onClick={() => setShowTodos(!showTodos)}
+        >
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">To Do's</CardTitle>
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -194,42 +142,98 @@ export default function Home() {
             <div className="text-2xl font-bold mb-2">
               {currentStageTasks.length}
             </div>
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-muted-foreground">
               Tasks in Stage {currentStage}: {stageName}
             </p>
-            {showTodos && (
-              <div className="mt-4 space-y-2">
-                {currentStageTasks.map((task, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg",
-                      task.completed ? "bg-primary/5" : "hover:bg-muted",
-                      task.urgent && !task.completed ? "border-l-4 border-destructive pl-4" : ""
-                    )}
-                  >
-                    <button
-                      className={cn(
-                        "w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center",
-                        task.completed
-                          ? "bg-primary border-primary"
-                          : "border-muted-foreground hover:border-primary"
-                      )}
-                    >
-                    </button>
-                    <span className={cn(
-                      "text-sm",
-                      task.completed && "line-through text-muted-foreground"
-                    )}>
-                      {task.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+          </CardContent>
+        </Card>
+
+        {/* Funding Opportunities Card */}
+        <Card className="backdrop-blur-sm bg-white/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold mb-2">{sampleFundingOpportunities.length}</div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Available grant applications
+            </p>
+            <Link href="/capital-sources#opportunities">
+              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Documents Card */}
+        <Card className="backdrop-blur-sm bg-white/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Documents</CardTitle>
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold mb-2">{documents.length}</div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Uploaded documents
+            </p>
+            <Link href="/documents">
+              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
+
+      {/* To Do's Dropdown - Outside the grid */}
+      {showTodos && (
+        <Card className="backdrop-blur-sm bg-white/50">
+          <CardContent className="py-4">
+            <div className="space-y-2">
+              {currentStageTasks.map((task, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg",
+                    task.completed ? "bg-primary/5" : "hover:bg-muted",
+                    task.urgent && !task.completed ? "border-l-4 border-destructive pl-4" : ""
+                  )}
+                >
+                  <button
+                    className={cn(
+                      "w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center",
+                      task.completed
+                        ? "bg-primary border-primary"
+                        : "border-muted-foreground hover:border-primary"
+                    )}
+                    onClick={() => {
+                      const updatedTasks = [...currentStageTasks];
+                      updatedTasks[index].completed = !updatedTasks[index].completed;
+                      //In a real application, you'd update the backend here.
+                      toast({
+                        title: `Task ${task.text} updated`,
+                        description: task.completed ? "Task marked as complete" : "Task marked as incomplete",
+                      });
+                    }}
+                  >
+                    {task.completed ? (
+                      <CheckSquare className="h-4 w-4 text-white" />
+                    ) : null}
+                  </button>
+                  <span className={cn(
+                    "text-sm",
+                    task.completed && "line-through text-muted-foreground"
+                  )}>
+                    {task.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
