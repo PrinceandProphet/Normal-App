@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Sample encouraging messages
 const encouragingMessages = [
@@ -42,10 +44,16 @@ const fundingOpportunities = [
   },
 ];
 
-interface Task {
-  id: number;
+interface SubTask {
   text: string;
   completed: boolean;
+}
+
+interface Task {
+  text: string;
+  completed: boolean;
+  urgent: boolean;
+  subtasks: SubTask[];
 }
 
 interface Document {
@@ -57,6 +65,7 @@ export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
   const [showTodos, setShowTodos] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
@@ -66,10 +75,20 @@ export default function Home() {
     queryKey: ["/api/action-plan/tasks", currentStage],
   });
 
-  const toggleTaskCompletion = (taskId: number) => {
-    //Implementation for toggling task completion would go here. This is a placeholder.
-    console.log(`Toggling completion for task ID: ${taskId}`);
+  const toggleTaskCompletion = async (taskId: number) => {
+    try {
+      await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
+      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update task status",
+      });
+    }
   };
+
+  const incompleteTasks = stageTasks.filter(task => !task.completed);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -116,7 +135,7 @@ export default function Home() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* To Do's Card with Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader 
+          <CardHeader
             className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
             onClick={() => setShowTodos(!showTodos)}
           >
@@ -134,7 +153,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">
-              {stageTasks.filter(t => !t.completed).length}
+              {incompleteTasks.length}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
               Tasks remaining in current stage
@@ -142,23 +161,24 @@ export default function Home() {
             {showTodos && (
               <div className="mt-4 space-y-2">
                 {stageTasks.map((task) => (
-                  <div 
-                    key={task.id}
+                  <div
+                    key={task.id} // Assuming task.id exists, otherwise find a suitable unique key
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg",
-                      task.completed ? "bg-primary/5" : "hover:bg-muted"
+                      task.completed ? "bg-primary/5" : "hover:bg-muted",
+                      task.urgent && !task.completed ? "border-l-4 border-destructive pl-4" : ""
                     )}
                   >
                     <Button
                       size="sm"
                       variant="ghost"
                       className={cn(
-                        "p-0 h-6 w-6",
-                        task.completed && "text-primary"
+                        "p-0 h-6 w-6 rounded-full border-2",
+                        task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
                       )}
                       onClick={() => toggleTaskCompletion(task.id)}
                     >
-                      <CheckSquare className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" />
                     </Button>
                     <span className={cn(
                       "text-sm",

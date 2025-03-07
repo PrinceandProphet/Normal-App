@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
 
 interface SubTask {
   text: string;
@@ -92,6 +94,7 @@ export default function ActionPlan() {
   const [newTaskText, setNewTaskText] = useState("");
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [stages, setStages] = useState(recoveryStages);
+  const toast = useToast();
 
   const handleAddTask = (stageIndex: number) => {
     if (!newTaskText.trim()) return;
@@ -152,7 +155,19 @@ export default function ActionPlan() {
   const toggleTaskCompletion = (stageIndex: number, taskIndex: number) => {
     const newStages = [...stages];
     newStages[stageIndex].tasks[taskIndex].completed = !newStages[stageIndex].tasks[taskIndex].completed;
+
+    // If the task has subtasks, update their completion status too
+    const task = newStages[stageIndex].tasks[taskIndex];
+    if (task.subtasks.length > 0) {
+      task.subtasks.forEach(subtask => {
+        subtask.completed = task.completed;
+      });
+    }
+
     setStages(newStages);
+
+    // Invalidate the tasks query to update the home page
+    queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
   };
 
   const toggleTaskUrgency = (stageIndex: number, taskIndex: number) => {
@@ -333,13 +348,13 @@ export default function ActionPlan() {
                             size="sm"
                             variant="ghost"
                             className={cn(
-                              "p-0 h-8 w-8",
-                              task.completed && "text-primary"
+                              "p-0 h-8 w-8 rounded-full border-2",
+                              task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
                             )}
                             onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
                             disabled={isPublicView}
                           >
-                            <CheckCircle className="h-5 w-5" />
+                            <CheckCircle className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
@@ -385,7 +400,6 @@ export default function ActionPlan() {
                       )}
                     </div>
 
-                    {/* Subtasks section */}
                     {task.expanded && (
                       <div className="ml-8 mt-2 space-y-2">
                         {task.subtasks.map((subtask, subtaskIndex) => (
@@ -414,7 +428,6 @@ export default function ActionPlan() {
                           </div>
                         ))}
 
-                        {/* Add subtask input */}
                         {!isPublicView && (
                           <div className="flex gap-2">
                             <Input
