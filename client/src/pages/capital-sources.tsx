@@ -369,12 +369,18 @@ export default function CapitalSources() {
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Available Funding Opportunities</h2>
-          <Button 
+          <Button
             variant="outline"
-            onClick={() => window.location.href = 'mailto:support@chasarnold.com?subject=New Funding Opportunity'}
+            asChild
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Report New Opportunity
+            <a
+              href="mailto:support@chasarnold.com?subject=New Funding Opportunity"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Report New Opportunity
+            </a>
           </Button>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
