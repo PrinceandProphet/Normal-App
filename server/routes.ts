@@ -53,6 +53,10 @@ export async function registerRoutes(app: Express) {
 
     try {
       const docData = await documentService.saveUploadedFile(req.file);
+      // Add capital source ID if provided
+      if (req.body.capitalSourceId) {
+        docData.capitalSourceId = parseInt(req.body.capitalSourceId);
+      }
       const document = await storage.createDocument(docData);
       res.status(201).json(document);
     } catch (error) {
@@ -143,8 +147,8 @@ export async function registerRoutes(app: Express) {
       res.json(updated);
     } catch (error) {
       console.error('Failed to create inbox:', error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to create inbox" 
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to create inbox"
       });
     }
   });
@@ -163,8 +167,8 @@ export async function registerRoutes(app: Express) {
       res.json(updated);
     } catch (error) {
       console.error('Failed to create phone number:', error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to create phone number" 
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to create phone number"
       });
     }
   });
@@ -192,6 +196,13 @@ export async function registerRoutes(app: Express) {
     const id = parseInt(req.params.id);
     await storage.deleteCapitalSource(id);
     res.status(204).send();
+  });
+
+  //New Endpoint for capital source documents
+  app.get("/api/capital-sources/:id/documents", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const documents = await storage.getDocumentsByCapitalSource(id);
+    res.json(documents);
   });
 
   return server;

@@ -30,8 +30,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DollarSign, Plus } from "lucide-react";
+import { DollarSign, Plus, Trash2 } from "lucide-react";
 import { z } from "zod";
+import { Label } from "@/components/ui/label";
+import { DocumentText, FileText } from "lucide-react";
 
 const sourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -74,16 +76,43 @@ export default function CapitalSources() {
       .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
   };
 
+  const getTotal = (type: string) => {
+    return getCurrentTotal(type) + getProjectedTotal(type);
+  };
+
   async function onSubmit(values: FormValues) {
     try {
-      await apiRequest("POST", "/api/capital-sources", {
+      // First create the capital source
+      const source = await apiRequest("POST", "/api/capital-sources", {
         ...values,
         amount: Number(values.amount),
       });
+
+      // Handle document upload if a file was selected
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+      if (fileInput?.files?.length) {
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("name", fileInput.files[0].name);
+        formData.append("capitalSourceId", source.id.toString());
+
+        const uploadRes = await fetch("/api/documents", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload document");
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+
       toast({
         title: "Success",
-        description: "Capital source added successfully",
+        description: "Capital source and documents added successfully",
       });
       form.reset();
       setIsDialogOpen(false);
@@ -92,6 +121,23 @@ export default function CapitalSources() {
         variant: "destructive",
         title: "Error",
         description: "Failed to add capital source",
+      });
+    }
+  }
+
+  async function deleteSource(id: number) {
+    try {
+      await apiRequest("DELETE", `/api/capital-sources/${id}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      toast({
+        title: "Success",
+        description: "Capital source deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete capital source",
       });
     }
   }
@@ -209,6 +255,17 @@ export default function CapitalSources() {
                     </FormItem>
                   )}
                 />
+                <div className="space-y-2">
+                  <Label htmlFor="document">Supporting Document</Label>
+                  <Input
+                    id="document"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Upload any supporting documentation for this capital source
+                  </p>
+                </div>
                 <Button type="submit">Add Source</Button>
               </form>
             </Form>
@@ -231,6 +288,9 @@ export default function CapitalSources() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Projected: ${getProjectedTotal(type).toLocaleString()}
+                </p>
+                <p className="text-xs font-medium text-primary">
+                  Total: ${getTotal(type).toLocaleString()}
                 </p>
               </div>
             </CardContent>
@@ -259,6 +319,13 @@ export default function CapitalSources() {
                     </p>
                   )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteSource(source.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>

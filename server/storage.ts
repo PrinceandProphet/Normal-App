@@ -48,6 +48,7 @@ export interface IStorage {
   createCapitalSource(source: InsertCapitalSource): Promise<CapitalSource>;
   updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource>;
   deleteCapitalSource(id: number): Promise<void>;
+  getDocumentsByCapitalSource(capitalSourceId: number): Promise<Document[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -195,6 +196,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCapitalSource(id: number): Promise<void> {
     await db.delete(capitalSources).where(eq(capitalSources.id, id));
+  }
+
+  async getDocumentsByCapitalSource(capitalSourceId: number): Promise<Document[]> {
+    return await db
+      .select()
+      .from(documents)
+      .where(eq(documents.capitalSourceId, capitalSourceId));
   }
 }
 

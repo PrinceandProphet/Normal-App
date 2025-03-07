@@ -17,6 +17,7 @@ export const documents = pgTable("documents", {
   path: text("path").notNull(),
   type: text("type").notNull(),
   size: integer("size").notNull(),
+  capitalSourceId: integer("capital_source_id").references(() => capitalSources.id),
 });
 
 export const contacts = pgTable("contacts", {
@@ -59,13 +60,6 @@ export const capitalSources = pgTable("capital_sources", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
-export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
-export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
-export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
-export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
-
 // Custom schema for capital source to handle numeric amount
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -74,6 +68,14 @@ export const insertCapitalSourceSchema = z.object({
   status: z.enum(["current", "projected"]),
   description: z.string().optional(),
 });
+
+// Auto-generated insert schemas for other models
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
+export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
+export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
+export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
+export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
