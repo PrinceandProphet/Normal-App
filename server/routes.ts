@@ -13,13 +13,20 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+console.log('Uploads directory:', uploadsDir); // Debug log
+
 const upload = multer({
   storage: multer.diskStorage({
-    destination: uploadsDir,
+    destination: (req, file, cb) => {
+      console.log('Saving file to:', uploadsDir); // Debug log
+      cb(null, uploadsDir);
+    },
     filename: (req, file, cb) => {
       // Generate unique filename
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, uniqueSuffix + path.extname(file.originalname));
+      const filename = uniqueSuffix + path.extname(file.originalname);
+      console.log('Generated filename:', filename); // Debug log
+      cb(null, filename);
     }
   }),
   limits: {
@@ -40,8 +47,11 @@ export async function registerRoutes(app: Express) {
   });
 
   app.post("/api/documents", upload.single("file"), async (req, res) => {
+    console.log('Upload request received:', req.body, req.file); // Debug log
+
     const file = req.file;
     if (!file) {
+      console.log('No file in request'); // Debug log
       return res.status(400).json({ message: "No file uploaded" });
     }
 
@@ -54,18 +64,16 @@ export async function registerRoutes(app: Express) {
       });
 
       const document = await storage.createDocument(doc);
+      console.log('Document created:', document); // Debug log
       res.status(201).json(document);
     } catch (error) {
+      console.error('Error in document upload:', error); // Debug log
       // Clean up uploaded file if document creation fails
-      fs.unlinkSync(file.path);
+      if (file.path) {
+        fs.unlinkSync(file.path);
+      }
       throw error;
     }
-  });
-
-  app.delete("/api/documents/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    await storage.deleteDocument(id);
-    res.status(204).send();
   });
 
   // Contacts

@@ -20,21 +20,30 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
   });
 
   async function onSubmit(values: any) {
+    console.log('Form submitted with values:', values); // Debug log
+
     try {
       const formData = new FormData();
       formData.append("name", values.name);
       if (values.file) {
+        console.log('Appending file to form:', values.file.name); // Debug log
         formData.append("file", values.file);
       }
 
+      console.log('Sending request to /api/documents'); // Debug log
       const res = await fetch("/api/documents", {
         method: "POST",
         body: formData,
       });
 
       if (!res.ok) {
-        throw new Error("Upload failed");
+        const error = await res.text();
+        console.error('Upload failed:', error); // Debug log
+        throw new Error(`Upload failed: ${error}`);
       }
+
+      const result = await res.json();
+      console.log('Upload successful:', result); // Debug log
 
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       toast({
@@ -44,10 +53,11 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
       form.reset();
       onSuccess?.();
     } catch (error) {
+      console.error('Error in upload:', error); // Debug log
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to upload document",
+        description: error instanceof Error ? error.message : "Failed to upload document",
       });
     }
   }
@@ -76,7 +86,11 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
               <FormControl>
                 <Input
                   type="file"
-                  onChange={(e) => onChange(e.target.files?.[0])}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    console.log('File selected:', file?.name); // Debug log
+                    onChange(file);
+                  }}
                   {...field}
                 />
               </FormControl>
