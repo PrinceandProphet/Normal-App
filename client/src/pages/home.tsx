@@ -39,17 +39,9 @@ const sampleFundingOpportunities = [
   }
 ];
 
-// Initial recovery stages data
-const initialTasks = [
-  { id: 1, text: "Locate safe temporary shelter", completed: false, urgent: true, stage: "S" },
-  { id: 2, text: "Register with FEMA", completed: false, urgent: true, stage: "S" },
-  { id: 3, text: "Address immediate medical needs", completed: false, urgent: true, stage: "S" },
-  { id: 4, text: "Secure food and water supply", completed: false, urgent: true, stage: "S" }
-];
-
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
-  const [showTodos] = useState(true); // Changed to true to show todos initially
+  const [showTodos, setShowTodos] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,9 +52,13 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Use the initial tasks data
-  const [tasks, setTasks] = useState(initialTasks);
-  const currentStageTasks = tasks.filter(task => task.stage === currentStage);
+  // Get tasks from the API
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ["/api/action-plan/tasks"],
+  });
+
+  // Filter tasks for current stage
+  const currentStageTasks = allTasks.filter(task => task.stage === currentStage);
   const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
   const { data: documents = [] } = useQuery({
@@ -78,33 +74,13 @@ export default function Home() {
 
   const toggleTaskCompletion = async (taskId: number) => {
     try {
-      // Update local state first
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, completed: !task.completed }
-            : task
-        )
-      );
-
-      // Then update the backend
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
-
       toast({
         title: "Success",
         description: "Task status updated",
       });
     } catch (error) {
-      // Revert local state if backend update fails
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, completed: !task.completed }
-            : task
-        )
-      );
-
       toast({
         variant: "destructive",
         title: "Error",
@@ -156,6 +132,7 @@ export default function Home() {
               "backdrop-blur-sm bg-white/50 cursor-pointer relative",
               showTodos && "border-b-0 rounded-b-none"
             )}
+            onClick={() => setShowTodos(!showTodos)}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">To Do's</CardTitle>
