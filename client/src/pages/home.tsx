@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield } from "lucide-react";
 
-// Sample encouraging messages to rotate
+// Sample encouraging messages
 const encouragingMessages = [
   "Every step forward matters, no matter how small.",
   "You're not alone in this journey.",
@@ -14,6 +14,12 @@ const encouragingMessages = [
   "Focus on today's progress, tomorrow will follow.",
   "Small actions lead to big changes.",
 ];
+
+// Get a random message from the array
+const getRandomMessage = () => {
+  const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
+  return encouragingMessages[randomIndex];
+};
 
 // Sample funding opportunities data - matching capital-sources.tsx
 const fundingOpportunities = [
@@ -36,7 +42,7 @@ const fundingOpportunities = [
 ];
 
 export default function Home() {
-  const [currentMessage, setCurrentMessage] = useState(encouragingMessages[0]);
+  const [currentMessage] = useState(getRandomMessage());
   const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
 
   const { data: documents } = useQuery({
@@ -46,19 +52,6 @@ export default function Home() {
   const { data: checklists } = useQuery({
     queryKey: ["/api/checklists"],
   });
-
-  // Rotate encouraging messages
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessage(prev => {
-        const currentIndex = encouragingMessages.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % encouragingMessages.length;
-        return encouragingMessages[nextIndex];
-      });
-    }, 10000); // Change message every 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
