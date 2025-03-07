@@ -5,6 +5,7 @@ import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCirc
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { jsPDF } from "jspdf";
 
 interface Task {
   text: string;
@@ -133,10 +134,68 @@ export default function ActionPlan() {
   };
 
   const handleExportPDF = () => {
-    // PDF export functionality will be implemented here
+    const doc = new jsPDF();
+    let yPos = 20;
+
+    // Add title
+    doc.setFontSize(24);
+    doc.text("Recovery Action Plan™", 20, yPos);
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.text("S.T.A.R.T.™ Framework Progress Report", 20, yPos);
+    yPos += 20;
+
+    // Add date
+    const date = new Date().toLocaleDateString();
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${date}`, 20, yPos);
+    yPos += 20;
+
+    // Add stages and tasks
+    stages.forEach((stage, index) => {
+      // Add stage header
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${stage.letter}. ${stage.title}`, 20, yPos);
+      yPos += 10;
+
+      // Add stage description
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(stage.description, 20, yPos, { maxWidth: 170 });
+      yPos += 10;
+
+      // Add tasks
+      doc.setFontSize(12);
+      stage.tasks.forEach(task => {
+        // Create task status indicators
+        const status = `[${task.completed ? '✓' : ' '}] ${task.urgent ? '!' : ' '} `;
+        const taskText = status + task.text;
+
+        doc.text(taskText, 25, yPos, { maxWidth: 165 });
+        yPos += 10;
+
+        // Add new page if needed
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+      });
+
+      yPos += 10; // Add space between stages
+    });
+
+    // Add footer
+    doc.setFontSize(8);
+    doc.text("© 2025 Disaster Planning. All rights reserved.", 20, 290);
+
+    // Save the PDF
+    doc.save("recovery-action-plan.pdf");
+
     toast({
-      title: "Coming Soon",
-      description: "PDF export functionality will be available soon!",
+      title: "Success",
+      description: "Your Recovery Action Plan has been exported as a PDF",
     });
   };
 
@@ -180,8 +239,8 @@ export default function ActionPlan() {
             <CardContent>
               <div className="space-y-4">
                 {stage.tasks.map((task, taskIndex) => (
-                  <div 
-                    key={taskIndex} 
+                  <div
+                    key={taskIndex}
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg transition-colors",
                       task.completed ? "bg-primary/5" : "hover:bg-muted",
@@ -190,7 +249,7 @@ export default function ActionPlan() {
                   >
                     {editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
                       <div className="flex-1 flex gap-2">
-                        <Input 
+                        <Input
                           value={task.text}
                           onChange={(e) => {
                             const newStages = [...stages];
@@ -198,13 +257,13 @@ export default function ActionPlan() {
                             setStages(newStages);
                           }}
                         />
-                        <Button 
+                        <Button
                           size="sm"
                           onClick={() => handleEditTask(stageIndex, taskIndex, task.text)}
                         >
                           <Save className="h-4 w-4" />
                         </Button>
-                        <Button 
+                        <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingTask(null)}
