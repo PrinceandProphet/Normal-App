@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Mail, Phone, Home, CreditCard, Users } from "lucide-react";
+import { Input } from "@/components/ui/input"; // Assuming this import is correct
 
 export default function Profile() {
   const { toast } = useToast();
@@ -67,7 +68,9 @@ export default function Profile() {
                   {systemConfig?.emailAddress ? (
                     <div className="space-y-2">
                       <p className="text-sm font-medium">Current Email Address:</p>
-                      <p className="font-mono bg-muted p-2 rounded">{systemConfig.emailAddress}</p>
+                      <p className="font-mono bg-muted p-2 rounded">
+                        {systemConfig.emailAddress}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         This email address is used for all system communications.
                       </p>
@@ -96,7 +99,9 @@ export default function Profile() {
                   {systemConfig?.phoneNumber ? (
                     <div className="space-y-2">
                       <p className="text-sm font-medium">Current Phone Number:</p>
-                      <p className="font-mono bg-muted p-2 rounded">{systemConfig.phoneNumber}</p>
+                      <p className="font-mono bg-muted p-2 rounded">
+                        {systemConfig.phoneNumber}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         This phone number is used for SMS communications.
                       </p>
@@ -183,18 +188,66 @@ export default function Profile() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Current Plan:</p>
                     <p className="font-mono bg-muted p-2 rounded text-sm">
                       Basic Plan (Free)
                     </p>
                   </div>
-                  <Button variant="outline" disabled>
-                    Upgrade Plan
-                  </Button>
+
+                  {/* Payment Method Section */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Payment Method:</p>
+                    <p className="font-mono bg-muted p-2 rounded text-sm">
+                      No payment method added
+                    </p>
+                    <Button variant="outline" disabled>
+                      Update Payment Method
+                    </Button>
+                  </div>
+
+                  {/* Promo Code Section */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Promo Code:</p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter promo code"
+                        disabled
+                        className="max-w-[200px]"
+                      />
+                      <Button variant="outline" disabled>
+                        Apply
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Coming soon: Apply promo codes from non-profit organizations
+                    </p>
+                  </div>
+
+                  {/* Plan Management */}
+                  <div className="space-y-2">
+                    <Button variant="outline" disabled className="w-full">
+                      Upgrade Plan
+                    </Button>
+                    <Button variant="ghost" disabled className="w-full text-destructive">
+                      Cancel Subscription
+                    </Button>
+                  </div>
+
+                  {/* Data Export */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <p className="text-sm font-medium">Account Data:</p>
+                    <Button variant="outline" disabled className="w-full">
+                      Export All Data
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Coming soon: Export all your data in a portable format
+                    </p>
+                  </div>
+
                   <p className="text-xs text-muted-foreground">
-                    Coming soon: Access advanced features with our premium plans.
+                    Coming soon: Manage your subscription, payment methods, and access premium features
                   </p>
                 </div>
               </CardContent>
