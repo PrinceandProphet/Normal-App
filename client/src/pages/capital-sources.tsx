@@ -366,7 +366,7 @@ export default function CapitalSources() {
       </div>
 
       {/* Funding Opportunities Section */}
-      <div className="mt-8">
+      <div id="opportunities" className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Available Funding Opportunities</h2>
           <Button

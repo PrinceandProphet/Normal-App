@@ -69,9 +69,12 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-2">
               Available grant applications
             </p>
+            <Link href="/capital-sources#opportunities">
+              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
+            </Link>
           </CardContent>
         </Card>
 
