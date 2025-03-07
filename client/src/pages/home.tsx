@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Task } from "@shared/schema";
 
 // Sample encouraging messages
@@ -24,27 +24,10 @@ const getRandomMessage = () => {
   return encouragingMessages[randomIndex];
 };
 
-// Sample funding opportunities data (this will be replaced by API call)
-//const sampleFundingOpportunities = [
-//  {
-//    id: 1,
-//    name: "FEMA Individual Assistance",
-//    deadline: "2025-04-01",
-//    maxAmount: 25000
-//  },
-//  {
-//    id: 2,
-//    name: "SBA Disaster Loan",
-//    deadline: "2025-03-31",
-//    maxAmount: 50000
-//  }
-//];
-
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [showTodos, setShowTodos] = useState(true);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Get current stage from the API
   const { data: systemConfig } = useQuery({
@@ -80,7 +63,6 @@ export default function Home() {
   const toggleTaskCompletion = async (taskId: number) => {
     try {
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
-      // Invalidate both the tasks query and the specific task query
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
       toast({
         title: "Success",
