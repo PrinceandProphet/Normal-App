@@ -60,6 +60,15 @@ export const capitalSources = pgTable("capital_sources", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  text: text("text").notNull(),
+  completed: boolean("completed").default(false),
+  urgent: boolean("urgent").default(false),
+  stage: text("stage").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Custom schema for capital source to handle numeric amount
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -76,6 +85,7 @@ export const insertContactSchema = createInsertSchema(contacts).omit({ id: true 
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -84,6 +94,7 @@ export type Message = typeof messages.$inferSelect;
 export type DocumentTemplate = typeof documentTemplates.$inferSelect;
 export type Checklist = typeof checklists.$inferSelect;
 export type CapitalSource = typeof capitalSources.$inferSelect;
+export type Task = typeof tasks.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -92,3 +103,4 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
 export type InsertCapitalSource = z.infer<typeof insertCapitalSourceSchema>;
+export type InsertTask = z.infer<typeof insertTaskSchema>;

@@ -7,6 +7,7 @@ import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } 
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Task } from "@shared/schema";
 
 // Sample encouraging messages
 const encouragingMessages = [
@@ -23,21 +24,21 @@ const getRandomMessage = () => {
   return encouragingMessages[randomIndex];
 };
 
-// Sample funding opportunities data
-const sampleFundingOpportunities = [
-  {
-    id: 1,
-    name: "FEMA Individual Assistance",
-    deadline: "2025-04-01",
-    maxAmount: 25000
-  },
-  {
-    id: 2,
-    name: "SBA Disaster Loan",
-    deadline: "2025-03-31",
-    maxAmount: 50000
-  }
-];
+// Sample funding opportunities data (this will be replaced by API call)
+//const sampleFundingOpportunities = [
+//  {
+//    id: 1,
+//    name: "FEMA Individual Assistance",
+//    deadline: "2025-04-01",
+//    maxAmount: 25000
+//  },
+//  {
+//    id: 2,
+//    name: "SBA Disaster Loan",
+//    deadline: "2025-03-31",
+//    maxAmount: 50000
+//  }
+//];
 
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
@@ -53,16 +54,20 @@ export default function Home() {
   const currentStage = systemConfig?.stage || "S";
 
   // Get tasks from the API
-  const { data: allTasks = [] } = useQuery({
+  const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks"],
   });
 
   // Filter tasks for current stage
-  const currentStageTasks = allTasks.filter(task => task.stage === currentStage);
+  const currentStageTasks = tasks.filter(task => task.stage === currentStage);
   const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
+  });
+
+  const { data: fundingOpportunities = [] } = useQuery({
+    queryKey: ["/api/capital-sources"],
   });
 
   const stageName = 
@@ -75,6 +80,7 @@ export default function Home() {
   const toggleTaskCompletion = async (taskId: number) => {
     try {
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
+      // Invalidate both the tasks query and the specific task query
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
       toast({
         title: "Success",
@@ -169,7 +175,7 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold mb-2">{sampleFundingOpportunities.length}</div>
+              <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
               <p className="text-xs text-muted-foreground mb-2">
                 Available grant applications
               </p>
