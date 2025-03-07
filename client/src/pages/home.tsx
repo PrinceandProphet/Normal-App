@@ -63,6 +63,7 @@ export default function Home() {
   const toggleTaskCompletion = async (taskId: number) => {
     try {
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
+      // Invalidate tasks query to refresh both dashboard and action plan
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
       toast({
         title: "Success",
@@ -137,10 +138,10 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold mb-2">
-                {incompleteTasks.length}
+                {currentStageTasks.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Tasks remaining in Stage {currentStage}
+                Total tasks in {stageName}
               </p>
             </CardContent>
             {showTodos && (
