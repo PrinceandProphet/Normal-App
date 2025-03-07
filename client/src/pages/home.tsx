@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,31 +18,10 @@ const encouragingMessages = [
   "Small actions lead to big changes.",
 ];
 
-// Get a random message from the array
 const getRandomMessage = () => {
   const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
   return encouragingMessages[randomIndex];
 };
-
-// Sample funding opportunities data - matching capital-sources.tsx
-const fundingOpportunities = [
-  {
-    id: 1,
-    name: "Disaster Recovery Grant",
-    agency: "State Emergency Management",
-    deadline: "2025-04-01",
-    maxAmount: 25000,
-    description: "Emergency assistance for households affected by natural disasters",
-  },
-  {
-    id: 2,
-    name: "Home Repair Program",
-    agency: "Housing Department",
-    deadline: "2025-03-31",
-    maxAmount: 15000,
-    description: "Funding for essential home repairs due to disaster damage",
-  },
-];
 
 interface SubTask {
   text: string;
@@ -50,6 +29,7 @@ interface SubTask {
 }
 
 interface Task {
+  id: number;
   text: string;
   completed: boolean;
   urgent: boolean;
@@ -63,21 +43,36 @@ interface Document {
 
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
-  const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
   const [showTodos, setShowTodos] = useState(false);
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get current stage from the API
+  const { data: currentStageData } = useQuery({
+    queryKey: ["/api/action-plan/current-stage"],
+  });
+
+  const currentStage = currentStageData?.stage || "S";
+
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
   const { data: stageTasks = [] } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks", currentStage],
+    enabled: !!currentStage,
   });
+
+  const incompleteTasks = stageTasks.filter(task => !task.completed);
 
   const toggleTaskCompletion = async (taskId: number) => {
     try {
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      toast({
+        title: "Success",
+        description: "Task status updated",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -87,7 +82,12 @@ export default function Home() {
     }
   };
 
-  const incompleteTasks = stageTasks.filter(task => !task.completed);
+  const stageName = 
+    currentStage === "S" ? "Secure & Stabilize" :
+    currentStage === "T" ? "Take Stock & Track" :
+    currentStage === "A" ? "Align Recovery Plan" :
+    currentStage === "R" ? "Rebuild & Restore" :
+    "Transition to Normal";
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -100,7 +100,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Recovery Status Card */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-none">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -110,13 +109,7 @@ export default function Home() {
                 <h2 className="text-lg font-semibold">Recovery Progress</h2>
               </div>
               <p className="text-3xl font-bold text-primary">
-                Stage {currentStage}: {
-                  currentStage === "S" ? "Secure & Stabilize" :
-                  currentStage === "T" ? "Take Stock & Track" :
-                  currentStage === "A" ? "Align Recovery Plan" :
-                  currentStage === "R" ? "Rebuild & Restore" :
-                  "Transition to Normal"
-                }
+                Stage {currentStage}: {stageName}
               </p>
               <p className="text-base italic text-muted-foreground">
                 "{currentMessage}"
@@ -132,7 +125,6 @@ export default function Home() {
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* To Do's Card with Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader
             className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
@@ -155,7 +147,7 @@ export default function Home() {
               {incompleteTasks.length}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
-              Tasks remaining in current stage
+              Tasks remaining in Stage {currentStage}: {stageName}
             </p>
             {showTodos && (
               <div className="mt-4 space-y-2">
@@ -171,8 +163,8 @@ export default function Home() {
                     <button
                       className={cn(
                         "w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center",
-                        task.completed 
-                          ? "bg-primary border-primary" 
+                        task.completed
+                          ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
                       onClick={() => toggleTaskCompletion(task.id)}
@@ -191,7 +183,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Funding Opportunities Card - No Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
@@ -200,7 +191,7 @@ export default function Home() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
+            <div className="text-2xl font-bold mb-2">3</div>
             <p className="text-xs text-muted-foreground mb-2">
               Available grant applications
             </p>
@@ -210,7 +201,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Documents Card - No Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Documents</CardTitle>
