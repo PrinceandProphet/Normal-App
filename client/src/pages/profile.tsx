@@ -3,11 +3,39 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Phone, Home, CreditCard, Users } from "lucide-react";
-import { Input } from "@/components/ui/input"; // Assuming this import is correct
+import { Mail, Phone, Home, CreditCard, Users, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertHouseholdMemberSchema } from "@shared/schema";
+import type { HouseholdMember } from "@shared/schema";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormLabel,
+  FormItem,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 export default function Profile() {
   const { toast } = useToast();
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
 
   const { data: systemConfig } = useQuery({
     queryKey: ["/api/system/config"],
@@ -43,6 +71,41 @@ export default function Profile() {
         variant: "destructive",
         title: "Error",
         description: "Failed to create phone number",
+      });
+    }
+  };
+
+  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
+    queryKey: ["/api/household-members"],
+  });
+
+  const form = useForm({
+    resolver: zodResolver(insertHouseholdMemberSchema),
+    defaultValues: {
+      name: "",
+      type: "adult",
+      age: undefined,
+      relationship: "",
+      species: "",
+      notes: "",
+    },
+  });
+
+  const addHouseholdMember = async (values: any) => {
+    try {
+      await apiRequest("POST", "/api/household-members", values);
+      queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      setAddMemberOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Household member added successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add household member",
       });
     }
   };
@@ -158,18 +221,178 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Current Members:</p>
-                    <p className="font-mono bg-muted p-2 rounded text-sm">
-                      No household members added
+                  {householdMembers.length > 0 ? (
+                    <div className="space-y-4">
+                      {householdMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {member.type === "pet"
+                                ? `${member.species}`
+                                : `${member.relationship}${member.age ? `, ${member.age} years` : ""}`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No household members added yet.
                     </p>
-                  </div>
-                  <Button variant="outline" disabled>
-                    Add Household Member
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Coming soon: Add and manage household members for each property.
-                  </p>
+                  )}
+
+                  <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Household Member
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Household Member</DialogTitle>
+                      </DialogHeader>
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(addHouseholdMember)} className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Name</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Type</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="adult">Adult</SelectItem>
+                                    <SelectItem value="child">Child</SelectItem>
+                                    <SelectItem value="pet">Pet</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )}
+                          />
+
+                          {form.watch("type") !== "pet" && (
+                            <>
+                              <FormField
+                                control={form.control}
+                                name="age"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Age</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        {...field}
+                                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="relationship"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Relationship</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select relationship" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="spouse">Spouse</SelectItem>
+                                        <SelectItem value="partner">Partner</SelectItem>
+                                        <SelectItem value="son">Son</SelectItem>
+                                        <SelectItem value="daughter">Daughter</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormItem>
+                                )}
+                              />
+                            </>
+                          )}
+
+                          {form.watch("type") === "pet" && (
+                            <FormField
+                              control={form.control}
+                              name="species"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Species</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select species" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="dog">Dog</SelectItem>
+                                      <SelectItem value="cat">Cat</SelectItem>
+                                      <SelectItem value="bird">Bird</SelectItem>
+                                      <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                          )}
+
+                          <FormField
+                            control={form.control}
+                            name="notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Notes</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    {...field}
+                                    placeholder="Add any additional information..."
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+
+                          <Button type="submit">Add Member</Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardContent>
             </Card>

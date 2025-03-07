@@ -69,6 +69,17 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const householdMembers = pgTable("household_members", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'adult', 'child', 'pet'
+  age: integer("age"),
+  relationship: text("relationship"), // For adults/children: e.g., 'spouse', 'son', 'daughter'
+  species: text("species"), // For pets: e.g., 'dog', 'cat'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Custom schema for capital source to handle numeric amount
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -87,6 +98,17 @@ export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 
+// Create the insert schema for household members
+export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
+  .extend({
+    type: z.enum(["adult", "child", "pet"]),
+    age: z.number().min(0).optional(),
+    relationship: z.string().optional(),
+    species: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .omit({ id: true, createdAt: true });
+
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -95,6 +117,7 @@ export type DocumentTemplate = typeof documentTemplates.$inferSelect;
 export type Checklist = typeof checklists.$inferSelect;
 export type CapitalSource = typeof capitalSources.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type HouseholdMember = typeof householdMembers.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -104,3 +127,4 @@ export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
 export type InsertCapitalSource = z.infer<typeof insertCapitalSourceSchema>;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type InsertHouseholdMember = z.infer<typeof insertHouseholdMemberSchema>;
