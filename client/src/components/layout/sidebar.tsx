@@ -5,7 +5,7 @@ import {
   MessageSquare, 
   Users, 
   Home,
-  AlertTriangle
+  Shield
 } from "lucide-react";
 
 const navigation = [
@@ -19,25 +19,25 @@ export default function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border">
-      <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <AlertTriangle className="h-6 w-6 text-primary mr-2" />
-        <span className="text-lg font-semibold text-sidebar-foreground">
+    <div className="w-72 bg-card shadow-lg">
+      <div className="h-16 flex items-center px-6 bg-primary/5">
+        <Shield className="h-6 w-6 text-primary mr-2" />
+        <span className="text-lg font-semibold text-primary">
           Disaster Planning
         </span>
       </div>
-      <nav className="px-4 py-4">
+      <nav className="px-4 py-6">
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.name} href={item.href}>
               <a
                 className={cn(
-                  "flex items-center px-2 py-2 text-sm rounded-md mb-1",
-                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
+                  "hover:bg-primary/10 hover:text-primary",
                   location === item.href
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600"
                 )}
               >
                 <Icon className="mr-3 h-5 w-5" />
