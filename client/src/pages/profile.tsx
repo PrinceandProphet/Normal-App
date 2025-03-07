@@ -6,8 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Mail, Phone, Home, CreditCard, Users, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { format, differenceInYears } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -15,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertHouseholdMemberSchema } from "@shared/schema";
 import type { HouseholdMember } from "@shared/schema";
@@ -34,11 +31,6 @@ import {
   FormItem,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export default function Profile() {
   const { toast } = useToast();
@@ -57,17 +49,8 @@ export default function Profile() {
     defaultValues: {
       name: "",
       type: "adult",
-      dateOfBirth: undefined,
-      relationship: "",
-      species: "",
-      notes: "",
     },
   });
-
-  const calculateAge = (dateOfBirth: Date | null) => {
-    if (!dateOfBirth) return null;
-    return differenceInYears(new Date(), dateOfBirth);
-  };
 
   const addHouseholdMember = async (values: any) => {
     try {
@@ -246,13 +229,7 @@ export default function Profile() {
                           <div>
                             <p className="font-medium">{member.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {member.type === "pet"
-                                ? `${member.species}`
-                                : `${member.relationship}${
-                                    member.dateOfBirth
-                                      ? `, ${calculateAge(new Date(member.dateOfBirth))} years`
-                                      : ""
-                                  }`}
+                              {member.type}
                             </p>
                           </div>
                         </div>
@@ -282,9 +259,9 @@ export default function Profile() {
                             name="name"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Name</FormLabel>
+                                <FormLabel>Full Name</FormLabel>
                                 <FormControl>
-                                  <Input {...field} />
+                                  <Input {...field} placeholder="Enter full name" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -311,120 +288,6 @@ export default function Profile() {
                                     <SelectItem value="pet">Pet</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              </FormItem>
-                            )}
-                          />
-
-                          {form.watch("type") !== "pet" && (
-                            <>
-                              <FormField 
-                                control={form.control}
-                                name="dateOfBirth"
-                                render={({ field }) => (
-                                  <FormItem className="flex flex-col">
-                                    <FormLabel>Date of Birth</FormLabel>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <FormControl>
-                                          <Button
-                                            variant={"outline"}
-                                            className={`w-full pl-3 text-left font-normal ${
-                                              !field.value && "text-muted-foreground"
-                                            }`}
-                                          >
-                                            {field.value ? (
-                                              format(field.value, "PPP")
-                                            ) : (
-                                              <span>Pick a date</span>
-                                            )}
-                                          </Button>
-                                        </FormControl>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                          mode="single"
-                                          selected={field.value}
-                                          onSelect={field.onChange}
-                                          disabled={(date) =>
-                                            date > new Date() || date < new Date("1900-01-01")
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name="relationship"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Relationship</FormLabel>
-                                    <Select
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                    >
-                                      <FormControl>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select relationship" />
-                                        </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent>
-                                        <SelectItem value="spouse">Spouse</SelectItem>
-                                        <SelectItem value="partner">Partner</SelectItem>
-                                        <SelectItem value="son">Son</SelectItem>
-                                        <SelectItem value="daughter">Daughter</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormItem>
-                                )}
-                              />
-                            </>
-                          )}
-
-                          {form.watch("type") === "pet" && (
-                            <FormField
-                              control={form.control}
-                              name="species"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Species</FormLabel>
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select species" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="dog">Dog</SelectItem>
-                                      <SelectItem value="cat">Cat</SelectItem>
-                                      <SelectItem value="bird">Bird</SelectItem>
-                                      <SelectItem value="other">Other</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormItem>
-                              )}
-                            />
-                          )}
-
-                          <FormField
-                            control={form.control}
-                            name="notes"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Notes</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    {...field}
-                                    placeholder="Add any additional information..."
-                                  />
-                                </FormControl>
                               </FormItem>
                             )}
                           />

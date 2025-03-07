@@ -73,10 +73,6 @@ export const householdMembers = pgTable("household_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'adult', 'child', 'pet'
-  dateOfBirth: timestamp("date_of_birth"),
-  relationship: text("relationship"), // For adults/children: e.g., 'spouse', 'son', 'daughter'
-  species: text("species"), // For pets: e.g., 'dog', 'cat'
-  notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -98,14 +94,10 @@ export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 
-// Create the insert schema for household members
+// Create the insert schema for household members - simplified
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     type: z.enum(["adult", "child", "pet"]),
-    dateOfBirth: z.date().optional(),
-    relationship: z.string().optional(),
-    species: z.string().optional(),
-    notes: z.string().optional(),
   })
   .omit({ id: true, createdAt: true });
 
