@@ -63,7 +63,9 @@ export default function Home() {
     enabled: !!currentStage,
   });
 
-  const incompleteTasks = stageTasks.filter(task => !task.completed);
+  const { data: fundingOpportunities = [] } = useQuery({
+    queryKey: ["/api/capital-sources"],
+  });
 
   const toggleTaskCompletion = async (taskId: number) => {
     try {
@@ -144,10 +146,10 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">
-              {incompleteTasks.length}
+              {stageTasks.length}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
-              Tasks remaining in Stage {currentStage}: {stageName}
+              Total tasks in Stage {currentStage}: {stageName}
             </p>
             {showTodos && (
               <div className="mt-4 space-y-2">
@@ -191,7 +193,7 @@ export default function Home() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">3</div>
+            <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
             <p className="text-xs text-muted-foreground mb-2">
               Available grant applications
             </p>
