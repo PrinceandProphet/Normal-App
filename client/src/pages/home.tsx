@@ -40,9 +40,8 @@ export default function Home() {
     queryKey: ["/api/action-plan/tasks"],
   });
 
-  // Filter tasks for current stage and count incomplete ones
+  // Filter tasks for current stage
   const currentStageTasks = tasks.filter(task => task.stage === currentStage);
-  const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
@@ -108,7 +107,7 @@ export default function Home() {
               {currentStageTasks.length}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
-              Total tasks in Stage {currentStage}
+              Tasks in Stage {currentStage}
             </p>
             <p className="text-xs text-muted-foreground mt-4 italic">
               Coming soon: Interactive task management directly from your dashboard
