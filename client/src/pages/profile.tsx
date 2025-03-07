@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -18,7 +19,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertHouseholdMemberSchema } from "@shared/schema";
 import type { HouseholdMember } from "@shared/schema";
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,11 @@ export default function Profile() {
     },
   });
 
+  const calculateAge = (dateOfBirth: Date | null) => {
+    if (!dateOfBirth) return null;
+    return differenceInYears(new Date(), dateOfBirth);
+  };
+
   const addHouseholdMember = async (values: any) => {
     try {
       await apiRequest("POST", "/api/household-members", values);
@@ -82,11 +87,6 @@ export default function Profile() {
         description: "Failed to add household member",
       });
     }
-  };
-
-  const calculateAge = (dateOfBirth: Date | null) => {
-    if (!dateOfBirth) return null;
-    return differenceInYears(new Date(), dateOfBirth);
   };
 
   const generateInbox = async () => {
@@ -266,7 +266,7 @@ export default function Profile() {
 
                   <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
                     <DialogTrigger asChild>
-                      <Button className="w-full">
+                      <Button>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Household Member
                       </Button>
@@ -317,7 +317,7 @@ export default function Profile() {
 
                           {form.watch("type") !== "pet" && (
                             <>
-                              <FormField
+                              <FormField 
                                 control={form.control}
                                 name="dateOfBirth"
                                 render={({ field }) => (
