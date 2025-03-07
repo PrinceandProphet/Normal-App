@@ -8,8 +8,6 @@ import {
   type SystemConfig, type InsertSystemConfig, systemConfig,
   type CapitalSource, type InsertCapitalSource,
   capitalSources,
-  type HouseholdMember, type InsertHouseholdMember,
-  householdMembers,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -51,12 +49,6 @@ export interface IStorage {
   updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource>;
   deleteCapitalSource(id: number): Promise<void>;
   getDocumentsByCapitalSource(capitalSourceId: number): Promise<Document[]>;
-
-  // Household Members
-  getHouseholdMembers(): Promise<HouseholdMember[]>;
-  createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember>;
-  updateHouseholdMember(id: number, member: Partial<InsertHouseholdMember>): Promise<HouseholdMember>;
-  deleteHouseholdMember(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -211,30 +203,6 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(documents)
       .where(eq(documents.capitalSourceId, capitalSourceId));
-  }
-
-  // Household Members
-  async getHouseholdMembers(): Promise<HouseholdMember[]> {
-    return await db.select().from(householdMembers);
-  }
-
-  async createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember> {
-    const [created] = await db.insert(householdMembers).values(member).returning();
-    return created;
-  }
-
-  async updateHouseholdMember(id: number, member: Partial<InsertHouseholdMember>): Promise<HouseholdMember> {
-    const [updated] = await db
-      .update(householdMembers)
-      .set(member)
-      .where(eq(householdMembers.id, id))
-      .returning();
-    if (!updated) throw new Error("Household member not found");
-    return updated;
-  }
-
-  async deleteHouseholdMember(id: number): Promise<void> {
-    await db.delete(householdMembers).where(eq(householdMembers.id, id));
   }
 }
 

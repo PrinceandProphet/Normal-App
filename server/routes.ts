@@ -205,30 +205,5 @@ export async function registerRoutes(app: Express) {
     res.json(documents);
   });
 
-  // Household Members
-  app.get("/api/household-members", async (req, res) => {
-    const members = await storage.getHouseholdMembers();
-    res.json(members);
-  });
-
-  app.post("/api/household-members", async (req, res) => {
-    const member = insertHouseholdMemberSchema.parse(req.body);
-    const created = await storage.createHouseholdMember(member);
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/household-members/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const member = insertHouseholdMemberSchema.partial().parse(req.body);
-    const updated = await storage.updateHouseholdMember(id, member);
-    res.json(updated);
-  });
-
-  app.delete("/api/household-members/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    await storage.deleteHouseholdMember(id);
-    res.status(204).send();
-  });
-
   return server;
 }
