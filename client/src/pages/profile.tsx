@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Phone, Home, CreditCard } from "lucide-react";
+import { Mail, Phone, Home, CreditCard, Users } from "lucide-react";
 
 export default function Profile() {
   const { toast } = useToast();
@@ -115,9 +115,9 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Properties and Billing Section */}
+        {/* Properties & Household Section */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Properties & Billing</h2>
+          <h2 className="text-lg font-semibold mb-4">Properties & Household</h2>
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -147,8 +147,39 @@ export default function Profile() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Household Members
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Current Members:</p>
+                    <p className="font-mono bg-muted p-2 rounded text-sm">
+                      No household members added
+                    </p>
+                  </div>
+                  <Button variant="outline" disabled>
+                    Add Household Member
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Coming soon: Add and manage household members for each property.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Billing Section */}
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Billing</h2>
+          <div className="grid gap-6 md:grid-cols-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Billing
+                  Plan & Payments
                 </CardTitle>
               </CardHeader>
               <CardContent>
