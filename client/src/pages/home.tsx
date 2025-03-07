@@ -24,6 +24,14 @@ const getRandomMessage = () => {
   return encouragingMessages[randomIndex];
 };
 
+// Initial tasks for Stage S
+const initialTasks = [
+  { id: 1, text: "Locate safe temporary shelter", completed: false, urgent: true, stage: "S" },
+  { id: 2, text: "Register with FEMA", completed: false, urgent: true, stage: "S" },
+  { id: 3, text: "Address immediate medical needs", completed: false, urgent: true, stage: "S" },
+  { id: 4, text: "Secure food and water supply", completed: false, urgent: true, stage: "S" }
+];
+
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const { toast } = useToast();
@@ -35,13 +43,13 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks from the API
-  const { data: tasks = [] } = useQuery<Task[]>({
+  // Get tasks from the API, fallback to initial tasks if none exist
+  const { data: tasks = initialTasks } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks"],
   });
 
-  // Filter tasks for current stage
-  const currentStageTasks = tasks.filter(task => task.stage === currentStage);
+  // For Stage S, show initial tasks count
+  const taskCount = currentStage === "S" ? 4 : tasks.filter(task => task.stage === currentStage).length;
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
@@ -104,7 +112,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">
-              {currentStageTasks.length}
+              {taskCount}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
               Tasks in Stage {currentStage}
