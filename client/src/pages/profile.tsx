@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Mail, Phone, Home, CreditCard, Users, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { format, differenceInYears } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -32,6 +34,11 @@ import {
   FormItem,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function Profile() {
   const { toast } = useToast();
@@ -40,6 +47,47 @@ export default function Profile() {
   const { data: systemConfig } = useQuery({
     queryKey: ["/api/system/config"],
   });
+
+  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
+    queryKey: ["/api/household-members"],
+  });
+
+  const form = useForm({
+    resolver: zodResolver(insertHouseholdMemberSchema),
+    defaultValues: {
+      name: "",
+      type: "adult",
+      dateOfBirth: undefined,
+      relationship: "",
+      species: "",
+      notes: "",
+    },
+  });
+
+  const addHouseholdMember = async (values: any) => {
+    try {
+      await apiRequest("POST", "/api/household-members", values);
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      setAddMemberOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Household member added successfully",
+      });
+    } catch (error) {
+      console.error("Failed to add household member:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add household member",
+      });
+    }
+  };
+
+  const calculateAge = (dateOfBirth: Date | null) => {
+    if (!dateOfBirth) return null;
+    return differenceInYears(new Date(), dateOfBirth);
+  };
 
   const generateInbox = async () => {
     try {
@@ -71,43 +119,6 @@ export default function Profile() {
         variant: "destructive",
         title: "Error",
         description: "Failed to create phone number",
-      });
-    }
-  };
-
-  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
-    queryKey: ["/api/household-members"],
-  });
-
-  const form = useForm({
-    resolver: zodResolver(insertHouseholdMemberSchema),
-    defaultValues: {
-      name: "",
-      type: "adult",
-      age: undefined,
-      relationship: "",
-      species: "",
-      notes: "",
-    },
-  });
-
-  const addHouseholdMember = async (values: any) => {
-    try {
-      await apiRequest("POST", "/api/household-members", values);
-      // Force a refetch of the household members
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
-      setAddMemberOpen(false);
-      form.reset();
-      toast({
-        title: "Success",
-        description: "Household member added successfully",
-      });
-    } catch (error) {
-      console.error("Failed to add household member:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add household member",
       });
     }
   };
@@ -237,7 +248,11 @@ export default function Profile() {
                             <p className="text-sm text-muted-foreground">
                               {member.type === "pet"
                                 ? `${member.species}`
-                                : `${member.relationship}${member.age ? `, ${member.age} years` : ""}`}
+                                : `${member.relationship}${
+                                    member.dateOfBirth
+                                      ? `, ${calculateAge(new Date(member.dateOfBirth))} years`
+                                      : ""
+                                  }`}
                             </p>
                           </div>
                         </div>
@@ -304,17 +319,39 @@ export default function Profile() {
                             <>
                               <FormField
                                 control={form.control}
-                                name="age"
+                                name="dateOfBirth"
                                 render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Age</FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        type="number"
-                                        {...field}
-                                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                                      />
-                                    </FormControl>
+                                  <FormItem className="flex flex-col">
+                                    <FormLabel>Date of Birth</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant={"outline"}
+                                            className={`w-full pl-3 text-left font-normal ${
+                                              !field.value && "text-muted-foreground"
+                                            }`}
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "PPP")
+                                            ) : (
+                                              <span>Pick a date</span>
+                                            )}
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          disabled={(date) =>
+                                            date > new Date() || date < new Date("1900-01-01")
+                                          }
+                                          initialFocus
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </FormItem>
                                 )}
                               />

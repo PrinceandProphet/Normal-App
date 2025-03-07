@@ -73,7 +73,7 @@ export const householdMembers = pgTable("household_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'adult', 'child', 'pet'
-  age: integer("age"),
+  dateOfBirth: timestamp("date_of_birth"),
   relationship: text("relationship"), // For adults/children: e.g., 'spouse', 'son', 'daughter'
   species: text("species"), // For pets: e.g., 'dog', 'cat'
   notes: text("notes"),
@@ -102,7 +102,7 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     type: z.enum(["adult", "child", "pet"]),
-    age: z.number().min(0).optional(),
+    dateOfBirth: z.date().optional(),
     relationship: z.string().optional(),
     species: z.string().optional(),
     notes: z.string().optional(),
