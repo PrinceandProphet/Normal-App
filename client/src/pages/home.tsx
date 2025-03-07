@@ -2,19 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, MessageSquare, Users, CheckSquare } from "lucide-react";
+import { FileText, DollarSign, CheckSquare } from "lucide-react";
 
 export default function Home() {
   const { data: documents } = useQuery({
     queryKey: ["/api/documents"],
   });
 
-  const { data: contacts } = useQuery({
-    queryKey: ["/api/contacts"],
-  });
-
   const { data: checklists } = useQuery({
     queryKey: ["/api/checklists"],
+  });
+
+  const { data: capitalSources } = useQuery({
+    queryKey: ["/api/capital-sources"],
   });
 
   return (
@@ -24,43 +24,11 @@ export default function Home() {
           Disaster Planning Dashboard
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage your emergency contacts, important documents, and communication all in one place.
+          Manage your checklists, funding opportunities, and important documents all in one place.
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">{documents?.length || 0}</div>
-            <Link href="/documents">
-              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Emergency Contacts</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">
-              {contacts?.filter(c => c.isEmergency).length || 0}
-            </div>
-            <Link href="/contacts">
-              <Button variant="link" className="px-0 font-medium">Manage Contacts →</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Checklists</CardTitle>
@@ -73,6 +41,36 @@ export default function Home() {
             <p className="text-xs text-muted-foreground">
               {checklists?.filter(c => c.completed.every(Boolean)).length || 0} completed
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="backdrop-blur-sm bg-white/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold mb-2">{capitalSources?.length || 0}</div>
+            <Link href="/capital-sources">
+              <Button variant="link" className="px-0 font-medium">View Funding →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="backdrop-blur-sm bg-white/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Documents</CardTitle>
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold mb-2">{documents?.length || 0}</div>
+            <Link href="/documents">
+              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -88,9 +86,9 @@ export default function Home() {
                 Upload New Document
               </Button>
             </Link>
-            <Link href="/contacts">
+            <Link href="/capital-sources">
               <Button variant="outline" className="w-full border-2">
-                Add Emergency Contact
+                Add Funding Source
               </Button>
             </Link>
           </CardContent>
