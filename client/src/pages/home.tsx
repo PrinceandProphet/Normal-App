@@ -39,51 +39,55 @@ const sampleFundingOpportunities = [
   }
 ];
 
-// Recovery stages data
-const recoveryStages = [
-  {
-    letter: "S",
-    title: "Secure & Stabilize",
-    tasks: [
-      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [], id: 1 },
-      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [], id: 2 },
-      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [], id: 3 },
-      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [], id: 4 }
-    ]
-  }
-];
-
-interface Document {
-  id: number;
-  name: string;
-}
-
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [showTodos, setShowTodos] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: currentStageData } = useQuery({
+  // Get current stage from the API
+  const { data: systemConfig } = useQuery({
     queryKey: ["/api/system/config"],
   });
 
-  const currentStage = currentStageData?.stage || "S";
+  const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks for current stage
-  const currentStageTasks = recoveryStages.find(stage => stage.letter === currentStage)?.tasks || [];
+  // Get tasks from the API
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["/api/action-plan/tasks"],
+  });
+
+  // Filter tasks for current stage and count incomplete ones
+  const currentStageTasks = tasks.filter(task => task.stage === currentStage);
   const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
-  const { data: documents = [] } = useQuery<Document[]>({
+  const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
   });
 
-  const stageName =
+  const stageName = 
     currentStage === "S" ? "Secure & Stabilize" :
-      currentStage === "T" ? "Take Stock & Track" :
-        currentStage === "A" ? "Align Recovery Plan" :
-          currentStage === "R" ? "Rebuild & Restore" :
-            "Transition to Normal";
+    currentStage === "T" ? "Take Stock & Track" :
+    currentStage === "A" ? "Align Recovery Plan" :
+    currentStage === "R" ? "Rebuild & Restore" :
+    "Transition to Normal";
+
+  const toggleTaskCompletion = async (taskId: number) => {
+    try {
+      await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
+      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      toast({
+        title: "Success",
+        description: "Task status updated",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update task status",
+      });
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -120,7 +124,6 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Three cards in a row */}
       <div className="space-y-2">
         <div className="grid gap-6 md:grid-cols-3">
           {/* To Do's Card */}
@@ -204,9 +207,9 @@ export default function Home() {
           )}>
             <CardContent className="py-4">
               <div className="space-y-2">
-                {currentStageTasks.map((task, index) => (
+                {currentStageTasks.map((task) => (
                   <div
-                    key={index}
+                    key={task.id}
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg",
                       task.completed ? "bg-primary/5" : "hover:bg-muted",
@@ -220,28 +223,11 @@ export default function Home() {
                           ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
-                      onClick={async () => {
-                        const updatedTasks = [...currentStageTasks];
-                        updatedTasks[index].completed = !updatedTasks[index].completed;
-                        try {
-                          await apiRequest("PATCH", `/api/action-plan/tasks/${task.id}/toggle`);
-                          queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
-                          toast({
-                            title: `Task updated`,
-                            description: task.completed ? "Task marked as incomplete" : "Task marked as complete",
-                          });
-                        } catch (error) {
-                          toast({
-                            variant: "destructive",
-                            title: "Error",
-                            description: "Failed to update task status",
-                          });
-                        }
-                      }}
+                      onClick={() => toggleTaskCompletion(task.id)}
                     >
-                      {task.completed ? (
+                      {task.completed && (
                         <CheckSquare className="h-4 w-4 text-white" />
-                      ) : null}
+                      )}
                     </button>
                     <span className={cn(
                       "text-sm",
