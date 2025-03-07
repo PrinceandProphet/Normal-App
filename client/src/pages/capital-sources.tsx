@@ -41,6 +41,8 @@ const sourceSchema = z.object({
   description: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof sourceSchema>;
+
 export default function CapitalSources() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function CapitalSources() {
     queryKey: ["/api/capital-sources"],
   });
 
-  const form = useForm({
+  const form = useForm<FormValues>({
     resolver: zodResolver(sourceSchema),
     defaultValues: {
       type: "FEMA",
@@ -72,7 +74,7 @@ export default function CapitalSources() {
       .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
   };
 
-  async function onSubmit(values: z.infer<typeof sourceSchema>) {
+  async function onSubmit(values: FormValues) {
     try {
       await apiRequest("POST", "/api/capital-sources", {
         ...values,

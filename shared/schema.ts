@@ -65,7 +65,15 @@ export const insertContactSchema = createInsertSchema(contacts).omit({ id: true 
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
-export const insertCapitalSourceSchema = createInsertSchema(capitalSources).omit({ id: true, createdAt: true });
+
+// Custom schema for capital source to handle numeric amount
+export const insertCapitalSourceSchema = z.object({
+  type: z.enum(["FEMA", "Insurance", "Grant"]),
+  name: z.string().min(1, "Name is required"),
+  amount: z.number().min(0, "Amount must be non-negative"),
+  status: z.enum(["current", "projected"]),
+  description: z.string().optional(),
+});
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;

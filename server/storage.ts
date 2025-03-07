@@ -173,14 +173,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCapitalSource(source: InsertCapitalSource): Promise<CapitalSource> {
-    const [created] = await db.insert(capitalSources).values(source).returning();
+    const [created] = await db.insert(capitalSources).values({
+      ...source,
+      amount: source.amount.toString(),
+    }).returning();
     return created;
   }
 
   async updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource> {
     const [updated] = await db
       .update(capitalSources)
-      .set(source)
+      .set({
+        ...source,
+        amount: source.amount?.toString(),
+      })
       .where(eq(capitalSources.id, id))
       .returning();
     if (!updated) throw new Error("Capital source not found");
