@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle2, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -348,13 +348,13 @@ export default function ActionPlan() {
                             size="sm"
                             variant="ghost"
                             className={cn(
-                              "p-0 h-8 w-8 rounded-full border-2",
-                              task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                              "p-0 h-8 w-8 rounded-full",
+                              task.completed ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"
                             )}
                             onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
                             disabled={isPublicView}
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <CheckCircle2 className="h-5 w-5" />
                           </Button>
                           <Button
                             size="sm"

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight, CheckCircle } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -173,12 +173,12 @@ export default function Home() {
                       size="sm"
                       variant="ghost"
                       className={cn(
-                        "p-0 h-6 w-6 rounded-full border-2",
-                        task.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                        "p-0 h-6 w-6 rounded-full",
+                        task.completed ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"
                       )}
                       onClick={() => toggleTaskCompletion(task.id)}
                     >
-                      <CheckCircle className="h-4 w-4" />
+                      <CheckCircle2 className="h-4 w-4" />
                     </Button>
                     <span className={cn(
                       "text-sm",
