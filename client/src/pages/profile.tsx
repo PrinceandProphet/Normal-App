@@ -219,7 +219,7 @@ export default function Profile() {
                 <div className="space-y-4">
                   {isLoading ? (
                     <p>Loading...</p>
-                  ) : householdMembers.length > 0 ? (
+                  ) : householdMembers?.length > 0 ? (
                     <div className="space-y-4">
                       {householdMembers.map((member) => (
                         <div
@@ -228,7 +228,7 @@ export default function Profile() {
                         >
                           <div>
                             <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground capitalize">
                               {member.type}
                             </p>
                           </div>
