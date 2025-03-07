@@ -13,10 +13,6 @@ export default function Home() {
     queryKey: ["/api/checklists"],
   });
 
-  const { data: capitalSources } = useQuery({
-    queryKey: ["/api/capital-sources"],
-  });
-
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="space-y-3">
@@ -24,14 +20,14 @@ export default function Home() {
           Disaster Planning Dashboard
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage your checklists, capital sources, and important documents all in one place.
+          Manage your checklists, explore funding opportunities, and organize important documents all in one place.
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Checklists</CardTitle>
+            <CardTitle className="text-sm font-medium">To Do's</CardTitle>
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <CheckSquare className="h-4 w-4 text-primary" />
             </div>
@@ -46,16 +42,16 @@ export default function Home() {
 
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Capital Sources</CardTitle>
+            <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">{capitalSources?.length || 0}</div>
-            <Link href="/capital-sources">
-              <Button variant="link" className="px-0 font-medium">View Sources →</Button>
-            </Link>
+            <div className="text-2xl font-bold mb-2">0</div>
+            <p className="text-xs text-muted-foreground">
+              Available grants to apply for
+            </p>
           </CardContent>
         </Card>
 
@@ -86,11 +82,9 @@ export default function Home() {
                 Upload New Document
               </Button>
             </Link>
-            <Link href="/capital-sources">
-              <Button variant="outline" className="w-full border-2">
-                Add Capital Source
-              </Button>
-            </Link>
+            <Button variant="outline" className="w-full border-2" disabled>
+              Browse Funding Opportunities
+            </Button>
           </CardContent>
         </Card>
 
