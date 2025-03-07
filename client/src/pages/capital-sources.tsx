@@ -64,31 +64,29 @@ export default function CapitalSources() {
     },
   });
 
-  const getCurrentTotal = (type: string) => {
+  const getAllCurrentTotal = () => {
     return sources
-      ?.filter((s) => s.type === type && s.status === "current")
+      ?.filter((s) => s.status === "current")
       .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
   };
 
-  const getProjectedTotal = (type: string) => {
+  const getAllProjectedTotal = () => {
     return sources
-      ?.filter((s) => s.type === type && s.status === "projected")
+      ?.filter((s) => s.status === "projected")
       .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
   };
 
-  const getTotal = (type: string) => {
-    return getCurrentTotal(type) + getProjectedTotal(type);
+  const getAllTotal = () => {
+    return getAllCurrentTotal() + getAllProjectedTotal();
   };
 
   async function onSubmit(values: FormValues) {
     try {
-      // First create the capital source
       const source = await apiRequest("POST", "/api/capital-sources", {
         ...values,
         amount: Number(values.amount),
       });
 
-      // Handle document upload if a file was selected
       const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
       if (fileInput?.files?.length) {
         const formData = new FormData();
@@ -273,32 +271,44 @@ export default function CapitalSources() {
         </Dialog>
       </div>
 
-      {/* Summary Tiles */}
       <div className="grid gap-4 md:grid-cols-3">
-        {["FEMA", "Insurance", "Grant"].map((type) => (
-          <Card key={type}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">{type}</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">
-                  ${getCurrentTotal(type).toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Projected: ${getProjectedTotal(type).toLocaleString()}
-                </p>
-                <p className="text-xs font-medium text-primary">
-                  Total: ${getTotal(type).toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Current</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${getAllCurrentTotal().toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Projected</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${getAllProjectedTotal().toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              ${getAllTotal().toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* List of Sources */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sources?.map((source) => (
           <Card key={source.id}>
