@@ -40,6 +40,12 @@ export async function registerRoutes(app: Express) {
   });
 
   app.post("/api/documents", upload.single("file"), async (req, res) => {
+    console.log('Upload request received:', {
+      body: req.body,
+      file: req.file,
+      headers: req.headers['content-type']
+    });
+
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }

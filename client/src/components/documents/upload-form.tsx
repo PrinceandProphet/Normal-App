@@ -13,7 +13,7 @@ interface UploadFormProps {
 
 const uploadFormSchema = z.object({
   name: z.string().min(1, "Document name is required"),
-  file: z.instanceof(File, { message: "Please select a file" })
+  file: z.custom<File>((v) => v instanceof File, "Please select a file")
 });
 
 type UploadFormValues = z.infer<typeof uploadFormSchema>;
@@ -38,6 +38,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
       const res = await fetch("/api/documents", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -66,7 +67,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" encType="multipart/form-data">
         <FormField
           control={form.control}
           name="name"
