@@ -50,7 +50,7 @@ export default function Home() {
           <CardContent>
             <div className="text-2xl font-bold mb-2">0</div>
             <p className="text-xs text-muted-foreground">
-              Available grants to apply for
+              Available grant applications
             </p>
           </CardContent>
         </Card>
