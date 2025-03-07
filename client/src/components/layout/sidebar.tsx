@@ -8,8 +8,12 @@ import {
   Shield,
   Settings,
   DollarSign,
-  CheckSquare
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -23,15 +27,35 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="w-72 bg-card shadow-lg">
+    <div className={cn(
+      "relative bg-card shadow-lg transition-all duration-300",
+      collapsed ? "w-16" : "w-72"
+    )}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute -right-4 top-8 h-8 w-8 rounded-full bg-background shadow-md"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </Button>
+
       <div className="h-16 flex items-center px-6 bg-primary/5">
         <Shield className="h-6 w-6 text-primary mr-2" />
-        <span className="text-lg font-semibold text-primary">
-          Disaster Planning
-        </span>
+        {!collapsed && (
+          <span className="text-lg font-semibold text-primary">
+            Disaster Planning
+          </span>
+        )}
       </div>
+
       <nav className="px-4 py-6">
         {navigation.map((item) => {
           const Icon = item.icon;
@@ -45,9 +69,10 @@ export default function Sidebar() {
                     ? "bg-primary/10 text-primary"
                     : "text-gray-600"
                 )}
+                title={collapsed ? item.name : undefined}
               >
-                <Icon className="mr-3 h-5 w-5" />
-                {item.name}
+                <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
+                {!collapsed && item.name}
               </a>
             </Link>
           );

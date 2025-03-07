@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Sample encouraging messages
 const encouragingMessages = [
@@ -41,17 +42,38 @@ const fundingOpportunities = [
   },
 ];
 
+interface Task {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+interface Document {
+  id: number;
+  name: string;
+}
+
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
-  const { data: documents } = useQuery({
+  const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
-  const { data: checklists } = useQuery({
-    queryKey: ["/api/checklists"],
+  const { data: stageTasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/action-plan/tasks", currentStage],
   });
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
+
+  const toggleTaskCompletion = (taskId: number) => {
+    //Implementation for toggling task completion would go here.  This is a placeholder.
+    console.log(`Toggling completion for task ID: ${taskId}`);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -97,25 +119,78 @@ export default function Home() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">To Do's</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckSquare className="h-4 w-4 text-primary" />
+          <CardHeader 
+            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
+            onClick={() => toggleCard('todos')}
+          >
+            <CardTitle className="text-sm font-medium">Current Stage To Do's</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckSquare className="h-4 w-4 text-primary" />
+              </div>
+              {expandedCard !== 'todos' ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">{checklists?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {checklists?.filter(c => c.completed.every(Boolean)).length || 0} completed
+            <div className="text-2xl font-bold mb-2">
+              {stageTasks.filter(t => !t.completed).length}
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Tasks remaining in current stage
             </p>
+            {expandedCard === 'todos' && (
+              <div className="mt-4 space-y-2">
+                {stageTasks.map((task) => (
+                  <div 
+                    key={task.id}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg",
+                      task.completed ? "bg-primary/5" : "hover:bg-muted"
+                    )}
+                  >
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={cn(
+                        "p-0 h-6 w-6",
+                        task.completed && "text-primary"
+                      )}
+                      onClick={() => toggleTaskCompletion(task.id)}
+                    >
+                      <CheckSquare className="h-4 w-4" />
+                    </Button>
+                    <span className={cn(
+                      "text-sm",
+                      task.completed && "line-through text-muted-foreground"
+                    )}>
+                      {task.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+          <CardHeader 
+            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
+            onClick={() => toggleCard('funding')}
+          >
             <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-primary" />
+              </div>
+              {expandedCard !== 'funding' ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -123,24 +198,58 @@ export default function Home() {
             <p className="text-xs text-muted-foreground mb-2">
               Available grant applications
             </p>
-            <Link href="/capital-sources#opportunities">
-              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
-            </Link>
+            {expandedCard === 'funding' && (
+              <div className="mt-4 space-y-3">
+                {fundingOpportunities.map((opportunity) => (
+                  <div key={opportunity.id} className="p-3 rounded-lg bg-muted">
+                    <h3 className="font-medium text-sm">{opportunity.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Deadline: {new Date(opportunity.deadline).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Up to ${opportunity.maxAmount.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+                <Link href="/capital-sources#opportunities">
+                  <Button variant="link" className="px-0 font-medium">View All Opportunities →</Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+          <CardHeader 
+            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
+            onClick={() => toggleCard('documents')}
+          >
             <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary" />
+              </div>
+              {expandedCard !== 'documents' ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">{documents?.length || 0}</div>
-            <Link href="/documents">
-              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
-            </Link>
+            <div className="text-2xl font-bold mb-2">{documents.length}</div>
+            {expandedCard === 'documents' && (
+              <div className="mt-4 space-y-2">
+                {documents.slice(0, 3).map((doc) => (
+                  <div key={doc.id} className="p-2 rounded-lg hover:bg-muted">
+                    <p className="text-sm truncate">{doc.name}</p>
+                  </div>
+                ))}
+                <Link href="/documents">
+                  <Button variant="link" className="px-0 font-medium">View All Documents →</Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
