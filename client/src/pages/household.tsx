@@ -68,6 +68,23 @@ export default function Household() {
     }
   };
 
+  const deleteMember = async (id: number) => {
+    try {
+      await apiRequest("DELETE", `/api/household-members/${id}`);
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      toast({
+        title: "Success",
+        description: "Member removed successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to remove member",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -161,6 +178,7 @@ export default function Household() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => deleteMember(member.id)}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
