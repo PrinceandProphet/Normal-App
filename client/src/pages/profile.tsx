@@ -75,7 +75,7 @@ export default function Profile() {
     }
   };
 
-  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
+  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members"],
   });
 
@@ -94,7 +94,8 @@ export default function Profile() {
   const addHouseholdMember = async (values: any) => {
     try {
       await apiRequest("POST", "/api/household-members", values);
-      queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      // Force a refetch of the household members
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
       setAddMemberOpen(false);
       form.reset();
       toast({
@@ -102,6 +103,7 @@ export default function Profile() {
         description: "Household member added successfully",
       });
     } catch (error) {
+      console.error("Failed to add household member:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -221,7 +223,9 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {householdMembers.length > 0 ? (
+                  {isLoading ? (
+                    <p>Loading...</p>
+                  ) : householdMembers.length > 0 ? (
                     <div className="space-y-4">
                       {householdMembers.map((member) => (
                         <div
