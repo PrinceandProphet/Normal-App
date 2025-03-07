@@ -1,0 +1,59 @@
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  path: text("path").notNull(),
+  type: text("type").notNull(),
+  size: integer("size").notNull(),
+});
+
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  isEmergency: boolean("is_emergency").default(false),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull(), // 'email' | 'sms'
+  isInbound: boolean("is_inbound").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+});
+
+export const documentTemplates = pgTable("document_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  content: text("content").notNull(),
+});
+
+export const checklists = pgTable("checklists", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  items: text("items").array().notNull(),
+  completed: boolean("completed").array().notNull(),
+});
+
+export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
+export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
+export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
+export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
+
+export type Document = typeof documents.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;
+export type Message = typeof messages.$inferSelect;
+export type DocumentTemplate = typeof documentTemplates.$inferSelect;
+export type Checklist = typeof checklists.$inferSelect;
+
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type InsertContact = z.infer<typeof insertContactSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
+export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
