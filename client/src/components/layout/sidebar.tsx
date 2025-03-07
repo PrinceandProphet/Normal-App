@@ -10,7 +10,8 @@ import {
   DollarSign,
   CheckSquare,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Building2
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Action Plan", href: "/action-plan", icon: Shield },
+  { name: "Household & Properties", href: "/household", icon: Building2 },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
