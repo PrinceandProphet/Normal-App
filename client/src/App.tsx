@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import Documents from "@/pages/documents";
 import Messages from "@/pages/messages";
 import Contacts from "@/pages/contacts";
+import Profile from "@/pages/profile";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
           <Route path="/documents" component={Documents} />
           <Route path="/messages" component={Messages} />
           <Route path="/contacts" component={Contacts} />
+          <Route path="/profile" component={Profile} />
           <Route component={NotFound} />
         </Switch>
       </main>

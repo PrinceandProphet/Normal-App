@@ -1,16 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { Link } from "wouter";
 
 export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
@@ -29,38 +25,6 @@ export default function Messages() {
     queryKey: ["/api/contacts", selectedContact, "messages"],
     enabled: selectedContact !== null,
   });
-
-  const emailForm = useForm({
-    resolver: zodResolver(z.object({
-      emailAddress: z.string().email("Please enter a valid email address"),
-    })),
-    defaultValues: {
-      emailAddress: systemConfig?.emailAddress || "",
-    },
-  });
-
-  useEffect(() => {
-    if (systemConfig?.emailAddress) {
-      emailForm.reset({ emailAddress: systemConfig.emailAddress });
-    }
-  }, [systemConfig]);
-
-  async function onUpdateEmail(values: { emailAddress: string }) {
-    try {
-      await apiRequest("POST", "/api/system/config", values);
-      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
-      toast({
-        title: "Success",
-        description: "System email updated successfully",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update system email",
-      });
-    }
-  }
 
   async function sendMessage() {
     if (!selectedContact || !messageContent.trim()) return;
@@ -97,43 +61,23 @@ export default function Messages() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>System Email Configuration</CardTitle>
+          <CardTitle>System Email</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {systemConfig?.emailAddress ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Current System Email:</p>
-                <p className="font-mono bg-muted p-2 rounded">{systemConfig.emailAddress}</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  No email address configured. Click below to generate a new email inbox.
-                </p>
-                <Button 
-                  onClick={async () => {
-                    try {
-                      await apiRequest("POST", "/api/system/config/generate", {});
-                      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
-                      toast({
-                        title: "Success",
-                        description: "Email inbox created successfully",
-                      });
-                    } catch (error) {
-                      toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Failed to create email inbox",
-                      });
-                    }
-                  }}
-                >
-                  Generate Email Inbox
-                </Button>
-              </div>
-            )}
-          </div>
+          {systemConfig?.emailAddress ? (
+            <p className="font-mono bg-muted p-2 rounded">
+              {systemConfig.emailAddress}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No system email configured. 
+              <Link href="/profile">
+                <a className="text-primary hover:underline ml-1">
+                  Configure in Profile Settings
+                </a>
+              </Link>
+            </p>
+          )}
         </CardContent>
       </Card>
 

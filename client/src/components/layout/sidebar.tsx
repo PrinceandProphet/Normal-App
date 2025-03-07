@@ -5,7 +5,8 @@ import {
   MessageSquare, 
   Users, 
   Home,
-  Shield
+  Shield,
+  Settings
 } from "lucide-react";
 
 const navigation = [
@@ -13,6 +14,7 @@ const navigation = [
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
+  { name: "Profile Settings", href: "/profile", icon: Settings },
 ];
 
 export default function Sidebar() {
