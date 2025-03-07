@@ -2,43 +2,36 @@ import type { Express } from "express";
 import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
+import { documentService } from "./services/documents";
 import { insertDocumentSchema, insertContactSchema, insertMessageSchema } from "@shared/schema";
 import path from "path";
-import fs from "fs";
 import express from 'express';
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-console.log('Uploads directory:', uploadsDir); // Debug log
-
+// Configure multer for file uploads
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      console.log('Saving file to:', uploadsDir); // Debug log
-      cb(null, uploadsDir);
+      cb(null, path.join(process.cwd(), "uploads"));
     },
     filename: (req, file, cb) => {
-      // Generate unique filename
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const filename = uniqueSuffix + path.extname(file.originalname);
-      console.log('Generated filename:', filename); // Debug log
-      cb(null, filename);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
     }
   }),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  fileFilter: (req, file, cb) => {
+    // Optional: Add file type validation here
+    cb(null, true);
+  }
 });
 
 export async function registerRoutes(app: Express) {
   const server = createServer(app);
 
   // Serve uploaded files
-  app.use('/uploads', express.static(uploadsDir));
+  app.use('/uploads', express.static(path.join(process.cwd(), "uploads")));
 
   // Documents
   app.get("/api/documents", async (req, res) => {
@@ -47,33 +40,31 @@ export async function registerRoutes(app: Express) {
   });
 
   app.post("/api/documents", upload.single("file"), async (req, res) => {
-    console.log('Upload request received:', req.body, req.file); // Debug log
-
-    const file = req.file;
-    if (!file) {
-      console.log('No file in request'); // Debug log
+    if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
     try {
-      const doc = insertDocumentSchema.parse({
-        name: req.body.name || file.originalname,
-        path: `/uploads/${file.filename}`,
-        type: path.extname(file.originalname),
-        size: file.size,
-      });
-
-      const document = await storage.createDocument(doc);
-      console.log('Document created:', document); // Debug log
+      const docData = await documentService.saveUploadedFile(req.file);
+      const document = await storage.createDocument(docData);
       res.status(201).json(document);
     } catch (error) {
-      console.error('Error in document upload:', error); // Debug log
-      // Clean up uploaded file if document creation fails
-      if (file.path) {
-        fs.unlinkSync(file.path);
+      // If anything fails, cleanup the uploaded file
+      if (req.file.path) {
+        await documentService.deleteFile(req.file.path);
       }
       throw error;
     }
+  });
+
+  app.delete("/api/documents/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const doc = await storage.getDocument(id);
+    if (doc) {
+      await documentService.deleteFile(doc.path);
+      await storage.deleteDocument(id);
+    }
+    res.status(204).send();
   });
 
   // Contacts
