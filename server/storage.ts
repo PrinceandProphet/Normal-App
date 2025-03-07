@@ -4,7 +4,8 @@ import {
   type Message, type InsertMessage,
   type DocumentTemplate, type InsertTemplate,
   type Checklist, type InsertChecklist,
-  documents, contacts, messages, documentTemplates, checklists
+  documents, contacts, messages, documentTemplates, checklists,
+  type SystemConfig, type InsertSystemConfig, systemConfig
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -35,6 +36,10 @@ export interface IStorage {
   getChecklists(): Promise<Checklist[]>;
   createChecklist(checklist: InsertChecklist): Promise<Checklist>;
   updateChecklist(id: number, checklist: Partial<InsertChecklist>): Promise<Checklist>;
+
+  // System Config
+  getSystemConfig(): Promise<SystemConfig | undefined>;
+  updateSystemConfig(config: InsertSystemConfig): Promise<SystemConfig>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -128,6 +133,30 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!updated) throw new Error("Checklist not found");
     return updated;
+  }
+
+  // System Config
+  async getSystemConfig(): Promise<SystemConfig | undefined> {
+    const [config] = await db.select().from(systemConfig).limit(1);
+    return config;
+  }
+
+  async updateSystemConfig(config: InsertSystemConfig): Promise<SystemConfig> {
+    const [existing] = await db.select().from(systemConfig).limit(1);
+    if (existing) {
+      const [updated] = await db
+        .update(systemConfig)
+        .set({ ...config, updatedAt: new Date() })
+        .where(eq(systemConfig.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(systemConfig)
+        .values({ ...config, updatedAt: new Date() })
+        .returning();
+      return created;
+    }
   }
 }
 

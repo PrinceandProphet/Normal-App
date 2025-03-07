@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
@@ -17,10 +21,46 @@ export default function Messages() {
     queryKey: ["/api/contacts"],
   });
 
+  const { data: systemConfig } = useQuery({
+    queryKey: ["/api/system/config"],
+  });
+
   const { data: messages } = useQuery({
     queryKey: ["/api/contacts", selectedContact, "messages"],
     enabled: selectedContact !== null,
   });
+
+  const emailForm = useForm({
+    resolver: zodResolver(z.object({
+      emailAddress: z.string().email("Please enter a valid email address"),
+    })),
+    defaultValues: {
+      emailAddress: systemConfig?.emailAddress || "",
+    },
+  });
+
+  useEffect(() => {
+    if (systemConfig?.emailAddress) {
+      emailForm.reset({ emailAddress: systemConfig.emailAddress });
+    }
+  }, [systemConfig]);
+
+  async function onUpdateEmail(values: { emailAddress: string }) {
+    try {
+      await apiRequest("POST", "/api/system/config", values);
+      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
+      toast({
+        title: "Success",
+        description: "System email updated successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update system email",
+      });
+    }
+  }
 
   async function sendMessage() {
     if (!selectedContact || !messageContent.trim()) return;
@@ -54,6 +94,35 @@ export default function Messages() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+
+      {/* Add System Email Configuration */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>System Email Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...emailForm}>
+            <form onSubmit={emailForm.handleSubmit(onUpdateEmail)} className="space-y-4">
+              <FormField
+                control={emailForm.control}
+                name="emailAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>System Email Address</FormLabel>
+                    <FormControl>
+                      <div className="flex gap-2">
+                        <Input {...field} placeholder="system@yourdomain.com" />
+                        <Button type="submit">Save</Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-4">

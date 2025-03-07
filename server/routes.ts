@@ -129,5 +129,17 @@ export async function registerRoutes(app: Express) {
     res.json(checklist);
   });
 
+  // System Config
+  app.get("/api/system/config", async (req, res) => {
+    const config = await storage.getSystemConfig();
+    res.json(config || { emailAddress: "" });
+  });
+
+  app.post("/api/system/config", async (req, res) => {
+    const config = insertSystemConfigSchema.parse(req.body);
+    const updated = await storage.updateSystemConfig(config);
+    res.json(updated);
+  });
+
   return server;
 }
