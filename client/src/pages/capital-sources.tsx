@@ -33,7 +33,6 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { DollarSign, Plus, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { Label } from "@/components/ui/label";
-import { DocumentText, FileText } from "lucide-react";
 
 const sourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -139,6 +138,26 @@ export default function CapitalSources() {
       });
     }
   }
+
+  // Sample funding opportunities data
+  const fundingOpportunities = [
+    {
+      id: 1,
+      name: "Disaster Recovery Grant",
+      agency: "State Emergency Management",
+      deadline: "2025-04-01",
+      maxAmount: 25000,
+      description: "Emergency assistance for households affected by natural disasters",
+    },
+    {
+      id: 2,
+      name: "Home Repair Program",
+      agency: "Housing Department",
+      deadline: "2025-03-31",
+      maxAmount: 15000,
+      description: "Funding for essential home repairs due to disaster damage",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -309,37 +328,81 @@ export default function CapitalSources() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {sources?.map((source) => (
-          <Card key={source.id}>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h3 className="font-semibold">{source.name}</h3>
-                  <p className="text-sm text-muted-foreground">{source.type}</p>
-                  <p className="text-sm font-medium">
-                    ${Number(source.amount).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {source.status}
-                  </p>
-                  {source.description && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {source.description}
+      {/* Capital Sources Section */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Your Capital Sources</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {sources?.map((source) => (
+            <Card key={source.id}>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">{source.name}</h3>
+                    <p className="text-sm text-muted-foreground">{source.type}</p>
+                    <p className="text-sm font-medium">
+                      ${Number(source.amount).toLocaleString()}
                     </p>
-                  )}
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {source.status}
+                    </p>
+                    {source.description && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {source.description}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteSource(source.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteSource(source.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Funding Opportunities Section */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Available Funding Opportunities</h2>
+          <Button variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Opportunity
+          </Button>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {fundingOpportunities.map((opportunity) => (
+            <Card key={opportunity.id}>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">{opportunity.name}</h3>
+                    <p className="text-sm text-muted-foreground">{opportunity.agency}</p>
+                    <p className="text-sm font-medium">
+                      Up to ${opportunity.maxAmount.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm">
+                      <span className="font-medium">Deadline:</span>{" "}
+                      {new Date(opportunity.deadline).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {opportunity.description}
+                    </p>
+                  </div>
+                  <Button className="w-full">
+                    Begin Application
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
