@@ -7,11 +7,13 @@ import {
   Home,
   Shield,
   Settings,
-  DollarSign
+  DollarSign,
+  CheckSquare
 } from "lucide-react";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
+  { name: "Action Plan", href: "/action-plan", icon: Shield },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
