@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,6 @@ interface SubTask {
 }
 
 interface Task {
-  id: number;
   text: string;
   completed: boolean;
   urgent: boolean;
@@ -41,48 +40,43 @@ interface Document {
   name: string;
 }
 
+// Recovery stages data
+const recoveryStages = [
+  {
+    letter: "S",
+    title: "Secure & Stabilize",
+    tasks: [
+      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [] },
+      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [] },
+      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
+      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
+    ]
+  },
+  // ... other stages
+];
+
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [showTodos, setShowTodos] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Get current stage from the API
   const { data: currentStageData } = useQuery({
-    queryKey: ["/api/action-plan/current-stage"],
+    queryKey: ["/api/system/config"],
   });
 
   const currentStage = currentStageData?.stage || "S";
+
+  // Get tasks for current stage
+  const currentStageTasks = recoveryStages.find(stage => stage.letter === currentStage)?.tasks || [];
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
-  const { data: stageTasks = [] } = useQuery<Task[]>({
-    queryKey: ["/api/action-plan/tasks", currentStage],
-    enabled: !!currentStage,
-  });
-
   const { data: fundingOpportunities = [] } = useQuery({
     queryKey: ["/api/capital-sources"],
   });
-
-  const toggleTaskCompletion = async (taskId: number) => {
-    try {
-      await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
-      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
-      toast({
-        title: "Success",
-        description: "Task status updated",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update task status",
-      });
-    }
-  };
 
   const stageName = 
     currentStage === "S" ? "Secure & Stabilize" :
@@ -146,16 +140,16 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">
-              {stageTasks.length}
+              {currentStageTasks.length}
             </div>
             <p className="text-xs text-muted-foreground mb-2">
-              Total tasks in Stage {currentStage}: {stageName}
+              Tasks in Stage {currentStage}: {stageName}
             </p>
             {showTodos && (
               <div className="mt-4 space-y-2">
-                {stageTasks.map((task) => (
+                {currentStageTasks.map((task, index) => (
                   <div
-                    key={task.id}
+                    key={index}
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg",
                       task.completed ? "bg-primary/5" : "hover:bg-muted",
@@ -169,7 +163,7 @@ export default function Home() {
                           ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
-                      onClick={() => toggleTaskCompletion(task.id)}
+                      onClick={() => {/* Task completion handler */}}
                     >
                     </button>
                     <span className={cn(
