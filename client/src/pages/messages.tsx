@@ -59,27 +59,30 @@ export default function Messages() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>System Email</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {systemConfig?.emailAddress ? (
-            <p className="font-mono bg-muted p-2 rounded">
-              {systemConfig.emailAddress}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No system email configured. 
-              <Link href="/profile">
-                <a className="text-primary hover:underline ml-1">
-                  Configure in Profile Settings
-                </a>
-              </Link>
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {/* System Contact Info - More subtle presentation */}
+      <div className="text-sm text-muted-foreground mb-6">
+        {(systemConfig?.emailAddress || systemConfig?.phoneNumber) ? (
+          <p>
+            System Contact: {' '}
+            {systemConfig.emailAddress && (
+              <span className="font-mono">{systemConfig.emailAddress}</span>
+            )}
+            {systemConfig.emailAddress && systemConfig.phoneNumber && ' • '}
+            {systemConfig.phoneNumber && (
+              <span className="font-mono">{systemConfig.phoneNumber}</span>
+            )}
+          </p>
+        ) : (
+          <p>
+            No system contact methods configured. 
+            <Link href="/profile">
+              <a className="text-primary hover:underline ml-1">
+                Configure in Profile Settings
+              </a>
+            </Link>
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-4">
@@ -125,7 +128,7 @@ export default function Messages() {
                         message.isInbound
                           ? "bg-secondary text-secondary-foreground"
                           : "bg-primary text-primary-foreground"
-                      }`}
+                        }`}
                     >
                       <p>{message.content}</p>
                       <p className="text-xs opacity-70">

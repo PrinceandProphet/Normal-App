@@ -149,5 +149,25 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/system/config/generate/phone", async (req, res) => {
+    try {
+      const phoneConfig = await mailslurpService.createPhone();
+      const config = await storage.getSystemConfig();
+
+      const updated = await storage.updateSystemConfig({
+        ...config,
+        phoneNumber: phoneConfig.phoneNumber,
+        phoneId: phoneConfig.phoneId,
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Failed to create phone number:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to create phone number" 
+      });
+    }
+  });
+
   return server;
 }
