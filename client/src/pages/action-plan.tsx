@@ -119,10 +119,15 @@ export default function ActionPlan() {
 
   const handleSharePlan = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const shareUrl = new URL(window.location.href);
+      shareUrl.searchParams.set('view', 'public');
+      shareUrl.searchParams.delete('token');
+      shareUrl.searchParams.delete('user');
+
+      await navigator.clipboard.writeText(shareUrl.toString());
       toast({
         title: "Success",
-        description: "Link copied to clipboard!",
+        description: "Shareable link copied to clipboard! Note: Others can only view this plan without account access.",
       });
     } catch (error) {
       toast({
@@ -137,7 +142,6 @@ export default function ActionPlan() {
     const doc = new jsPDF();
     let yPos = 20;
 
-    // Add title
     doc.setFontSize(24);
     doc.text("Recovery Action Plan™", 20, yPos);
     yPos += 10;
@@ -146,51 +150,42 @@ export default function ActionPlan() {
     doc.text("S.T.A.R.T.™ Framework Progress Report", 20, yPos);
     yPos += 20;
 
-    // Add date
     const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
     doc.text(`Generated on: ${date}`, 20, yPos);
     yPos += 20;
 
-    // Add stages and tasks
     stages.forEach((stage, index) => {
-      // Add stage header
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
       doc.text(`${stage.letter}. ${stage.title}`, 20, yPos);
       yPos += 10;
 
-      // Add stage description
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.text(stage.description, 20, yPos, { maxWidth: 170 });
       yPos += 10;
 
-      // Add tasks
       doc.setFontSize(12);
       stage.tasks.forEach(task => {
-        // Create task status indicators
         const status = `[${task.completed ? '✓' : ' '}] ${task.urgent ? '!' : ' '} `;
         const taskText = status + task.text;
 
         doc.text(taskText, 25, yPos, { maxWidth: 165 });
         yPos += 10;
 
-        // Add new page if needed
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
         }
       });
 
-      yPos += 10; // Add space between stages
+      yPos += 10;
     });
 
-    // Add footer
     doc.setFontSize(8);
     doc.text("© 2025 Disaster Planning. All rights reserved.", 20, 290);
 
-    // Save the PDF
     doc.save("recovery-action-plan.pdf");
 
     toast({
@@ -198,6 +193,8 @@ export default function ActionPlan() {
       description: "Your Recovery Action Plan has been exported as a PDF",
     });
   };
+
+  const isPublicView = new URLSearchParams(window.location.search).get('view') === 'public';
 
   return (
     <div className="space-y-6">
@@ -208,16 +205,18 @@ export default function ActionPlan() {
             Track your progress through the S.T.A.R.T.™ framework for disaster recovery.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSharePlan}>
-            <Share2 className="h-4 w-4 mr-2" />
-            Share Plan
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            <FileDown className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
-        </div>
+        {!isPublicView && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSharePlan}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share Plan
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6">
@@ -247,7 +246,7 @@ export default function ActionPlan() {
                       task.urgent && !task.completed ? "border-l-4 border-destructive" : ""
                     )}
                   >
-                    {editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
+                    {!isPublicView && editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
                       <div className="flex-1 flex gap-2">
                         <Input
                           value={task.text}
@@ -280,7 +279,8 @@ export default function ActionPlan() {
                             "p-0 h-8 w-8",
                             task.completed && "text-primary"
                           )}
-                          onClick={() => toggleTaskCompletion(stageIndex, taskIndex)}
+                          onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
+                          disabled={isPublicView}
                         >
                           <CheckCircle className="h-5 w-5" />
                         </Button>
@@ -290,29 +290,33 @@ export default function ActionPlan() {
                         )}>
                           {task.text}
                         </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className={cn(
-                            "p-0 h-8 w-8",
-                            task.urgent && "text-destructive"
-                          )}
-                          onClick={() => toggleTaskUrgency(stageIndex, taskIndex)}
-                        >
-                          <AlertCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingTask({ stageIndex, taskIndex })}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {!isPublicView && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                "p-0 h-8 w-8",
+                                task.urgent && "text-destructive"
+                              )}
+                              onClick={() => toggleTaskUrgency(stageIndex, taskIndex)}
+                            >
+                              <AlertCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingTask({ stageIndex, taskIndex })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
                 ))}
-                {editingStage === stageIndex ? (
+                {!isPublicView && (
                   <div className="flex gap-2">
                     <Input
                       placeholder="Add new task..."
@@ -334,15 +338,6 @@ export default function ActionPlan() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center"
-                    onClick={() => setEditingStage(stageIndex)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Custom Task
-                  </Button>
                 )}
               </div>
             </CardContent>

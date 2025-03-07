@@ -55,6 +55,23 @@ export default function Messages() {
     }
   }
 
+  // Add helper functions for communication
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Success",
+        description: "Copied to clipboard!",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to copy text",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
@@ -65,11 +82,23 @@ export default function Messages() {
           <p>
             System Contact: {' '}
             {systemConfig.emailAddress && (
-              <span className="font-mono">{systemConfig.emailAddress}</span>
+              <button
+                onClick={() => copyToClipboard(systemConfig.emailAddress)}
+                className="font-mono hover:text-primary cursor-pointer"
+                title="Click to copy email"
+              >
+                {systemConfig.emailAddress}
+              </button>
             )}
             {systemConfig.emailAddress && systemConfig.phoneNumber && ' • '}
             {systemConfig.phoneNumber && (
-              <span className="font-mono">{systemConfig.phoneNumber}</span>
+              <a
+                href={`tel:${systemConfig.phoneNumber}`}
+                className="font-mono hover:text-primary"
+                title="Click to call"
+              >
+                {systemConfig.phoneNumber}
+              </a>
             )}
           </p>
         ) : (
