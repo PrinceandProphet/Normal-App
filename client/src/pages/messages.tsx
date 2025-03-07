@@ -95,32 +95,45 @@ export default function Messages() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
 
-      {/* Add System Email Configuration */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>System Email Configuration</CardTitle>
         </CardHeader>
         <CardContent>
-          <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onUpdateEmail)} className="space-y-4">
-              <FormField
-                control={emailForm.control}
-                name="emailAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>System Email Address</FormLabel>
-                    <FormControl>
-                      <div className="flex gap-2">
-                        <Input {...field} placeholder="system@yourdomain.com" />
-                        <Button type="submit">Save</Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
+          <div className="space-y-4">
+            {systemConfig?.emailAddress ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Current System Email:</p>
+                <p className="font-mono bg-muted p-2 rounded">{systemConfig.emailAddress}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  No email address configured. Click below to generate a new email inbox.
+                </p>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      await apiRequest("POST", "/api/system/config/generate", {});
+                      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
+                      toast({
+                        title: "Success",
+                        description: "Email inbox created successfully",
+                      });
+                    } catch (error) {
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to create email inbox",
+                      });
+                    }
+                  }}
+                >
+                  Generate Email Inbox
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

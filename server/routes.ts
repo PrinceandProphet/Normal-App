@@ -3,9 +3,10 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { documentService } from "./services/documents";
-import { insertDocumentSchema, insertContactSchema, insertMessageSchema } from "@shared/schema";
+import { insertDocumentSchema, insertContactSchema, insertMessageSchema, insertSystemConfigSchema } from "@shared/schema";
 import path from "path";
 import express from 'express';
+import { mailslurpService } from "./services/mailslurp";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -132,13 +133,20 @@ export async function registerRoutes(app: Express) {
   // System Config
   app.get("/api/system/config", async (req, res) => {
     const config = await storage.getSystemConfig();
-    res.json(config || { emailAddress: "" });
+    res.json(config || { emailAddress: "", inboxId: "" });
   });
 
-  app.post("/api/system/config", async (req, res) => {
-    const config = insertSystemConfigSchema.parse(req.body);
-    const updated = await storage.updateSystemConfig(config);
-    res.json(updated);
+  app.post("/api/system/config/generate", async (req, res) => {
+    try {
+      const inboxConfig = await mailslurpService.createInbox();
+      const updated = await storage.updateSystemConfig(inboxConfig);
+      res.json(updated);
+    } catch (error) {
+      console.error('Failed to create inbox:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to create inbox" 
+      });
+    }
   });
 
   return server;

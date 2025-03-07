@@ -5,6 +5,7 @@ import { z } from "zod";
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
   emailAddress: text("email_address").notNull(),
+  inboxId: text("inbox_id").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
