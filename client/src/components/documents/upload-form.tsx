@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 interface UploadFormProps {
   onSuccess?: () => void;
@@ -11,11 +11,11 @@ interface UploadFormProps {
 
 export default function UploadForm({ onSuccess }: UploadFormProps) {
   const { toast } = useToast();
-  
+
   const form = useForm({
     defaultValues: {
       name: "",
-      file: null,
+      file: null as File | null,
     },
   });
 
@@ -23,9 +23,19 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
     try {
       const formData = new FormData();
       formData.append("name", values.name);
-      formData.append("file", values.file);
+      if (values.file) {
+        formData.append("file", values.file);
+      }
 
-      await apiRequest("POST", "/api/documents", formData);
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       toast({
         title: "Success",
@@ -44,7 +54,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" encType="multipart/form-data">
         <FormField
           control={form.control}
           name="name"

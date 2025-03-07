@@ -4,9 +4,24 @@ import multer from "multer";
 import { storage } from "./storage";
 import { insertDocumentSchema, insertContactSchema, insertMessageSchema } from "@shared/schema";
 import path from "path";
+import fs from "fs";
+import express from 'express';
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (req, file, cb) => {
+      // Generate unique filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+  }),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -14,6 +29,9 @@ const upload = multer({
 
 export async function registerRoutes(app: Express) {
   const server = createServer(app);
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(uploadsDir));
 
   // Documents
   app.get("/api/documents", async (req, res) => {
@@ -27,15 +45,21 @@ export async function registerRoutes(app: Express) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const doc = insertDocumentSchema.parse({
-      name: req.body.name || file.originalname,
-      path: `/uploads/${file.originalname}`,
-      type: path.extname(file.originalname),
-      size: file.size,
-    });
+    try {
+      const doc = insertDocumentSchema.parse({
+        name: req.body.name || file.originalname,
+        path: `/uploads/${file.filename}`,
+        type: path.extname(file.originalname),
+        size: file.size,
+      });
 
-    const document = await storage.createDocument(doc);
-    res.status(201).json(document);
+      const document = await storage.createDocument(doc);
+      res.status(201).json(document);
+    } catch (error) {
+      // Clean up uploaded file if document creation fails
+      fs.unlinkSync(file.path);
+      throw error;
+    }
   });
 
   app.delete("/api/documents/:id", async (req, res) => {
