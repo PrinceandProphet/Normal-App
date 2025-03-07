@@ -51,8 +51,23 @@ const recoveryStages = [
       { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
       { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
     ]
+  }
+];
+
+// Sample funding opportunities data
+const sampleFundingOpportunities = [
+  {
+    id: 1,
+    name: "FEMA Individual Assistance",
+    deadline: "2025-04-01",
+    maxAmount: 25000
   },
-  // ... other stages
+  {
+    id: 2,
+    name: "SBA Disaster Loan",
+    deadline: "2025-03-31",
+    maxAmount: 50000
+  }
 ];
 
 export default function Home() {
@@ -60,7 +75,6 @@ export default function Home() {
   const [showTodos, setShowTodos] = useState(false);
   const { toast } = useToast();
 
-  // Get current stage from the API
   const { data: currentStageData } = useQuery({
     queryKey: ["/api/system/config"],
   });
@@ -72,10 +86,6 @@ export default function Home() {
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
-  });
-
-  const { data: fundingOpportunities = [] } = useQuery({
-    queryKey: ["/api/capital-sources"],
   });
 
   const stageName = 
@@ -120,9 +130,51 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-6">
+        {/* Top row with Funding and Documents */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Funding Opportunities Card */}
+          <Card className="backdrop-blur-sm bg-white/50">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-primary" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold mb-2">{sampleFundingOpportunities.length}</div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Available grant applications
+              </p>
+              <Link href="/capital-sources#opportunities">
+                <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Documents Card */}
+          <Card className="backdrop-blur-sm bg-white/50">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Documents</CardTitle>
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold mb-2">{documents.length}</div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Uploaded documents
+              </p>
+              <Link href="/documents">
+                <Button variant="link" className="px-0 font-medium">View Documents →</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* To Do's Card - Full Width */}
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader
+          <CardHeader 
             className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
             onClick={() => setShowTodos(!showTodos)}
           >
@@ -163,7 +215,6 @@ export default function Home() {
                           ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
-                      onClick={() => {/* Task completion handler */}}
                     >
                     </button>
                     <span className={cn(
@@ -176,42 +227,6 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Available grant applications
-            </p>
-            <Link href="/capital-sources#opportunities">
-              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">{documents.length}</div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Uploaded documents
-            </p>
-            <Link href="/documents">
-              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
-            </Link>
           </CardContent>
         </Card>
       </div>
