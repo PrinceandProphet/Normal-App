@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 
+interface SubTask {
+  text: string;
+  completed: boolean;
+}
+
 interface Task {
   text: string;
   completed: boolean;
   urgent: boolean;
+  subtasks: SubTask[];
+  expanded?: boolean;
 }
 
 interface Stage {
@@ -26,10 +33,10 @@ const recoveryStages: Stage[] = [
     title: "Secure & Stabilize",
     description: "Find shelter, register for aid, meet urgent medical & food needs.",
     tasks: [
-      { text: "Locate safe temporary shelter", completed: false, urgent: true },
-      { text: "Register with FEMA", completed: false, urgent: true },
-      { text: "Address immediate medical needs", completed: false, urgent: true },
-      { text: "Secure food and water supply", completed: false, urgent: true }
+      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [] },
+      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [] },
+      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
+      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
     ]
   },
   {
@@ -37,10 +44,10 @@ const recoveryStages: Stage[] = [
     title: "Take Stock & Track Assistance",
     description: "Document losses, apply for FEMA & insurance, secure financial relief.",
     tasks: [
-      { text: "Document property damage", completed: false, urgent: true },
-      { text: "File insurance claims", completed: false, urgent: true },
-      { text: "Apply for FEMA assistance", completed: false, urgent: false },
-      { text: "Track aid applications", completed: false, urgent: false }
+      { text: "Document property damage", completed: false, urgent: true, subtasks: [] },
+      { text: "File insurance claims", completed: false, urgent: true, subtasks: [] },
+      { text: "Apply for FEMA assistance", completed: false, urgent: false, subtasks: [] },
+      { text: "Track aid applications", completed: false, urgent: false, subtasks: [] }
     ]
   },
   {
@@ -48,10 +55,10 @@ const recoveryStages: Stage[] = [
     title: "Align Recovery Plan & Resources",
     description: "Assess long-term housing, begin repair planning, appeal denied claims.",
     tasks: [
-      { text: "Evaluate long-term housing options", completed: false, urgent: false },
-      { text: "Create repair/rebuild plan", completed: false, urgent: false },
-      { text: "Appeal denied claims if necessary", completed: false, urgent: false },
-      { text: "Identify available resources", completed: false, urgent: false }
+      { text: "Evaluate long-term housing options", completed: false, urgent: false, subtasks: [] },
+      { text: "Create repair/rebuild plan", completed: false, urgent: false, subtasks: [] },
+      { text: "Appeal denied claims if necessary", completed: false, urgent: false, subtasks: [] },
+      { text: "Identify available resources", completed: false, urgent: false, subtasks: [] }
     ]
   },
   {
@@ -59,10 +66,10 @@ const recoveryStages: Stage[] = [
     title: "Rebuild & Restore Stability",
     description: "Hire contractors, complete home repairs, secure job & financial recovery.",
     tasks: [
-      { text: "Vet and hire contractors", completed: false, urgent: false },
-      { text: "Oversee repairs/reconstruction", completed: false, urgent: false },
-      { text: "Address employment needs", completed: false, urgent: false },
-      { text: "Establish financial stability", completed: false, urgent: false }
+      { text: "Vet and hire contractors", completed: false, urgent: false, subtasks: [] },
+      { text: "Oversee repairs/reconstruction", completed: false, urgent: false, subtasks: [] },
+      { text: "Address employment needs", completed: false, urgent: false, subtasks: [] },
+      { text: "Establish financial stability", completed: false, urgent: false, subtasks: [] }
     ]
   },
   {
@@ -70,10 +77,10 @@ const recoveryStages: Stage[] = [
     title: "Transition to Normal & Prepare for Future",
     description: "Close aid cases, submit tax claims, update emergency plans.",
     tasks: [
-      { text: "Close assistance cases", completed: false, urgent: false },
-      { text: "File tax-related claims", completed: false, urgent: false },
-      { text: "Update emergency plans", completed: false, urgent: false },
-      { text: "Document lessons learned", completed: false, urgent: false }
+      { text: "Close assistance cases", completed: false, urgent: false, subtasks: [] },
+      { text: "File tax-related claims", completed: false, urgent: false, subtasks: [] },
+      { text: "Update emergency plans", completed: false, urgent: false, subtasks: [] },
+      { text: "Document lessons learned", completed: false, urgent: false, subtasks: [] }
     ]
   }
 ];
@@ -81,7 +88,9 @@ const recoveryStages: Stage[] = [
 export default function ActionPlan() {
   const [editingStage, setEditingStage] = useState<number | null>(null);
   const [editingTask, setEditingTask] = useState<{ stageIndex: number; taskIndex: number } | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<{ stageIndex: number; taskIndex: number; subtaskIndex: number } | null>(null);
   const [newTaskText, setNewTaskText] = useState("");
+  const [newSubtaskText, setNewSubtaskText] = useState("");
   const [stages, setStages] = useState(recoveryStages);
 
   const handleAddTask = (stageIndex: number) => {
@@ -91,11 +100,46 @@ export default function ActionPlan() {
     newStages[stageIndex].tasks.push({
       text: newTaskText.trim(),
       completed: false,
-      urgent: false
+      urgent: false,
+      subtasks: []
     });
     setStages(newStages);
     setNewTaskText("");
     setEditingStage(null);
+  };
+
+  const handleAddSubtask = (stageIndex: number, taskIndex: number) => {
+    if (!newSubtaskText.trim()) return;
+
+    const newStages = [...stages];
+    newStages[stageIndex].tasks[taskIndex].subtasks.push({
+      text: newSubtaskText.trim(),
+      completed: false
+    });
+    setStages(newStages);
+    setNewSubtaskText("");
+  };
+
+  const toggleTaskExpanded = (stageIndex: number, taskIndex: number) => {
+    const newStages = [...stages];
+    newStages[stageIndex].tasks[taskIndex].expanded = !newStages[stageIndex].tasks[taskIndex].expanded;
+    setStages(newStages);
+  };
+
+  const toggleSubtaskCompletion = (stageIndex: number, taskIndex: number, subtaskIndex: number) => {
+    const newStages = [...stages];
+    newStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex].completed =
+      !newStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex].completed;
+
+    // Check if all subtasks are completed
+    const allSubtasksCompleted = newStages[stageIndex].tasks[taskIndex].subtasks.every(st => st.completed);
+    if (allSubtasksCompleted) {
+      newStages[stageIndex].tasks[taskIndex].completed = true;
+    } else {
+      newStages[stageIndex].tasks[taskIndex].completed = false;
+    }
+
+    setStages(newStages);
   };
 
   const handleEditTask = (stageIndex: number, taskIndex: number, newText: string) => {
@@ -155,7 +199,7 @@ export default function ActionPlan() {
     doc.text(`Generated on: ${date}`, 20, yPos);
     yPos += 20;
 
-    stages.forEach((stage, index) => {
+    stages.forEach((stage) => {
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
       doc.text(`${stage.letter}. ${stage.title}`, 20, yPos);
@@ -173,6 +217,19 @@ export default function ActionPlan() {
 
         doc.text(taskText, 25, yPos, { maxWidth: 165 });
         yPos += 10;
+
+        // Add subtasks to PDF
+        task.subtasks.forEach(subtask => {
+          const subtaskStatus = `  • [${subtask.completed ? '✓' : ' '}] `;
+          const subtaskText = subtaskStatus + subtask.text;
+          doc.text(subtaskText, 30, yPos, { maxWidth: 160 });
+          yPos += 8;
+
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+        });
 
         if (yPos > 270) {
           doc.addPage();
@@ -238,84 +295,153 @@ export default function ActionPlan() {
             <CardContent>
               <div className="space-y-4">
                 {stage.tasks.map((task, taskIndex) => (
-                  <div
-                    key={taskIndex}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg transition-colors",
-                      task.completed ? "bg-primary/5" : "hover:bg-muted",
-                      task.urgent && !task.completed ? "border-l-4 border-destructive" : ""
-                    )}
-                  >
-                    {!isPublicView && editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
-                      <div className="flex-1 flex gap-2">
-                        <Input
-                          value={task.text}
-                          onChange={(e) => {
-                            const newStages = [...stages];
-                            newStages[stageIndex].tasks[taskIndex].text = e.target.value;
-                            setStages(newStages);
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleEditTask(stageIndex, taskIndex, task.text)}
-                        >
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingTask(null)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className={cn(
-                            "p-0 h-8 w-8",
-                            task.completed && "text-primary"
+                  <div key={taskIndex}>
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg transition-colors",
+                        task.completed ? "bg-primary/5" : "hover:bg-muted",
+                        task.urgent && !task.completed ? "border-l-4 border-destructive" : ""
+                      )}
+                    >
+                      {!isPublicView && editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input
+                            value={task.text}
+                            onChange={(e) => {
+                              const newStages = [...stages];
+                              newStages[stageIndex].tasks[taskIndex].text = e.target.value;
+                              setStages(newStages);
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleEditTask(stageIndex, taskIndex, task.text)}
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingTask(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "p-0 h-8 w-8",
+                              task.completed && "text-primary"
+                            )}
+                            onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
+                            disabled={isPublicView}
+                          >
+                            <CheckCircle className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="p-0 h-8 w-8"
+                            onClick={() => toggleTaskExpanded(stageIndex, taskIndex)}
+                          >
+                            {task.expanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <span className={cn(
+                            "flex-1",
+                            task.completed && "line-through text-muted-foreground"
+                          )}>
+                            {task.text}
+                          </span>
+                          {!isPublicView && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className={cn(
+                                  "p-0 h-8 w-8",
+                                  task.urgent && "text-destructive"
+                                )}
+                                onClick={() => toggleTaskUrgency(stageIndex, taskIndex)}
+                              >
+                                <AlertCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setEditingTask({ stageIndex, taskIndex })}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
-                          onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
-                          disabled={isPublicView}
-                        >
-                          <CheckCircle className="h-5 w-5" />
-                        </Button>
-                        <span className={cn(
-                          "flex-1",
-                          task.completed && "line-through text-muted-foreground"
-                        )}>
-                          {task.text}
-                        </span>
-                        {!isPublicView && (
-                          <>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Subtasks section */}
+                    {task.expanded && (
+                      <div className="ml-8 mt-2 space-y-2">
+                        {task.subtasks.map((subtask, subtaskIndex) => (
+                          <div
+                            key={subtaskIndex}
+                            className="flex items-center gap-2 p-1 rounded-lg hover:bg-muted"
+                          >
                             <Button
                               size="sm"
                               variant="ghost"
                               className={cn(
-                                "p-0 h-8 w-8",
-                                task.urgent && "text-destructive"
+                                "p-0 h-6 w-6",
+                                subtask.completed && "text-primary"
                               )}
-                              onClick={() => toggleTaskUrgency(stageIndex, taskIndex)}
+                              onClick={() => !isPublicView && toggleSubtaskCompletion(stageIndex, taskIndex, subtaskIndex)}
+                              disabled={isPublicView}
                             >
-                              <AlertCircle className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
+                            <span className={cn(
+                              "text-sm",
+                              subtask.completed && "line-through text-muted-foreground"
+                            )}>
+                              {subtask.text}
+                            </span>
+                          </div>
+                        ))}
+
+                        {/* Add subtask input */}
+                        {!isPublicView && (
+                          <div className="flex gap-2">
+                            <Input
+                              size="sm"
+                              placeholder="Add subtask..."
+                              value={newSubtaskText}
+                              onChange={(e) => setNewSubtaskText(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleAddSubtask(stageIndex, taskIndex);
+                                }
+                              }}
+                              className="text-sm"
+                            />
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => setEditingTask({ stageIndex, taskIndex })}
+                              onClick={() => handleAddSubtask(stageIndex, taskIndex)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              Add
                             </Button>
-                          </>
+                          </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                 ))}
+
                 {!isPublicView && (
                   <div className="flex gap-2">
                     <Input
@@ -330,12 +456,6 @@ export default function ActionPlan() {
                     />
                     <Button onClick={() => handleAddTask(stageIndex)}>
                       Add
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setEditingStage(null)}
-                    >
-                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
