@@ -140,7 +140,7 @@ export default function Home() {
                 {incompleteTasks.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Incomplete tasks in Stage {currentStage}
+                Tasks remaining in Stage {currentStage}
               </p>
             </CardContent>
             {showTodos && (
@@ -187,7 +187,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* To Do's Dropdown */}
+        {/* To Do's Dropdown - Connected to card above */}
         {showTodos && (
           <Card className={cn(
             "backdrop-blur-sm bg-white/50 rounded-t-none border-t-0 transition-all duration-200",
