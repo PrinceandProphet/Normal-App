@@ -24,7 +24,7 @@ export default function Home() {
           Disaster Planning Dashboard
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage your checklists, funding opportunities, and important documents all in one place.
+          Manage your checklists, capital sources, and important documents all in one place.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default function Home() {
 
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
+            <CardTitle className="text-sm font-medium">Capital Sources</CardTitle>
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
@@ -54,7 +54,7 @@ export default function Home() {
           <CardContent>
             <div className="text-2xl font-bold mb-2">{capitalSources?.length || 0}</div>
             <Link href="/capital-sources">
-              <Button variant="link" className="px-0 font-medium">View Funding →</Button>
+              <Button variant="link" className="px-0 font-medium">View Sources →</Button>
             </Link>
           </CardContent>
         </Card>
@@ -88,7 +88,7 @@ export default function Home() {
             </Link>
             <Link href="/capital-sources">
               <Button variant="outline" className="w-full border-2">
-                Add Funding Source
+                Add Capital Source
               </Button>
             </Link>
           </CardContent>
