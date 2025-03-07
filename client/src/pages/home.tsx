@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ interface Document {
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [showTodos, setShowTodos] = useState(false);
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
@@ -66,12 +66,8 @@ export default function Home() {
     queryKey: ["/api/action-plan/tasks", currentStage],
   });
 
-  const toggleCard = (cardId: string) => {
-    setExpandedCard(expandedCard === cardId ? null : cardId);
-  };
-
   const toggleTaskCompletion = (taskId: number) => {
-    //Implementation for toggling task completion would go here.  This is a placeholder.
+    //Implementation for toggling task completion would go here. This is a placeholder.
     console.log(`Toggling completion for task ID: ${taskId}`);
   };
 
@@ -118,20 +114,21 @@ export default function Home() {
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* To Do's Card with Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader 
             className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
-            onClick={() => toggleCard('todos')}
+            onClick={() => setShowTodos(!showTodos)}
           >
-            <CardTitle className="text-sm font-medium">Current Stage To Do's</CardTitle>
+            <CardTitle className="text-sm font-medium">To Do's</CardTitle>
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <CheckSquare className="h-4 w-4 text-primary" />
               </div>
-              {expandedCard !== 'todos' ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
+              {showTodos ? (
                 <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
               )}
             </div>
           </CardHeader>
@@ -142,7 +139,7 @@ export default function Home() {
             <p className="text-xs text-muted-foreground mb-2">
               Tasks remaining in current stage
             </p>
-            {expandedCard === 'todos' && (
+            {showTodos && (
               <div className="mt-4 space-y-2">
                 {stageTasks.map((task) => (
                   <div 
@@ -176,21 +173,12 @@ export default function Home() {
           </CardContent>
         </Card>
 
+        {/* Funding Opportunities Card - No Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader 
-            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
-            onClick={() => toggleCard('funding')}
-          >
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Funding Opportunities</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-primary" />
-              </div>
-              {expandedCard !== 'funding' ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
@@ -198,58 +186,28 @@ export default function Home() {
             <p className="text-xs text-muted-foreground mb-2">
               Available grant applications
             </p>
-            {expandedCard === 'funding' && (
-              <div className="mt-4 space-y-3">
-                {fundingOpportunities.map((opportunity) => (
-                  <div key={opportunity.id} className="p-3 rounded-lg bg-muted">
-                    <h3 className="font-medium text-sm">{opportunity.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Deadline: {new Date(opportunity.deadline).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Up to ${opportunity.maxAmount.toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-                <Link href="/capital-sources#opportunities">
-                  <Button variant="link" className="px-0 font-medium">View All Opportunities →</Button>
-                </Link>
-              </div>
-            )}
+            <Link href="/capital-sources#opportunities">
+              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
+            </Link>
           </CardContent>
         </Card>
 
+        {/* Documents Card - No Dropdown */}
         <Card className="backdrop-blur-sm bg-white/50">
-          <CardHeader 
-            className="flex flex-row items-center justify-between pb-2 space-y-0 cursor-pointer"
-            onClick={() => toggleCard('documents')}
-          >
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-primary" />
-              </div>
-              {expandedCard !== 'documents' ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">{documents.length}</div>
-            {expandedCard === 'documents' && (
-              <div className="mt-4 space-y-2">
-                {documents.slice(0, 3).map((doc) => (
-                  <div key={doc.id} className="p-2 rounded-lg hover:bg-muted">
-                    <p className="text-sm truncate">{doc.name}</p>
-                  </div>
-                ))}
-                <Link href="/documents">
-                  <Button variant="link" className="px-0 font-medium">View All Documents →</Button>
-                </Link>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground mb-2">
+              Uploaded documents
+            </p>
+            <Link href="/documents">
+              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -265,9 +223,11 @@ export default function Home() {
                 Upload New Document
               </Button>
             </Link>
-            <Button variant="outline" className="w-full border-2" disabled>
-              Browse Funding Opportunities
-            </Button>
+            <Link href="/capital-sources">
+              <Button variant="outline" className="w-full border-2">
+                Browse Funding Opportunities
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
