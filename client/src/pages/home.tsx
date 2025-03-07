@@ -4,6 +4,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare } from "lucide-react";
 
+// Sample funding opportunities data - matching capital-sources.tsx
+const fundingOpportunities = [
+  {
+    id: 1,
+    name: "Disaster Recovery Grant",
+    agency: "State Emergency Management",
+    deadline: "2025-04-01",
+    maxAmount: 25000,
+    description: "Emergency assistance for households affected by natural disasters",
+  },
+  {
+    id: 2,
+    name: "Home Repair Program",
+    agency: "Housing Department",
+    deadline: "2025-03-31",
+    maxAmount: 15000,
+    description: "Funding for essential home repairs due to disaster damage",
+  },
+];
+
 export default function Home() {
   const { data: documents } = useQuery({
     queryKey: ["/api/documents"],
@@ -48,7 +68,7 @@ export default function Home() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-2">0</div>
+            <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
             <p className="text-xs text-muted-foreground">
               Available grant applications
             </p>
