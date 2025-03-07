@@ -40,8 +40,11 @@ export default function Profile() {
     queryKey: ["/api/system/config"],
   });
 
+  // Changed to refetch on mount and window focus
   const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const form = useForm({
@@ -55,7 +58,11 @@ export default function Profile() {
   const addHouseholdMember = async (values: any) => {
     try {
       await apiRequest("POST", "/api/household-members", values);
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      // Force an immediate refetch
+      await queryClient.invalidateQueries({ 
+        queryKey: ["/api/household-members"],
+        refetchType: 'active',
+      });
       setAddMemberOpen(false);
       form.reset();
       toast({
@@ -181,128 +188,100 @@ export default function Profile() {
 
         {/* Properties & Household Section */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Properties & Household</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="h-5 w-5" />
-                  Properties
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Primary Residence:</p>
-                    <p className="font-mono bg-muted p-2 rounded text-sm">
-                      No property added yet
-                    </p>
-                  </div>
-                  <Button variant="outline" disabled>
-                    Add Property
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Coming soon: Add and manage your properties for disaster planning.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Household Members
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {isLoading ? (
-                    <p>Loading...</p>
-                  ) : householdMembers?.length > 0 ? (
-                    <div className="space-y-4">
-                      {householdMembers.map((member) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-muted-foreground capitalize">
-                              {member.type}
-                            </p>
-                          </div>
+          <h2 className="text-lg font-semibold mb-4">Household Members</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Household Members
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {isLoading ? (
+                  <p>Loading...</p>
+                ) : householdMembers && householdMembers.length > 0 ? (
+                  <div className="space-y-4">
+                    {householdMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {member.type}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No household members added yet.
-                    </p>
-                  )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No household members added yet.
+                  </p>
+                )}
 
-                  <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Household Member
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Household Member</DialogTitle>
-                      </DialogHeader>
-                      <Form {...form}>
-                        <form onSubmit={form.handleSubmit(addHouseholdMember)} className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Full Name</FormLabel>
+                <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Household Member
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Household Member</DialogTitle>
+                    </DialogHeader>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(addHouseholdMember)} className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter full name" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
                                 <FormControl>
-                                  <Input {...field} placeholder="Enter full name" />
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
                                 </FormControl>
-                              </FormItem>
-                            )}
-                          />
+                                <SelectContent>
+                                  <SelectItem value="adult">Adult</SelectItem>
+                                  <SelectItem value="child">Child</SelectItem>
+                                  <SelectItem value="pet">Pet</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
 
-                          <FormField
-                            control={form.control}
-                            name="type"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Type</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="adult">Adult</SelectItem>
-                                    <SelectItem value="child">Child</SelectItem>
-                                    <SelectItem value="pet">Pet</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormItem>
-                            )}
-                          />
-
-                          <Button type="submit">Add Member</Button>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                        <Button type="submit">Add Member</Button>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
         {/* Billing Section */}
         <div>
           <h2 className="text-lg font-semibold mb-4">Billing</h2>
