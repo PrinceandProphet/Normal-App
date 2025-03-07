@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,10 +45,10 @@ const recoveryStages = [
     letter: "S",
     title: "Secure & Stabilize",
     tasks: [
-      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [] },
-      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [] },
-      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [] },
-      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [] }
+      { text: "Locate safe temporary shelter", completed: false, urgent: true, subtasks: [], id: 1 },
+      { text: "Register with FEMA", completed: false, urgent: true, subtasks: [], id: 2 },
+      { text: "Address immediate medical needs", completed: false, urgent: true, subtasks: [], id: 3 },
+      { text: "Secure food and water supply", completed: false, urgent: true, subtasks: [], id: 4 }
     ]
   }
 ];
@@ -62,6 +62,7 @@ export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [showTodos, setShowTodos] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: currentStageData } = useQuery({
     queryKey: ["/api/system/config"],
@@ -71,17 +72,18 @@ export default function Home() {
 
   // Get tasks for current stage
   const currentStageTasks = recoveryStages.find(stage => stage.letter === currentStage)?.tasks || [];
+  const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
-  const stageName = 
+  const stageName =
     currentStage === "S" ? "Secure & Stabilize" :
-    currentStage === "T" ? "Take Stock & Track" :
-    currentStage === "A" ? "Align Recovery Plan" :
-    currentStage === "R" ? "Rebuild & Restore" :
-    "Transition to Normal";
+      currentStage === "T" ? "Take Stock & Track" :
+        currentStage === "A" ? "Align Recovery Plan" :
+          currentStage === "R" ? "Rebuild & Restore" :
+            "Transition to Normal";
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -122,7 +124,7 @@ export default function Home() {
       <div className="space-y-2">
         <div className="grid gap-6 md:grid-cols-3">
           {/* To Do's Card */}
-          <Card 
+          <Card
             className={cn(
               "backdrop-blur-sm bg-white/50 cursor-pointer relative",
               showTodos && "border-b-0 rounded-b-none"
@@ -144,10 +146,10 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold mb-2">
-                {currentStageTasks.length}
+                {incompleteTasks.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Tasks in Stage {currentStage}: {stageName}
+                Tasks remaining in Stage {currentStage}: {stageName}
               </p>
             </CardContent>
             {showTodos && (
@@ -218,13 +220,23 @@ export default function Home() {
                           ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
-                      onClick={() => {
+                      onClick={async () => {
                         const updatedTasks = [...currentStageTasks];
                         updatedTasks[index].completed = !updatedTasks[index].completed;
-                        toast({
-                          title: `Task ${task.text} updated`,
-                          description: task.completed ? "Task marked as complete" : "Task marked as incomplete",
-                        });
+                        try {
+                          await apiRequest("PATCH", `/api/action-plan/tasks/${task.id}/toggle`);
+                          queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+                          toast({
+                            title: `Task updated`,
+                            description: task.completed ? "Task marked as incomplete" : "Task marked as complete",
+                          });
+                        } catch (error) {
+                          toast({
+                            variant: "destructive",
+                            title: "Error",
+                            description: "Failed to update task status",
+                          });
+                        }
                       }}
                     >
                       {task.completed ? (
