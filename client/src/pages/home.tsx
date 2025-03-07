@@ -39,9 +39,17 @@ const sampleFundingOpportunities = [
   }
 ];
 
+// Initial recovery stages data
+const initialTasks = [
+  { id: 1, text: "Locate safe temporary shelter", completed: false, urgent: true, stage: "S" },
+  { id: 2, text: "Register with FEMA", completed: false, urgent: true, stage: "S" },
+  { id: 3, text: "Address immediate medical needs", completed: false, urgent: true, stage: "S" },
+  { id: 4, text: "Secure food and water supply", completed: false, urgent: true, stage: "S" }
+];
+
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
-  const [showTodos, setShowTodos] = useState(false);
+  const [showTodos] = useState(true); // Changed to true to show todos initially
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -52,12 +60,8 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks from the API
-  const { data: tasks = [] } = useQuery({
-    queryKey: ["/api/action-plan/tasks"],
-  });
-
-  // Filter tasks for current stage and count incomplete ones
+  // Use the initial tasks data
+  const [tasks, setTasks] = useState(initialTasks);
   const currentStageTasks = tasks.filter(task => task.stage === currentStage);
   const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
@@ -74,13 +78,33 @@ export default function Home() {
 
   const toggleTaskCompletion = async (taskId: number) => {
     try {
+      // Update local state first
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, completed: !task.completed }
+            : task
+        )
+      );
+
+      // Then update the backend
       await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}/toggle`);
       queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+
       toast({
         title: "Success",
         description: "Task status updated",
       });
     } catch (error) {
+      // Revert local state if backend update fails
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, completed: !task.completed }
+            : task
+        )
+      );
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -127,12 +151,11 @@ export default function Home() {
       <div className="space-y-2">
         <div className="grid gap-6 md:grid-cols-3">
           {/* To Do's Card */}
-          <Card
+          <Card 
             className={cn(
               "backdrop-blur-sm bg-white/50 cursor-pointer relative",
               showTodos && "border-b-0 rounded-b-none"
             )}
-            onClick={() => setShowTodos(!showTodos)}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">To Do's</CardTitle>
@@ -199,7 +222,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* To Do's Dropdown - Connected to card above */}
+        {/* To Do's Dropdown */}
         {showTodos && (
           <Card className={cn(
             "backdrop-blur-sm bg-white/50 rounded-t-none border-t-0 transition-all duration-200",
