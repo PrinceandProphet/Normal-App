@@ -6,7 +6,8 @@ import {
   Users, 
   Home,
   Shield,
-  Settings
+  Settings,
+  DollarSign
 } from "lucide-react";
 
 const navigation = [
@@ -14,6 +15,7 @@ const navigation = [
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
+  { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
   { name: "Profile Settings", href: "/profile", icon: Settings },
 ];
 

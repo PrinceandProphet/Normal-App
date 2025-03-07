@@ -5,7 +5,9 @@ import {
   type DocumentTemplate, type InsertTemplate,
   type Checklist, type InsertChecklist,
   documents, contacts, messages, documentTemplates, checklists,
-  type SystemConfig, type InsertSystemConfig, systemConfig
+  type SystemConfig, type InsertSystemConfig, systemConfig,
+  type CapitalSource, type InsertCapitalSource,
+  capitalSources,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -40,6 +42,12 @@ export interface IStorage {
   // System Config
   getSystemConfig(): Promise<SystemConfig | undefined>;
   updateSystemConfig(config: InsertSystemConfig): Promise<SystemConfig>;
+
+  // Capital Sources
+  getCapitalSources(): Promise<CapitalSource[]>;
+  createCapitalSource(source: InsertCapitalSource): Promise<CapitalSource>;
+  updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource>;
+  deleteCapitalSource(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -157,6 +165,30 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Capital Sources
+  async getCapitalSources(): Promise<CapitalSource[]> {
+    return await db.select().from(capitalSources);
+  }
+
+  async createCapitalSource(source: InsertCapitalSource): Promise<CapitalSource> {
+    const [created] = await db.insert(capitalSources).values(source).returning();
+    return created;
+  }
+
+  async updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource> {
+    const [updated] = await db
+      .update(capitalSources)
+      .set(source)
+      .where(eq(capitalSources.id, id))
+      .returning();
+    if (!updated) throw new Error("Capital source not found");
+    return updated;
+  }
+
+  async deleteCapitalSource(id: number): Promise<void> {
+    await db.delete(capitalSources).where(eq(capitalSources.id, id));
   }
 }
 

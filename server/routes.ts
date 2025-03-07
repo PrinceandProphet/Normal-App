@@ -3,7 +3,7 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { documentService } from "./services/documents";
-import { insertDocumentSchema, insertContactSchema, insertMessageSchema, insertSystemConfigSchema } from "@shared/schema";
+import { insertDocumentSchema, insertContactSchema, insertMessageSchema, insertSystemConfigSchema, insertCapitalSourceSchema } from "@shared/schema";
 import path from "path";
 import express from 'express';
 import { mailslurpService } from "./services/mailslurp";
@@ -167,6 +167,31 @@ export async function registerRoutes(app: Express) {
         message: error instanceof Error ? error.message : "Failed to create phone number" 
       });
     }
+  });
+
+  // Capital Sources
+  app.get("/api/capital-sources", async (req, res) => {
+    const sources = await storage.getCapitalSources();
+    res.json(sources);
+  });
+
+  app.post("/api/capital-sources", async (req, res) => {
+    const source = insertCapitalSourceSchema.parse(req.body);
+    const created = await storage.createCapitalSource(source);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/capital-sources/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const source = insertCapitalSourceSchema.partial().parse(req.body);
+    const updated = await storage.updateCapitalSource(id, source);
+    res.json(updated);
+  });
+
+  app.delete("/api/capital-sources/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteCapitalSource(id);
+    res.status(204).send();
   });
 
   return server;

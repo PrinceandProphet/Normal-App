@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -49,12 +49,23 @@ export const checklists = pgTable("checklists", {
   completed: boolean("completed").array().notNull(),
 });
 
+export const capitalSources = pgTable("capital_sources", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'FEMA' | 'Insurance' | 'Grant'
+  name: text("name").notNull(),
+  amount: numeric("amount").notNull(),
+  status: text("status").notNull(), // 'current' | 'projected'
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
 export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
+export const insertCapitalSourceSchema = createInsertSchema(capitalSources).omit({ id: true, createdAt: true });
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -62,6 +73,7 @@ export type Contact = typeof contacts.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type DocumentTemplate = typeof documentTemplates.$inferSelect;
 export type Checklist = typeof checklists.$inferSelect;
+export type CapitalSource = typeof capitalSources.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -69,3 +81,4 @@ export type InsertContact = z.infer<typeof insertContactSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
+export type InsertCapitalSource = z.infer<typeof insertCapitalSourceSchema>;
