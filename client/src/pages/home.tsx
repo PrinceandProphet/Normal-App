@@ -66,7 +66,6 @@ export default function Home() {
   const [currentStage, setCurrentStage] = useState("S"); // This would come from user's data eventually
   const [showTodos, setShowTodos] = useState(false);
   const queryClient = useQueryClient();
-
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
@@ -162,24 +161,23 @@ export default function Home() {
               <div className="mt-4 space-y-2">
                 {stageTasks.map((task) => (
                   <div
-                    key={task.id} // Assuming task.id exists, otherwise find a suitable unique key
+                    key={task.id}
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg",
                       task.completed ? "bg-primary/5" : "hover:bg-muted",
                       task.urgent && !task.completed ? "border-l-4 border-destructive pl-4" : ""
                     )}
                   >
-                    <Button
-                      size="sm"
-                      variant="ghost"
+                    <button
                       className={cn(
-                        "p-0 h-6 w-6 rounded-full",
-                        task.completed ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"
+                        "w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center",
+                        task.completed 
+                          ? "bg-primary border-primary" 
+                          : "border-muted-foreground hover:border-primary"
                       )}
                       onClick={() => toggleTaskCompletion(task.id)}
                     >
-                      <CheckCircle2 className="h-4 w-4" />
-                    </Button>
+                    </button>
                     <span className={cn(
                       "text-sm",
                       task.completed && "line-through text-muted-foreground"

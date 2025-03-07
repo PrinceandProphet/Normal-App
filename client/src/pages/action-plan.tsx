@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle2, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-
 
 interface SubTask {
   text: string;
@@ -344,18 +343,16 @@ export default function ActionPlan() {
                         </div>
                       ) : (
                         <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
+                          <button
                             className={cn(
-                              "p-0 h-8 w-8 rounded-full",
-                              task.completed ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"
+                              "w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center",
+                              task.completed
+                                ? "bg-primary border-primary"
+                                : "border-muted-foreground hover:border-primary"
                             )}
                             onClick={() => !isPublicView && toggleTaskCompletion(stageIndex, taskIndex)}
                             disabled={isPublicView}
-                          >
-                            <CheckCircle2 className="h-5 w-5" />
-                          </Button>
+                          />
                           <Button
                             size="sm"
                             variant="ghost"
@@ -407,18 +404,16 @@ export default function ActionPlan() {
                             key={subtaskIndex}
                             className="flex items-center gap-2 p-1 rounded-lg hover:bg-muted"
                           >
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                            <button
                               className={cn(
-                                "p-0 h-6 w-6",
-                                subtask.completed && "text-primary"
+                                "w-4 h-4 rounded-full border-2 transition-colors flex items-center justify-center",
+                                subtask.completed
+                                  ? "bg-primary border-primary"
+                                  : "border-muted-foreground hover:border-primary"
                               )}
                               onClick={() => !isPublicView && toggleSubtaskCompletion(stageIndex, taskIndex, subtaskIndex)}
                               disabled={isPublicView}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
+                            />
                             <span className={cn(
                               "text-sm",
                               subtask.completed && "line-through text-muted-foreground"
