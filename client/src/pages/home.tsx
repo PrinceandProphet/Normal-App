@@ -41,7 +41,7 @@ export default function Home() {
     queryKey: ["/api/action-plan/tasks"],
   });
 
-  // Filter tasks for current stage
+  // Filter tasks for current stage and count incomplete ones
   const currentStageTasks = tasks.filter(task => task.stage === currentStage);
   const incompleteTasks = currentStageTasks.filter(task => !task.completed);
 
@@ -140,7 +140,7 @@ export default function Home() {
                 {incompleteTasks.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Tasks remaining in Stage {currentStage}: {stageName}
+                Incomplete tasks in Stage {currentStage}
               </p>
             </CardContent>
             {showTodos && (
@@ -211,7 +211,10 @@ export default function Home() {
                           ? "bg-primary border-primary"
                           : "border-muted-foreground hover:border-primary"
                       )}
-                      onClick={() => toggleTaskCompletion(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompletion(task.id);
+                      }}
                     >
                       {task.completed && (
                         <CheckSquare className="h-4 w-4 text-white" />
