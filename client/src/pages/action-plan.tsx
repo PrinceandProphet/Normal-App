@@ -1,20 +1,34 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, CheckCircle, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-const recoveryStages = [
+interface Task {
+  text: string;
+  completed: boolean;
+  urgent: boolean;
+}
+
+interface Stage {
+  letter: string;
+  title: string;
+  description: string;
+  tasks: Task[];
+}
+
+const recoveryStages: Stage[] = [
   {
     letter: "S",
     title: "Secure & Stabilize",
     description: "Find shelter, register for aid, meet urgent medical & food needs.",
     tasks: [
-      "Locate safe temporary shelter",
-      "Register with FEMA",
-      "Address immediate medical needs",
-      "Secure food and water supply"
+      { text: "Locate safe temporary shelter", completed: false, urgent: true },
+      { text: "Register with FEMA", completed: false, urgent: true },
+      { text: "Address immediate medical needs", completed: false, urgent: true },
+      { text: "Secure food and water supply", completed: false, urgent: true }
     ]
   },
   {
@@ -22,10 +36,10 @@ const recoveryStages = [
     title: "Take Stock & Track Assistance",
     description: "Document losses, apply for FEMA & insurance, secure financial relief.",
     tasks: [
-      "Document property damage",
-      "File insurance claims",
-      "Apply for FEMA assistance",
-      "Track aid applications"
+      { text: "Document property damage", completed: false, urgent: true },
+      { text: "File insurance claims", completed: false, urgent: true },
+      { text: "Apply for FEMA assistance", completed: false, urgent: false },
+      { text: "Track aid applications", completed: false, urgent: false }
     ]
   },
   {
@@ -33,10 +47,10 @@ const recoveryStages = [
     title: "Align Recovery Plan & Resources",
     description: "Assess long-term housing, begin repair planning, appeal denied claims.",
     tasks: [
-      "Evaluate long-term housing options",
-      "Create repair/rebuild plan",
-      "Appeal denied claims if necessary",
-      "Identify available resources"
+      { text: "Evaluate long-term housing options", completed: false, urgent: false },
+      { text: "Create repair/rebuild plan", completed: false, urgent: false },
+      { text: "Appeal denied claims if necessary", completed: false, urgent: false },
+      { text: "Identify available resources", completed: false, urgent: false }
     ]
   },
   {
@@ -44,10 +58,10 @@ const recoveryStages = [
     title: "Rebuild & Restore Stability",
     description: "Hire contractors, complete home repairs, secure job & financial recovery.",
     tasks: [
-      "Vet and hire contractors",
-      "Oversee repairs/reconstruction",
-      "Address employment needs",
-      "Establish financial stability"
+      { text: "Vet and hire contractors", completed: false, urgent: false },
+      { text: "Oversee repairs/reconstruction", completed: false, urgent: false },
+      { text: "Address employment needs", completed: false, urgent: false },
+      { text: "Establish financial stability", completed: false, urgent: false }
     ]
   },
   {
@@ -55,10 +69,10 @@ const recoveryStages = [
     title: "Transition to Normal & Prepare for Future",
     description: "Close aid cases, submit tax claims, update emergency plans.",
     tasks: [
-      "Close assistance cases",
-      "File tax-related claims",
-      "Update emergency plans",
-      "Document lessons learned"
+      { text: "Close assistance cases", completed: false, urgent: false },
+      { text: "File tax-related claims", completed: false, urgent: false },
+      { text: "Update emergency plans", completed: false, urgent: false },
+      { text: "Document lessons learned", completed: false, urgent: false }
     ]
   }
 ];
@@ -73,7 +87,11 @@ export default function ActionPlan() {
     if (!newTaskText.trim()) return;
 
     const newStages = [...stages];
-    newStages[stageIndex].tasks.push(newTaskText.trim());
+    newStages[stageIndex].tasks.push({
+      text: newTaskText.trim(),
+      completed: false,
+      urgent: false
+    });
     setStages(newStages);
     setNewTaskText("");
     setEditingStage(null);
@@ -81,9 +99,21 @@ export default function ActionPlan() {
 
   const handleEditTask = (stageIndex: number, taskIndex: number, newText: string) => {
     const newStages = [...stages];
-    newStages[stageIndex].tasks[taskIndex] = newText;
+    newStages[stageIndex].tasks[taskIndex].text = newText;
     setStages(newStages);
     setEditingTask(null);
+  };
+
+  const toggleTaskCompletion = (stageIndex: number, taskIndex: number) => {
+    const newStages = [...stages];
+    newStages[stageIndex].tasks[taskIndex].completed = !newStages[stageIndex].tasks[taskIndex].completed;
+    setStages(newStages);
+  };
+
+  const toggleTaskUrgency = (stageIndex: number, taskIndex: number) => {
+    const newStages = [...stages];
+    newStages[stageIndex].tasks[taskIndex].urgent = !newStages[stageIndex].tasks[taskIndex].urgent;
+    setStages(newStages);
   };
 
   const handleSharePlan = async () => {
@@ -150,20 +180,27 @@ export default function ActionPlan() {
             <CardContent>
               <div className="space-y-4">
                 {stage.tasks.map((task, taskIndex) => (
-                  <div key={taskIndex} className="flex items-center gap-2">
+                  <div 
+                    key={taskIndex} 
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg transition-colors",
+                      task.completed ? "bg-primary/5" : "hover:bg-muted",
+                      task.urgent && !task.completed ? "border-l-4 border-destructive" : ""
+                    )}
+                  >
                     {editingTask?.stageIndex === stageIndex && editingTask?.taskIndex === taskIndex ? (
                       <div className="flex-1 flex gap-2">
                         <Input 
-                          value={task}
+                          value={task.text}
                           onChange={(e) => {
                             const newStages = [...stages];
-                            newStages[stageIndex].tasks[taskIndex] = e.target.value;
+                            newStages[stageIndex].tasks[taskIndex].text = e.target.value;
                             setStages(newStages);
                           }}
                         />
                         <Button 
                           size="sm"
-                          onClick={() => handleEditTask(stageIndex, taskIndex, task)}
+                          onClick={() => handleEditTask(stageIndex, taskIndex, task.text)}
                         >
                           <Save className="h-4 w-4" />
                         </Button>
@@ -177,7 +214,34 @@ export default function ActionPlan() {
                       </div>
                     ) : (
                       <>
-                        <span className="flex-1">{task}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={cn(
+                            "p-0 h-8 w-8",
+                            task.completed && "text-primary"
+                          )}
+                          onClick={() => toggleTaskCompletion(stageIndex, taskIndex)}
+                        >
+                          <CheckCircle className="h-5 w-5" />
+                        </Button>
+                        <span className={cn(
+                          "flex-1",
+                          task.completed && "line-through text-muted-foreground"
+                        )}>
+                          {task.text}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={cn(
+                            "p-0 h-8 w-8",
+                            task.urgent && "text-destructive"
+                          )}
+                          onClick={() => toggleTaskUrgency(stageIndex, taskIndex)}
+                        >
+                          <AlertCircle className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
