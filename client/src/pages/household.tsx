@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Building2, Home, Users, Trash2 } from "lucide-react";
+import { Plus, Building2, Home, Users, Trash2, Pencil } from "lucide-react";
 import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
 import {
   Dialog,
@@ -40,6 +40,7 @@ export default function Household() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
 
   // Fetch properties and related data
   const { data: properties = [] } = useQuery<Property[]>({
@@ -148,25 +149,36 @@ export default function Household() {
     }
   };
 
-  const addMember = async (values: any) => {
+  const addOrUpdateMember = async (values: any) => {
     try {
-      const response = await apiRequest("POST", "/api/household-members", {
-        ...values,
-        groupId: selectedGroupId,
-      });
+      let response;
+      if (editingMemberId) {
+        response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, {
+          ...values,
+          groupId: selectedGroupId,
+        });
+      } else {
+        response = await apiRequest("POST", "/api/household-members", {
+          ...values,
+          groupId: selectedGroupId,
+        });
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
       setAddMemberOpen(false);
+      setEditingMemberId(null);
       memberForm.reset();
+
       toast({
         title: "Success",
-        description: "Household member added successfully",
+        description: `Household member ${editingMemberId ? 'updated' : 'added'} successfully`,
       });
     } catch (error) {
-      console.error("Failed to add household member:", error);
+      console.error("Failed to save household member:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add household member",
+        description: `Failed to ${editingMemberId ? 'update' : 'add'} household member`,
       });
     }
   };
@@ -362,7 +374,10 @@ export default function Household() {
                               <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-semibold">Household Members</h3>
                                 <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-                                  <DialogTrigger asChild>
+                                  <DialogTrigger asChild onClick={() => {
+                                    memberForm.reset();
+                                    setEditingMemberId(null);
+                                  }}>
                                     <Button variant="outline" size="sm">
                                       <Plus className="h-4 w-4 mr-2" />
                                       Add Member
@@ -370,10 +385,12 @@ export default function Household() {
                                   </DialogTrigger>
                                   <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                                     <DialogHeader>
-                                      <DialogTitle>Add Household Member</DialogTitle>
+                                      <DialogTitle>
+                                        {editingMemberId ? 'Edit Household Member' : 'Add Household Member'}
+                                      </DialogTitle>
                                     </DialogHeader>
                                     <Form {...memberForm}>
-                                      <form onSubmit={memberForm.handleSubmit(addMember)} className="space-y-6">
+                                      <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-6">
                                         {/* Basic Information Section */}
                                         <div className="space-y-4">
                                           <h3 className="font-semibold">Basic Information</h3>
@@ -755,10 +772,41 @@ export default function Household() {
                                                 </FormItem>
                                               )}
                                             />
+                                            {/* Added Tag Input Field */}
+                                            <div className="space-y-4">
+                                              <h3 className="font-semibold">Grant Qualification Information</h3>
+                                              <div className="grid gap-4 grid-cols-1">
+                                                <FormField
+                                                  control={memberForm.control}
+                                                  name="qualifyingTags"
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Qualifying Tags</FormLabel>
+                                                      <FormControl>
+                                                        <Input
+                                                          placeholder="Enter tags separated by commas"
+                                                          value={field.value?.join(', ') || ''}
+                                                          onChange={(e) => {
+                                                            const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+                                                            field.onChange(tags);
+                                                          }}
+                                                        />
+                                                      </FormControl>
+                                                      <p className="text-sm text-muted-foreground">
+                                                        Add any additional qualifying attributes (e.g., first-time homebuyer, caregiver)
+                                                      </p>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
 
-                                        <Button type="submit">Add Member</Button>
+                                        <Button type="submit">
+                                          {editingMemberId ? 'Update Member' : 'Add Member'}
+                                        </Button>
                                       </form>
                                     </Form>
                                   </DialogContent>
@@ -778,17 +826,42 @@ export default function Household() {
                                         <div>
                                           <p className="font-medium">{member.name}</p>
                                           <p className="text-sm text-muted-foreground capitalize">
-                                            {member.type}
+                                            {member.type} • {member.relationship || 'Unknown relationship'}
                                           </p>
+                                          {member.qualifyingTags?.length > 0 && (
+                                            <div className="flex gap-1 mt-1 flex-wrap">
+                                              {member.qualifyingTags.map((tag, index) => (
+                                                <span
+                                                  key={index}
+                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                                >
+                                                  {tag}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
                                         </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => deleteMember(member.id)}
-                                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              memberForm.reset(member);
+                                              setEditingMemberId(member.id);
+                                              setAddMemberOpen(true);
+                                            }}
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => deleteMember(member.id)}
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
