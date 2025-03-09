@@ -32,7 +32,7 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   content: text("content").notNull(),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   isInbound: boolean("is_inbound").notNull(),
   timestamp: timestamp("timestamp").notNull(),
 });
@@ -52,10 +52,10 @@ export const checklists = pgTable("checklists", {
 
 export const capitalSources = pgTable("capital_sources", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   name: text("name").notNull(),
   amount: numeric("amount").notNull(),
-  status: text("status").notNull(), 
+  status: text("status").notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -72,8 +72,8 @@ export const tasks = pgTable("tasks", {
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   address: text("address").notNull(),
-  type: text("type").notNull(), 
-  ownershipStatus: text("ownership_status").notNull(), 
+  type: text("type").notNull(),
+  ownershipStatus: text("ownership_status").notNull(),
   primaryResidence: boolean("primary_residence").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -82,14 +82,14 @@ export const householdGroups = pgTable("household_groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   propertyId: integer("property_id").references(() => properties.id),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const householdMembers = pgTable("household_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   groupId: integer("group_id").references(() => householdGroups.id),
 
   // Sensitive Information - Consider encryption at rest
@@ -159,7 +159,11 @@ export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     name: z.string().min(1, "Name is required"),
-    dateOfBirth: z.date({ required_error: "Date of birth is required" }),
+    dateOfBirth: z.string()
+      .transform((str) => new Date(str))
+      .refine((date) => !isNaN(date.getTime()), {
+        message: "Invalid date format"
+      }),
     type: z.enum(['adult', 'child', 'senior', 'dependent']).optional(),
     relationship: z.enum([
       'head',

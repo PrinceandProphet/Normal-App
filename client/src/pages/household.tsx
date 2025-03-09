@@ -153,10 +153,10 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
-      // Ensure dateOfBirth is a proper Date object
+      // Convert the date to ISO string format for API submission
       const formattedValues = {
         ...values,
-        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth) : undefined,
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
       };
 
       let response;
@@ -525,7 +525,7 @@ export default function Household() {
                                                       value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                                                       onChange={(e) => {
                                                         if (e.target.value) {
-                                                          field.onChange(new Date(e.target.value));
+                                                          field.onChange(e.target.value);
                                                         } else {
                                                           field.onChange(undefined);
                                                         }
@@ -931,7 +931,7 @@ export default function Household() {
                                                   className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
                                                 >
                                                   {tag}
-                                                </span>
+                                                                                                </span>
                                               ))}
                                             </div>
                                           )}
