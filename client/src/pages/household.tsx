@@ -7,32 +7,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Home, Users } from "lucide-react";
 import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormLabel,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormLabel, FormItem, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPropertySchema, insertHouseholdGroupSchema } from "@shared/schema";
-import { MemberForm, MemberList } from "./member-form";
+import { MemberList } from "./member-form";
 
 export default function HouseholdPage() {
   const { toast } = useToast();
@@ -79,8 +60,8 @@ export default function HouseholdPage() {
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
-      type: "single_family",
-      ownershipStatus: "owned",
+      type: "single_family" as const,
+      ownershipStatus: "owned" as const,
       primaryResidence: false,
     },
   });
@@ -90,7 +71,7 @@ export default function HouseholdPage() {
     resolver: zodResolver(insertHouseholdGroupSchema),
     defaultValues: {
       name: "",
-      type: "nuclear",
+      type: "nuclear" as const,
       propertyId: undefined,
     },
   });

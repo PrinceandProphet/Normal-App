@@ -15,21 +15,24 @@ import type { HouseholdMember } from "@shared/schema";
 type MemberFormProps = {
   groupId: number;
   onSuccess?: () => void;
+  onEdit?: (member: HouseholdMember) => void;
+  editingMember?: HouseholdMember | null;
+  onClose?: () => void;
+
 };
 
-export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
+export function MemberForm({ groupId, onSuccess, onEdit, editingMember, onClose }: MemberFormProps) {
   const { toast } = useToast();
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
 
-  const memberForm = useForm({
+  const form = useForm({
     resolver: zodResolver(insertHouseholdMemberSchema),
-    defaultValues: {
+    defaultValues: editingMember || {
       name: "",
       type: "adult" as const,
       relationship: "head" as const,
       dateOfBirth: "",
-      groupId: groupId,
+      groupId,
     },
   });
 
@@ -41,8 +44,9 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
         dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString() : undefined,
       };
 
-      if (editingMemberId) {
-        await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, formattedValues);
+      if (editingMember) {
+        await apiRequest("PATCH", `/api/household-members/${editingMember.id}`, formattedValues);
+        if (onEdit) onEdit({...editingMember, ...formattedValues})
       } else {
         await apiRequest("POST", "/api/household-members", formattedValues);
       }
@@ -52,9 +56,8 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
         exact: true,
       });
 
-      setAddMemberOpen(false);
-      setEditingMemberId(null);
-      memberForm.reset();
+      setOpen(false);
+      form.reset();
 
       if (onSuccess) {
         onSuccess();
@@ -62,22 +65,23 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
 
       toast({
         title: "Success",
-        description: `Member ${editingMemberId ? 'updated' : 'added'} successfully`,
+        description: `Member ${editingMember ? 'updated' : 'added'} successfully`,
       });
+      if (onClose) onClose();
     } catch (error) {
       console.error("Failed to save member:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Failed to ${editingMemberId ? 'update' : 'add'} member`,
+        description: `Failed to ${editingMember ? 'update' : 'add'} member`,
       });
     }
   };
 
   return (
-    <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+    <Dialog open={open || (editingMember !== undefined)} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={()=> setOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Member
         </Button>
@@ -85,13 +89,13 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {editingMemberId ? "Edit Member" : "Add New Member"}
+            {editingMember ? "Edit Member" : "Add New Member"}
           </DialogTitle>
         </DialogHeader>
-        <Form {...memberForm}>
-          <form onSubmit={memberForm.handleSubmit(onSubmit)} className="space-y-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
-              control={memberForm.control}
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -105,7 +109,7 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
             />
 
             <FormField
-              control={memberForm.control}
+              control={form.control}
               name="type"
               render={({ field }) => (
                 <FormItem>
@@ -129,7 +133,7 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
             />
 
             <FormField
-              control={memberForm.control}
+              control={form.control}
               name="relationship"
               render={({ field }) => (
                 <FormItem>
@@ -155,7 +159,7 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
             />
 
             <FormField
-              control={memberForm.control}
+              control={form.control}
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
@@ -173,7 +177,7 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
             />
 
             <Button type="submit">
-              {editingMemberId ? "Update Member" : "Add Member"}
+              {editingMember ? "Update Member" : "Add Member"}
             </Button>
           </form>
         </Form>
@@ -189,11 +193,6 @@ type MemberListProps = {
 
 export function MemberList({ groupId, members }: MemberListProps) {
   const { toast } = useToast();
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
-  const memberForm = useForm({
-    resolver: zodResolver(insertHouseholdMemberSchema),
-  });
 
   const deleteMember = async (id: number) => {
     try {
@@ -214,17 +213,6 @@ export function MemberList({ groupId, members }: MemberListProps) {
         description: "Failed to remove member",
       });
     }
-  };
-
-  const handleEditMember = (member: HouseholdMember) => {
-    memberForm.reset({
-      ...member,
-      dateOfBirth: member.dateOfBirth 
-        ? new Date(member.dateOfBirth).toISOString().split('T')[0]
-        : '',
-    });
-    setEditingMemberId(member.id);
-    setAddMemberOpen(true);
   };
 
   return (
@@ -251,27 +239,8 @@ export function MemberList({ groupId, members }: MemberListProps) {
                     Works at {member.employer}
                   </p>
                 )}
-                {member.qualifyingTags && member.qualifyingTags.length > 0 && (
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {member.qualifyingTags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEditMember(member)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
