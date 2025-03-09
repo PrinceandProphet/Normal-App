@@ -205,6 +205,17 @@ export default function Household() {
     }
   };
 
+  const deleteMember = async (memberId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/household-members/${memberId}`);
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      toast({ title: "Success", description: "Household member deleted successfully" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to delete household member" });
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
