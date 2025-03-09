@@ -32,7 +32,7 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   content: text("content").notNull(),
-  type: text("type").notNull(), // 'email' | 'sms'
+  type: text("type").notNull(), 
   isInbound: boolean("is_inbound").notNull(),
   timestamp: timestamp("timestamp").notNull(),
 });
@@ -52,10 +52,10 @@ export const checklists = pgTable("checklists", {
 
 export const capitalSources = pgTable("capital_sources", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // 'FEMA' | 'Insurance' | 'Grant'
+  type: text("type").notNull(), 
   name: text("name").notNull(),
   amount: numeric("amount").notNull(),
-  status: text("status").notNull(), // 'current' | 'projected'
+  status: text("status").notNull(), 
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -69,14 +69,36 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const householdMembers = pgTable("household_members", {
+export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(), // 'adult', 'child', 'pet'
+  address: text("address").notNull(),
+  type: text("type").notNull(), 
+  ownershipStatus: text("ownership_status").notNull(), 
+  primaryResidence: boolean("primary_residence").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Custom schema for capital source to handle numeric amount
+export const householdGroups = pgTable("household_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  propertyId: integer("property_id").references(() => properties.id),
+  type: text("type").notNull(), 
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const householdMembers = pgTable("household_members", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), 
+  groupId: integer("group_id").references(() => householdGroups.id),
+  dateOfBirth: timestamp("date_of_birth"),
+  relationship: text("relationship"), 
+  occupation: text("occupation"),
+  income: text("income_range"), 
+  specialNeeds: text("special_needs"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
   name: z.string().min(1, "Name is required"),
@@ -85,7 +107,6 @@ export const insertCapitalSourceSchema = z.object({
   description: z.string().optional(),
 });
 
-// Auto-generated insert schemas for other models
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
 export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
@@ -94,10 +115,40 @@ export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 
-// Create the insert schema for household members - simplified
+export const insertPropertySchema = createInsertSchema(properties)
+  .extend({
+    type: z.enum(['single_family', 'multi_family', 'apartment', 'mobile_home', 'other']),
+    ownershipStatus: z.enum(['owned', 'rented', 'other']),
+  })
+  .omit({ id: true, createdAt: true });
+
+export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
+  .extend({
+    type: z.enum(['nuclear', 'extended', 'multi_generational']),
+  })
+  .omit({ id: true, createdAt: true });
+
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
-    type: z.enum(["adult", "child", "pet"]),
+    type: z.enum(['adult', 'child', 'senior', 'dependent']),
+    relationship: z.enum([
+      'head',
+      'spouse',
+      'child',
+      'parent',
+      'grandparent',
+      'other'
+    ]).optional(),
+    dateOfBirth: z.date().optional(),
+    occupation: z.string().optional(),
+    income: z.enum([
+      'under_15000',
+      '15000_30000',
+      '30000_50000',
+      '50000_75000',
+      'over_75000'
+    ]).optional(),
+    specialNeeds: z.string().optional(),
   })
   .omit({ id: true, createdAt: true });
 
@@ -110,6 +161,8 @@ export type Checklist = typeof checklists.$inferSelect;
 export type CapitalSource = typeof capitalSources.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type HouseholdMember = typeof householdMembers.$inferSelect;
+export type Property = typeof properties.$inferSelect;
+export type HouseholdGroup = typeof householdGroups.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -119,4 +172,6 @@ export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
 export type InsertCapitalSource = z.infer<typeof insertCapitalSourceSchema>;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+export type InsertHouseholdGroup = z.infer<typeof insertHouseholdGroupSchema>;
 export type InsertHouseholdMember = z.infer<typeof insertHouseholdMemberSchema>;
