@@ -181,8 +181,9 @@ export default function Household() {
         name: values.name.trim(),
         type: values.type || "adult",
         relationship: values.relationship || "head",
-        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
+        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
         groupId: selectedGroupId,
+        qualifyingTags: values.qualifyingTags || [],
       };
 
       console.log("[DEBUG] Formatted values:", formattedValues);
@@ -196,26 +197,16 @@ export default function Household() {
 
       console.log("[DEBUG] Save response:", response);
 
-      // Force immediate cache invalidation and refetch
+      // Invalidate both queries to ensure data is fresh
       await queryClient.invalidateQueries({
-        queryKey: ["/api/household-members", selectedGroupId],
-        exact: true,
-        refetchType: 'active',
+        queryKey: ["/api/household-members"],
+        exact: false,
       });
 
-      // Optimistically update the cache
-      queryClient.setQueryData(
-        ["/api/household-members", selectedGroupId],
-        (old: HouseholdMember[] | undefined) => {
-          const currentMembers = Array.isArray(old) ? old : [];
-          if (editingMemberId) {
-            return currentMembers.map(member => 
-              member.id === editingMemberId ? response : member
-            );
-          }
-          return [...currentMembers, response];
-        }
-      );
+      await queryClient.refetchQueries({
+        queryKey: ["/api/household-members", selectedGroupId],
+        exact: true,
+      });
 
       setAddMemberOpen(false);
       setEditingMemberId(null);
@@ -270,6 +261,29 @@ export default function Household() {
   const searchTags = (query: string) => {
     const normalizedQuery = query.toLowerCase();
     return availableTags.filter((tag) => tag.toLowerCase().includes(normalizedQuery));
+  };
+
+  // Member display helper functions (replaced with edited version)
+  const formatMemberType = (type: string | undefined): string => {
+    switch (type) {
+      case 'adult': return 'Adult';
+      case 'child': return 'Child';
+      case 'senior': return 'Senior';
+      case 'dependent': return 'Dependent';
+      default: return 'Unknown';
+    }
+  };
+
+  const formatRelationship = (relationship: string | undefined): string => {
+    switch (relationship) {
+      case 'head': return 'Head of Household';
+      case 'spouse': return 'Spouse';
+      case 'child': return 'Child';
+      case 'parent': return 'Parent';
+      case 'grandparent': return 'Grandparent';
+      case 'other': return 'Other';
+      default: return 'Unknown relationship';
+    }
   };
 
   return (
@@ -471,492 +485,490 @@ export default function Household() {
                                     Add Member
                                   </Button>
                                 </DialogTrigger>
-                                {/* Member form dialog content remains the same */}
                                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                                    <DialogHeader>
-                                      <DialogTitle>
-                                        {editingMemberId ? "Edit Household Member" : "Add Household Member"}
-                                      </DialogTitle>
-                                    </DialogHeader>
-                                    <Form {...memberForm}>
-                                      <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-6">
-                                        {/* Basic Information Section */}
-                                        <div className="space-y-4">
-                                          <h3 className="font-semibold">Basic Information</h3>
-                                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="name"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Full Name</FormLabel>
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      {editingMemberId ? "Edit Household Member" : "Add Household Member"}
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <Form {...memberForm}>
+                                    <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-6">
+                                      {/* Basic Information Section */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Basic Information</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Full Name</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Enter full name" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="type"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Member Type</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                   <FormControl>
-                                                    <Input {...field} placeholder="Enter full name" />
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select type" />
+                                                    </SelectTrigger>
                                                   </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="type"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Member Type</FormLabel>
-                                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select type" />
-                                                      </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                      <SelectItem value="adult">Adult</SelectItem>
-                                                      <SelectItem value="child">Child</SelectItem>
-                                                      <SelectItem value="senior">Senior</SelectItem>
-                                                      <SelectItem value="dependent">Dependent</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="relationship"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Relationship</FormLabel>
-                                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select relationship" />
-                                                      </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                      <SelectItem value="head">Head of Household</SelectItem>
-                                                      <SelectItem value="spouse">Spouse</SelectItem>
-                                                      <SelectItem value="child">Child</SelectItem>
-                                                      <SelectItem value="parent">Parent</SelectItem>
-                                                      <SelectItem value="grandparent">Grandparent</SelectItem>
-                                                      <SelectItem value="other">Other</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                          </div>
+                                                  <SelectContent>
+                                                    <SelectItem value="adult">Adult</SelectItem>
+                                                    <SelectItem value="child">Child</SelectItem>
+                                                    <SelectItem value="senior">Senior</SelectItem>
+                                                    <SelectItem value="dependent">Dependent</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="relationship"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Relationship</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                  <FormControl>
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select relationship" />
+                                                    </SelectTrigger>
+                                                  </FormControl>
+                                                  <SelectContent>
+                                                    <SelectItem value="head">Head of Household</SelectItem>
+                                                    <SelectItem value="spouse">Spouse</SelectItem>
+                                                    <SelectItem value="child">Child</SelectItem>
+                                                    <SelectItem value="parent">Parent</SelectItem>
+                                                    <SelectItem value="grandparent">Grandparent</SelectItem>
+                                                    <SelectItem value="other">Other</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
                                         </div>
+                                      </div>
 
-                                        {/* Sensitive Information Section */}
-                                        <div className="space-y-4">
-                                          <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold">Sensitive Information</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                              (This information is encrypted and stored securely)
-                                            </p>
-                                          </div>
-                                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="ssn"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Social Security Number</FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      {...field}
-                                                      type="password"
-                                                      placeholder="XXX-XX-XXXX"
-                                                      autoComplete="off"
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="dateOfBirth"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Date of Birth</FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      type="date"
-                                                      {...field}
-                                                      value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                                                      onChange={(e) => {
-                                                        if (e.target.value) {
-                                                          field.onChange(e.target.value);
-                                                        } else {
-                                                          field.onChange(undefined);
-                                                        }
-                                                      }}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                          </div>
+                                      {/* Sensitive Information Section */}
+                                      <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="font-semibold">Sensitive Information</h3>
+                                          <p className="text-sm text-muted-foreground">
+                                            (This information is encrypted and stored securely)
+                                          </p>
                                         </div>
-
-                                        {/* Employment Information Section */}
-                                        <div className="space-y-4">
-                                          <h3 className="font-semibold">Employment Information</h3>
-                                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="employer"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Employer</FormLabel>
-                                                  <FormControl>
-                                                    <Input {...field} placeholder="Current employer" />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="occupation"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Occupation</FormLabel>
-                                                  <FormControl>
-                                                    <Input {...field} placeholder="Current occupation" />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="employmentStatus"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Employment Status</FormLabel>
-                                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select status" />
-                                                      </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                      <SelectItem value="full_time">Full Time</SelectItem>
-                                                      <SelectItem value="part_time">Part Time</SelectItem>
-                                                      <SelectItem value="self_employed">Self Employed</SelectItem>
-                                                      <SelectItem value="unemployed">Unemployed</SelectItem>
-                                                      <SelectItem value="retired">Retired</SelectItem>
-                                                      <SelectItem value="student">Student</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="annualIncome"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Annual Income</FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      {...field}
-                                                      type="number"
-                                                      placeholder="0.00"
-                                                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                          </div>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="ssn"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Social Security Number</FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    {...field}
+                                                    type="password"
+                                                    placeholder="XXX-XX-XXXX"
+                                                    autoComplete="off"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="dateOfBirth"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Date of Birth</FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    type="date"
+                                                    {...field}
+                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => {
+                                                      if (e.target.value) {
+                                                        field.onChange(e.target.value);
+                                                      } else {
+                                                        field.onChange(undefined);
+                                                      }
+                                                    }}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
                                         </div>
+                                      </div>
 
-                                        {/* Demographics Section */}
-                                        <div className="space-y-4">
-                                          <h3 className="font-semibold">Demographics</h3>
-                                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="maritalStatus"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Marital Status</FormLabel>
-                                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select status" />
-                                                      </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                      <SelectItem value="single">Single</SelectItem>
-                                                      <SelectItem value="married">Married</SelectItem>
-                                                      <SelectItem value="divorced">Divorced</SelectItem>
-                                                      <SelectItem value="widowed">Widowed</SelectItem>
-                                                      <SelectItem value="separated">Separated</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="educationLevel"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Education Level</FormLabel>
-                                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select education level" />
-                                                      </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                      <SelectItem value="less_than_high_school">Less than High School</SelectItem>
-                                                      <SelectItem value="high_school">High School</SelectItem>
-                                                      <SelectItem value="some_college">Some College</SelectItem>
-                                                      <SelectItem value="associates">Associate's Degree</SelectItem>
-                                                      <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-                                                      <SelectItem value="masters">Master's Degree</SelectItem>
-                                                      <SelectItem value="doctorate">Doctorate</SelectItem>
-                                                    </SelectContent>
-                                                  </Select>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="primaryLanguage"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Primary Language</FormLabel>
+                                      {/* Employment Information Section */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Employment Information</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="employer"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Employer</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Current employer" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="occupation"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Occupation</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Current occupation" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="employmentStatus"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Employment Status</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                   <FormControl>
-                                                    <Input {...field} placeholder="Primary language spoken" />
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
                                                   </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                          </div>
+                                                  <SelectContent>
+                                                    <SelectItem value="full_time">Full Time</SelectItem>
+                                                    <SelectItem value="part_time">Part Time</SelectItem>
+                                                    <SelectItem value="self_employed">Self Employed</SelectItem>
+                                                    <SelectItem value="unemployed">Unemployed</SelectItem>
+                                                    <SelectItem value="retired">Retired</SelectItem>
+                                                    <SelectItem value="student">Student</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="annualIncome"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Annual Income</FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    {...field}
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
                                         </div>
+                                      </div>
 
-                                        {/* Grant Qualification Attributes */}
-                                        <div className="space-y-4">
-                                          <h3 className="font-semibold">Grant Qualification Information</h3>
-                                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="isVeteran"
-                                              render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2">
+                                      {/* Demographics Section */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Demographics</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="maritalStatus"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Marital Status</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                   <FormControl>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={field.value}
-                                                      onChange={field.onChange}
-                                                      className="h-4 w-4"
-                                                    />
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
                                                   </FormControl>
-                                                  <FormLabel className="!mt-0">Veteran Status</FormLabel>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="hasDisabilities"
-                                              render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2">
+                                                  <SelectContent>
+                                                    <SelectItem value="single">Single</SelectItem>
+                                                    <SelectItem value="married">Married</SelectItem>
+                                                    <SelectItem value="divorced">Divorced</SelectItem>
+                                                    <SelectItem value="widowed">Widowed</SelectItem>
+                                                    <SelectItem value="separated">Separated</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="educationLevel"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Education Level</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                   <FormControl>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={field.value}
-                                                      onChange={field.onChange}
-                                                      className="h-4 w-4"
-                                                    />
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select education level" />
+                                                    </SelectTrigger>
                                                   </FormControl>
-                                                  <FormLabel className="!mt-0">Has Disabilities</FormLabel>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="disabilityNotes"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Disability Notes</FormLabel>
-                                                  <FormControl>
-                                                    <Input {...field} placeholder="Additional disability information" />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="specialNeeds"
-                                              render={({ field }) => (
-                                                <FormItem>
-                                                  <FormLabel>Special Needs</FormLabel>
-                                                  <FormControl>
-                                                    <Input {...field} placeholder="Special needs or requirements" />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="isStudentFullTime"
-                                              render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2">
-                                                  <FormControl>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={field.value}
-                                                      onChange={field.onChange}
-                                                      className="h-4 w-4"
-                                                    />
-                                                  </FormControl>
-                                                  <FormLabel className="!mt-0">Full-time Student</FormLabel>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="isSenior"
-                                              render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2">
-                                                  <FormControl>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={field.value}
-                                                      onChange={field.onChange}
-                                                      className="h-4 w-4"
-                                                    />
-                                                  </FormControl>
-                                                  <FormLabel className="!mt-0">Senior Citizen</FormLabel>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={memberForm.control}
-                                              name="isPregnant"
-                                              render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2">
-                                                  <FormControl>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={field.value}
-                                                      onChange={field.onChange}
-                                                      className="h-4 w-4"
-                                                    />
-                                                  </FormControl>
-                                                  <FormLabel className="!mt-0">Pregnant</FormLabel>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            {/* Updated Tag Input Field */}
-                                            <div className="space-y-4">
-                                              <h3 className="font-semibold">Grant Qualification Tags</h3>
-                                              <div className="grid gap-4 grid-cols-1">
-                                                <FormField
-                                                  control={memberForm.control}
-                                                  name="qualifyingTags"
-                                                  render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Qualifying Tags</FormLabel>
-                                                      <div className="space-y-2">
-                                                        {/* Display existing tags */}
-                                                        <div className="flex flex-wrap gap-2">
-                                                          {field.value?.map((tag, index) => (
-                                                            <span
-                                                              key={index}
-                                                              className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm flex items-center gap-1"
+                                                  <SelectContent>
+                                                    <SelectItem value="less_than_high_school">Less than High School</SelectItem>
+                                                    <SelectItem value="high_school">High School</SelectItem>
+                                                    <SelectItem value="some_college">Some College</SelectItem>
+                                                    <SelectItem value="associates">Associate's Degree</SelectItem>
+                                                    <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                                                    <SelectItem value="masters">Master's Degree</SelectItem>
+                                                    <SelectItem value="doctorate">Doctorate</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="primaryLanguage"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Primary Language</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Primary language spoken" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Grant Qualification Attributes */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Grant Qualification Information</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isVeteran"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Veteran Status</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="hasDisabilities"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Has Disabilities</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="disabilityNotes"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Disability Notes</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Additional disability information" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="specialNeeds"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Special Needs</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Special needs or requirements" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isStudentFullTime"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Full-time Student</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isSenior"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Senior Citizen</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isPregnant"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Pregnant</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          {/* Updated Tag Input Field */}
+                                          <div className="space-y-4">
+                                            <h3 className="font-semibold">Grant Qualification Tags</h3>
+                                            <div className="grid gap-4 grid-cols-1">
+                                              <FormField
+                                                control={memberForm.control}
+                                                name="qualifyingTags"
+                                                render={({ field }) => (
+                                                  <FormItem>
+                                                    <FormLabel>Qualifying Tags</FormLabel>
+                                                    <div className="space-y-2">
+                                                      {/* Display existing tags */}
+                                                      <div className="flex flex-wrap gap-2">
+                                                        {field.value?.map((tag, index) => (
+                                                          <span
+                                                            key={index}
+                                                            className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm flex items-center gap-1"
+                                                          >
+                                                            {tag}
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                const newTags = field.value?.filter((_, i) => i !== index) || [];
+                                                                field.onChange(newTags);
+                                                              }}
+                                                              className="hover:text-destructive"
                                                             >
-                                                              {tag}
-                                                              <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                  const newTags = field.value?.filter((_, i) => i !== index) || [];
-                                                                  field.onChange(newTags);
-                                                                }}
-                                                                className="hover:text-destructive"
-                                                              >
-                                                                ×
-                                                              </button>
-                                                            </span>
-                                                          ))}
-                                                        </div>
+                                                              ×
+                                                            </button>
+                                                          </span>
+                                                        ))}
+                                                      </div>
 
-                                                        {/* Tag input */}
-                                                        <div className="relative">
-                                                          <FormControl>
-                                                            <Input
-                                                              placeholder="Type a tag and press Enter"
-                                                              value={tagInput}
-                                                              onChange={(e) => setTagInput(e.target.value)}
-                                                              onKeyDown={(e) => {
-                                                                if (e.key === "Enter" && tagInput.trim()) {
-                                                                  e.preventDefault();
-                                                                  const newTag = tagInput.trim();
+                                                      {/* Tag input */}
+                                                      <div className="relative">
+                                                        <FormControl>
+                                                          <Input
+                                                            placeholder="Type a tag and press Enter"
+                                                            value={tagInput}
+                                                            onChange={(e) => setTagInput(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                              if (e.key === "Enter" && tagInput.trim()) {
+                                                                e.preventDefault();
+                                                                const newTag = tagInput.trim();
+                                                                const currentTags = field.value || [];
+                                                                if (!currentTags.includes(newTag)) {
+                                                                  const newTags = [...currentTags, newTag];
+                                                                  field.onChange(newTags);
+                                                                  // Add to available tags if it's new
+                                                                  if (!availableTags.includes(newTag)) {
+                                                                    setAvailableTags([...availableTags, newTag]);
+                                                                  }
+                                                                }
+                                                                setTagInput("");
+                                                              }
+                                                            }}
+                                                          />
+                                                        </FormControl>
+
+                                                        {/* Fuzzy search suggestions */}
+                                                        {tagInput.trim() && (<div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadowlg">
+                                                            {searchTags(tagInput).map((tag, index) => (
+                                                              <button
+                                                                key={index}
+                                                                type="button"
+                                                                className="w-full px-3 py-2 text-left hover:bg-muted"
+                                                                onClick={() => {
                                                                   const currentTags = field.value || [];
-                                                                  if (!currentTags.includes(newTag)) {
-                                                                    const newTags = [...currentTags, newTag];
-                                                                    field.onChange(newTags);
-                                                                    // Add to available tags if it's new
-                                                                    if (!availableTags.includes(newTag)) {
-                                                                      setAvailableTags([...availableTags, newTag]);
-                                                                    }
+                                                                  if (!currentTags.includes(tag)) {
+                                                                    field.onChange([...currentTags, tag]);
                                                                   }
                                                                   setTagInput("");
-                                                                }
-                                                              }}
-                                                            />
-                                                          </FormControl>
-
-                                                          {/* Fuzzy search suggestions */}
-                                                          {tagInput.trim() && (
-                                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadowlg">
-                                                              {searchTags(tagInput).map((tag, index) => (
-                                                                <button
-                                                                  key={index}
-                                                                  type="button"
-                                                                  className="w-full px-3 py-2 text-left hover:bg-muted"
-                                                                  onClick={() => {
-                                                                    const currentTags = field.value || [];                                                                    if (!currentTags.includes(tag)) {
-                                                                      field.onChange([...currentTags, tag]);
-                                                                    }
-                                                                    setTagInput("");
-                                                                  }}
-                                                                >
-                                                                  {tag}
-                                                                </button>
-                                                              ))}
-                                                            </div>
-                                                          )}
-                                                        </div>
+                                                                }}
+                                                              >
+                                                                {tag}
+                                                              </button>
+                                                            ))}
+                                                          </div>
+                                                        )}
                                                       </div>
-                                                      <p className="text-sm text-muted-foreground">
-                                                        Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
-                                                      </p>
-                                                      <FormMessage />
-                                                    </FormItem>
-                                                  )}
-                                                />
-                                              </div>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">
+                                                      Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
+                                                    </p>
+                                                    <FormMessage />
+                                                  </FormItem>
+                                                )}
+                                              />
                                             </div>
                                           </div>
                                         </div>
@@ -967,65 +979,64 @@ export default function Household() {
                                       </form>
                                     </Form>
                                   </DialogContent>
-                              </Dialog>
-                            </div>
+                                </Dialog>
+                              </div>
 
-                            <div className="space-y-4">
-                              {householdMembers.map((member) => (
-                                <div
-                                  key={member.id}
-                                  className="flex justify-between items-start p-4 bg-background rounded-lg border"
-                                >
-                                  <div>
-                                    <p className="font-medium">{member.name || 'Unnamed Member'}</p>
-                                    <p className="text-sm text-muted-foreground capitalize">
-                                      {member.type || 'adult'} • {member.relationship || 'head'}
-                                    </p>
-                                    {member.qualifyingTags?.length > 0 && (
-                                      <div className="flex gap-1 mt-1 flex-wrap">
-                                        {member.qualifyingTags.map((tag, index) => (
-                                          <span
-                                            key={index}
-                                            className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
+                              <div className="space-y-4">
+                                {householdMembers.map((member) => (
+                                  <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
+                                    <div>
+                                      <p className="font-medium">{member.name || 'Unnamed Member'}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {formatMemberType(member.type)} • {formatRelationship(member.relationship)}
+                                      </p>
+                                      {member.qualifyingTags?.length > 0 && (
+                                        <div className="flex gap-1 mt-1 flex-wrap">
+                                          {member.qualifyingTags.map((tag, index) => (
+                                            <span
+                                              key={index}
+                                              className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          console.log("[DEBUG] Editing member:", member);
+                                          const formData = {
+                                            ...member,
+                                            dateOfBirth: member.dateOfBirth
+                                              ? new Date(member.dateOfBirth).toISOString().split('T')[0]
+                                              : undefined,
+                                          };
+                                          console.log("[DEBUG] Setting form data:", formData);
+                                          setEditingMemberId(member.id);
+                                          memberForm.reset(formData);
+                                          setAddMemberOpen(true);
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => deleteMember(member.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        const defaultValues = {
-                                          ...member,
-                                          dateOfBirth: member.dateOfBirth 
-                                            ? new Date(member.dateOfBirth).toISOString().split('T')[0] 
-                                            : undefined,
-                                        };
-                                        console.log("[DEBUG] Setting form values for edit:", defaultValues);
-                                        memberForm.reset(defaultValues);
-                                        setEditingMemberId(member.id);
-                                        setAddMemberOpen(true);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => deleteMember(member.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
