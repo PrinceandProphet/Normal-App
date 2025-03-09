@@ -107,8 +107,8 @@ export default function Household() {
     resolver: zodResolver(insertHouseholdMemberSchema),
     defaultValues: {
       name: "",
-      type: "adult", // Set a default type
-      relationship: "head", // Set a default relationship
+      type: "adult",
+      relationship: "head",
       dateOfBirth: undefined,
       ssn: "",
       employer: "",
@@ -128,50 +128,6 @@ export default function Household() {
       qualifyingTags: [],
     },
   });
-
-  // Form submission handlers
-  const addProperty = async (values: any) => {
-    try {
-      const response = await apiRequest("POST", "/api/properties", values);
-      await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      setAddPropertyOpen(false);
-      propertyForm.reset();
-      toast({
-        title: "Success",
-        description: "Property added successfully",
-      });
-    } catch (error) {
-      console.error("Failed to add property:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add property",
-      });
-    }
-  };
-
-  const addGroup = async (values: any) => {
-    try {
-      const response = await apiRequest("POST", "/api/household-groups", {
-        ...values,
-        propertyId: selectedPropertyId,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
-      setAddGroupOpen(false);
-      groupForm.reset();
-      toast({
-        title: "Success",
-        description: "Household group added successfully",
-      });
-    } catch (error) {
-      console.error("Failed to add household group:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add household group",
-      });
-    }
-  };
 
   const addOrUpdateMember = async (values: any) => {
     try {
@@ -226,44 +182,7 @@ export default function Household() {
     }
   };
 
-  const deleteMember = async (id: number) => {
-    try {
-      await apiRequest("DELETE", `/api/household-members/${id}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
-      toast({
-        title: "Success",
-        description: "Member removed successfully",
-      });
-    } catch (error) {
-      console.error("Failed to delete member:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to remove member",
-      });
-    }
-  };
-
-  useEffect(() => {
-    const memberTags = Array.isArray(householdMembers)
-      ? householdMembers.reduce((tags: string[], member) => {
-          if (Array.isArray(member.qualifyingTags)) {
-            return [...tags, ...member.qualifyingTags];
-          }
-          return tags;
-        }, [])
-      : [];
-
-    setAvailableTags([...new Set(memberTags)]);
-  }, [householdMembers]);
-
-  // Function to handle fuzzy search
-  const searchTags = (query: string) => {
-    const normalizedQuery = query.toLowerCase();
-    return availableTags.filter((tag) => tag.toLowerCase().includes(normalizedQuery));
-  };
-
-  // Member display helper functions (replaced with edited version)
+  // Member display helper functions
   const formatMemberType = (type: string | undefined): string => {
     switch (type) {
       case 'adult': return 'Adult';
@@ -307,7 +226,7 @@ export default function Household() {
               <DialogTitle>Add Property</DialogTitle>
             </DialogHeader>
             <Form {...propertyForm}>
-              <form onSubmit={propertyForm.handleSubmit(addProperty)} className="space-y-4">
+              <form onSubmit={propertyForm.handleSubmit(addOrUpdateMember)} className="space-y-4">
                 <FormField
                   control={propertyForm.control}
                   name="address"
@@ -388,7 +307,7 @@ export default function Household() {
                           <DialogTitle>Add Household Group</DialogTitle>
                         </DialogHeader>
                         <Form {...groupForm}>
-                          <form onSubmit={groupForm.handleSubmit(addGroup)} className="space-y-4">
+                          <form onSubmit={groupForm.handleSubmit(addOrUpdateMember)} className="space-y-4">
                             <FormField
                               control={groupForm.control}
                               name="name"
@@ -691,352 +610,69 @@ export default function Household() {
                                         </div>
                                       </div>
 
-                                      {/* Demographics Section */}
-                                      <div className="space-y-4">
-                                        <h3 className="font-semibold">Demographics</h3>
-                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="maritalStatus"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Marital Status</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                  <FormControl>
-                                                    <SelectTrigger>
-                                                      <SelectValue placeholder="Select status" />
-                                                    </SelectTrigger>
-                                                  </FormControl>
-                                                  <SelectContent>
-                                                    <SelectItem value="single">Single</SelectItem>
-                                                    <SelectItem value="married">Married</SelectItem>
-                                                    <SelectItem value="divorced">Divorced</SelectItem>
-                                                    <SelectItem value="widowed">Widowed</SelectItem>
-                                                    <SelectItem value="separated">Separated</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="educationLevel"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Education Level</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                  <FormControl>
-                                                    <SelectTrigger>
-                                                      <SelectValue placeholder="Select education level" />
-                                                    </SelectTrigger>
-                                                  </FormControl>
-                                                  <SelectContent>
-                                                    <SelectItem value="less_than_high_school">Less than High School</SelectItem>
-                                                    <SelectItem value="high_school">High School</SelectItem>
-                                                    <SelectItem value="some_college">Some College</SelectItem>
-                                                    <SelectItem value="associates">Associate's Degree</SelectItem>
-                                                    <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-                                                    <SelectItem value="masters">Master's Degree</SelectItem>
-                                                    <SelectItem value="doctorate">Doctorate</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="primaryLanguage"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Primary Language</FormLabel>
-                                                <FormControl>
-                                                  <Input {...field} placeholder="Primary language spoken" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                        </div>
-                                      </div>
-
-                                      {/* Grant Qualification Attributes */}
-                                      <div className="space-y-4">
-                                        <h3 className="font-semibold">Grant Qualification Information</h3>
-                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="isVeteran"
-                                            render={({ field }) => (
-                                              <FormItem className="flex items-center gap-2">
-                                                <FormControl>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={field.value}
-                                                    onChange={field.onChange}
-                                                    className="h-4 w-4"
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="!mt-0">Veteran Status</FormLabel>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="hasDisabilities"
-                                            render={({ field }) => (
-                                              <FormItem className="flex items-center gap-2">
-                                                <FormControl>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={field.value}
-                                                    onChange={field.onChange}
-                                                    className="h-4 w-4"
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="!mt-0">Has Disabilities</FormLabel>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="disabilityNotes"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Disability Notes</FormLabel>
-                                                <FormControl>
-                                                  <Input {...field} placeholder="Additional disability information" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="specialNeeds"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Special Needs</FormLabel>
-                                                <FormControl>
-                                                  <Input {...field} placeholder="Special needs or requirements" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="isStudentFullTime"
-                                            render={({ field }) => (
-                                              <FormItem className="flex items-center gap-2">
-                                                <FormControl>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={field.value}
-                                                    onChange={field.onChange}
-                                                    className="h-4 w-4"
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="!mt-0">Full-time Student</FormLabel>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="isSenior"
-                                            render={({ field }) => (
-                                              <FormItem className="flex items-center gap-2">
-                                                <FormControl>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={field.value}
-                                                    onChange={field.onChange}
-                                                    className="h-4 w-4"
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="!mt-0">Senior Citizen</FormLabel>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="isPregnant"
-                                            render={({ field }) => (
-                                              <FormItem className="flex items-center gap-2">
-                                                <FormControl>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={field.value}
-                                                    onChange={field.onChange}
-                                                    className="h-4 w-4"
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="!mt-0">Pregnant</FormLabel>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          {/* Updated Tag Input Field */}
-                                          <div className="space-y-4">
-                                            <h3 className="font-semibold">Grant Qualification Tags</h3>
-                                            <div className="grid gap-4 grid-cols-1">
-                                              <FormField
-                                                control={memberForm.control}
-                                                name="qualifyingTags"
-                                                render={({ field }) => (
-                                                  <FormItem>
-                                                    <FormLabel>Qualifying Tags</FormLabel>
-                                                    <div className="space-y-2">
-                                                      {/* Display existing tags */}
-                                                      <div className="flex flex-wrap gap-2">
-                                                        {field.value?.map((tag, index) => (
-                                                          <span
-                                                            key={index}
-                                                            className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm flex items-center gap-1"
-                                                          >
-                                                            {tag}
-                                                            <button
-                                                              type="button"
-                                                              onClick={() => {
-                                                                const newTags = field.value?.filter((_, i) => i !== index) || [];
-                                                                field.onChange(newTags);
-                                                              }}
-                                                              className="hover:text-destructive"
-                                                            >
-                                                              ×
-                                                            </button>
-                                                          </span>
-                                                        ))}
-                                                      </div>
-
-                                                      {/* Tag input */}
-                                                      <div className="relative">
-                                                        <FormControl>
-                                                          <Input
-                                                            placeholder="Type a tag and press Enter"
-                                                            value={tagInput}
-                                                            onChange={(e) => setTagInput(e.target.value)}
-                                                            onKeyDown={(e) => {
-                                                              if (e.key === "Enter" && tagInput.trim()) {
-                                                                e.preventDefault();
-                                                                const newTag = tagInput.trim();
-                                                                const currentTags = field.value || [];
-                                                                if (!currentTags.includes(newTag)) {
-                                                                  const newTags = [...currentTags, newTag];
-                                                                  field.onChange(newTags);
-                                                                  // Add to available tags if it's new
-                                                                  if (!availableTags.includes(newTag)) {
-                                                                    setAvailableTags([...availableTags, newTag]);
-                                                                  }
-                                                                }
-                                                                setTagInput("");
-                                                              }
-                                                            }}
-                                                          />
-                                                        </FormControl>
-
-                                                        {/* Fuzzy search suggestions */}
-                                                        {tagInput.trim() && (<div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadowlg">
-                                                            {searchTags(tagInput).map((tag, index) => (
-                                                              <button
-                                                                key={index}
-                                                                type="button"
-                                                                className="w-full px-3 py-2 text-left hover:bg-muted"
-                                                                onClick={() => {
-                                                                  const currentTags = field.value || [];
-                                                                  if (!currentTags.includes(tag)) {
-                                                                    field.onChange([...currentTags, tag]);
-                                                                  }
-                                                                  setTagInput("");
-                                                                }}
-                                                              >
-                                                                {tag}
-                                                              </button>
-                                                            ))}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">
-                                                      Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
-                                                    </p>
-                                                    <FormMessage />
-                                                  </FormItem>
-                                                )}
-                                              />
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        <Button type="submit">
-                                          {editingMemberId ? "Update Member" : "Add Member"}
-                                        </Button>
-                                      </form>
-                                    </Form>
-                                  </DialogContent>
-                                </Dialog>
-                              </div>
-
-                              <div className="space-y-4">
-                                {householdMembers.map((member) => (
-                                  <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
-                                    <div>
-                                      <p className="font-medium">{member.name || 'Unnamed Member'}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {formatMemberType(member.type)} • {formatRelationship(member.relationship)}
-                                      </p>
-                                      {member.qualifyingTags?.length > 0 && (
-                                        <div className="flex gap-1 mt-1 flex-wrap">
-                                          {member.qualifyingTags.map((tag, index) => (
-                                            <span
-                                              key={index}
-                                              className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
-                                            >
-                                              {tag}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          console.log("[DEBUG] Editing member:", member);
-                                          const formData = {
-                                            ...member,
-                                            dateOfBirth: member.dateOfBirth
-                                              ? new Date(member.dateOfBirth).toISOString().split('T')[0]
-                                              : undefined,
-                                          };
-                                          console.log("[DEBUG] Setting form data:", formData);
-                                          setEditingMemberId(member.id);
-                                          memberForm.reset(formData);
-                                          setAddMemberOpen(true);
-                                        }}
-                                      >
-                                        <Pencil className="h-4 w-4" />
+                                      <Button type="submit">
+                                        {editingMemberId ? "Update Member" : "Add Member"}
                                       </Button>
-                                      <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => deleteMember(member.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                                    </form>
+                                  </Form>
+                                </DialogContent>
+                              </Dialog>
                             </div>
-                          )}
-                        </div>
+
+                            <div className="space-y-4">
+                              {householdMembers.map((member) => (
+                                <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
+                                  <div>
+                                    <p className="font-medium">{member.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {formatMemberType(member.type)} • {formatRelationship(member.relationship)}
+                                    </p>
+                                    {member.qualifyingTags?.length > 0 && (
+                                      <div className="flex gap-1 mt-1 flex-wrap">
+                                        {member.qualifyingTags.map((tag, index) => (
+                                          <span
+                                            key={index}
+                                            className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        console.log("[DEBUG] Editing member:", member);
+                                        const formData = {
+                                          ...member,
+                                          dateOfBirth: member.dateOfBirth
+                                            ? new Date(member.dateOfBirth).toISOString().split('T')[0]
+                                            : undefined,
+                                        };
+                                        console.log("[DEBUG] Setting form data:", formData);
+                                        setEditingMemberId(member.id);
+                                        memberForm.reset(formData);
+                                        setAddMemberOpen(true);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => deleteMember(member.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
