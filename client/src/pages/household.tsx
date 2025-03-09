@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Building2, Home, Users, Trash2, Pencil } from "lucide-react";
+import { Plus, Building2, Home, Users, Trash2, Pencil, X } from "lucide-react";
 import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
 import {
   Dialog,
@@ -226,6 +226,15 @@ export default function Household() {
     return householdGroups.filter(group => group.propertyId === propertyId);
   };
 
+  const handlePropertyDeselect = () => {
+    setSelectedPropertyId(null);
+    setSelectedGroupId(null); // Also deselect group when property is deselected
+  };
+
+  const handleGroupDeselect = () => {
+    setSelectedGroupId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -306,12 +315,21 @@ export default function Household() {
                   {property.type.replace("_", " ")} • {property.ownershipStatus}
                 </p>
               </div>
-              <Button
-                variant={selectedPropertyId === property.id ? "default" : "ghost"}
-                onClick={() => setSelectedPropertyId(property.id)}
-              >
-                {selectedPropertyId === property.id ? "Selected" : "Select"}
-              </Button>
+              <div className="flex gap-2">
+                {selectedPropertyId === property.id ? (
+                  <Button variant="ghost" onClick={handlePropertyDeselect}>
+                    <X className="h-4 w-4 mr-2" />
+                    Deselect
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setSelectedPropertyId(property.id)}
+                  >
+                    Select
+                  </Button>
+                )}
+              </div>
             </CardHeader>
 
             {selectedPropertyId === property.id && (
@@ -385,13 +403,24 @@ export default function Household() {
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Button
-                              variant={selectedGroupId === group.id ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setSelectedGroupId(group.id)}
-                            >
-                              {selectedGroupId === group.id ? "Managing Members" : "Manage Members"}
-                            </Button>
+                            {selectedGroupId === group.id ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleGroupDeselect}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Deselect
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedGroupId(group.id)}
+                              >
+                                Manage Members
+                              </Button>
+                            )}
                             <Button
                               variant="destructive"
                               size="sm"
@@ -776,7 +805,7 @@ export default function Household() {
                                               <FormItem>
                                                 <FormLabel>Additional Eligibility Criteria</FormLabel>
                                                 <FormControl>
-                                                  <Input 
+                                                  <Input
                                                     placeholder="Type criteria and press Enter to add"
                                                     onKeyDown={(e) => {
                                                       if (e.key === "Enter" && e.currentTarget.value.trim()) {
