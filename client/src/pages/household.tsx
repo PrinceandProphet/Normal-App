@@ -57,17 +57,29 @@ export default function Household() {
   const { data: householdMembers = [] } = useQuery({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
-      console.log("Fetching members for group:", selectedGroupId);
+      console.log("[DEBUG] Fetching members, selectedGroupId:", selectedGroupId);
       if (!selectedGroupId) return [];
-      const response = await apiRequest<HouseholdMember[]>(
-        "GET",
-        `/api/household-members?groupId=${selectedGroupId}`
-      );
-      console.log("Received members:", response);
-      return Array.isArray(response) ? response : [];
+      try {
+        const response = await apiRequest<HouseholdMember[]>(
+          "GET",
+          `/api/household-members?groupId=${selectedGroupId}`
+        );
+        console.log("[DEBUG] API Response for members:", response);
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("[DEBUG] Error fetching members:", error);
+        return [];
+      }
     },
     enabled: !!selectedGroupId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+
+  // Monitor changes to householdMembers
+  useEffect(() => {
+    console.log("[DEBUG] householdMembers updated:", householdMembers);
+  }, [householdMembers]);
 
   // Form setup for property
   const propertyForm = useForm({
@@ -163,28 +175,44 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
-      console.log("Adding/Updating member with values:", values);
+      console.log("[DEBUG] Starting member add/update with values:", values);
       const formattedValues = {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
         groupId: selectedGroupId,
       };
 
+      console.log("[DEBUG] Formatted values:", formattedValues);
       let response;
+
       if (editingMemberId) {
         response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, formattedValues);
       } else {
         response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
-      console.log("Member save response:", response);
 
-      // Force an immediate refetch
-      queryClient.removeQueries({ queryKey: ["/api/household-members", selectedGroupId] });
-      await queryClient.refetchQueries({
+      console.log("[DEBUG] Save response:", response);
+
+      // Force immediate cache invalidation and refetch
+      await queryClient.invalidateQueries({
         queryKey: ["/api/household-members", selectedGroupId],
         exact: true,
-        type: 'active',
+        refetchType: 'active',
       });
+
+      // Optimistically update the cache
+      queryClient.setQueryData(
+        ["/api/household-members", selectedGroupId],
+        (old: HouseholdMember[] | undefined) => {
+          const currentMembers = Array.isArray(old) ? old : [];
+          if (editingMemberId) {
+            return currentMembers.map(member => 
+              member.id === editingMemberId ? response : member
+            );
+          }
+          return [...currentMembers, response];
+        }
+      );
 
       setAddMemberOpen(false);
       setEditingMemberId(null);
@@ -195,7 +223,7 @@ export default function Household() {
         description: `Household member ${editingMemberId ? 'updated' : 'added'} successfully`,
       });
     } catch (error) {
-      console.error("Failed to save household member:", error);
+      console.error("[DEBUG] Error in addOrUpdateMember:", error);
       toast({
         variant: "destructive",
         title: "Error",
