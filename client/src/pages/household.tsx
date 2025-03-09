@@ -33,7 +33,29 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPropertySchema, insertHouseholdGroupSchema, insertHouseholdMemberSchema } from "@shared/schema";
 
-const deleteProperty = async (propertyId: number) => {
+export default function Household() {
+  const { toast } = useToast();
+  const [addPropertyOpen, setAddPropertyOpen] = useState(false);
+  const [addGroupOpen, setAddGroupOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+
+  const { data: properties = [] } = useQuery<Property[]>({
+    queryKey: ["/api/properties"],
+  });
+
+  const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
+    queryKey: ["/api/household-groups"],
+  });
+
+  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
+    queryKey: ["/api/household-members"],
+  });
+
+  // Move deleteProperty inside the component
+  const deleteProperty = async (propertyId: number) => {
     try {
       // Delete all groups and members associated with this property
       const propertyGroups = householdGroups.filter(group => group.propertyId === propertyId);
@@ -67,27 +89,6 @@ const deleteProperty = async (propertyId: number) => {
       });
     }
   };
-
-export default function Household() {
-  const { toast } = useToast();
-  const [addPropertyOpen, setAddPropertyOpen] = useState(false);
-  const [addGroupOpen, setAddGroupOpen] = useState(false);
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
-
-  const { data: properties = [] } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
-  });
-
-  const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
-    queryKey: ["/api/household-groups"],
-  });
-
-  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
-    queryKey: ["/api/household-members"],
-  });
 
   // Form setup for property
   const propertyForm = useForm({
