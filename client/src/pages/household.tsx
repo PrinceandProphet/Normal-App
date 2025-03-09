@@ -226,10 +226,61 @@ export default function Household() {
   const deleteMember = async (memberId: number) => {
     try {
       await apiRequest("DELETE", `/api/household-members/${memberId}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
-      toast({ title: "Success", description: "Household member deleted successfully" });
+
+      // Invalidate both queries to ensure UI updates
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/household-members"],
+        exact: false,
+      });
+
+      // Also refresh the specific group's members
+      if (selectedGroupId) {
+        await queryClient.refetchQueries({
+          queryKey: ["/api/household-members", selectedGroupId],
+          exact: true,
+        });
+      }
+
+      toast({
+        title: "Success",
+        description: "Member removed successfully",
+      });
     } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to delete household member" });
+      console.error("Failed to delete member:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to remove member",
+      });
+    }
+  };
+
+  const handleGroupDelete = async (groupId: number) => {
+    try {
+      // First, delete all members in the group
+      const groupMembers = householdMembers.filter(member => member.groupId === groupId);
+      for (const member of groupMembers) {
+        await apiRequest("DELETE", `/api/household-members/${member.id}`);
+      }
+
+      // Then delete the group
+      await apiRequest("DELETE", `/api/household-groups/${groupId}`);
+
+      // Invalidate queries to refresh the UI
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+
+      toast({
+        title: "Success",
+        description: "Household group deleted successfully",
+      });
+    } catch (error) {
+      console.error("Failed to delete household group:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete household group",
+      });
     }
   };
 
@@ -399,22 +450,7 @@ export default function Household() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={async () => {
-                                try {
-                                  await apiRequest("DELETE", `/api/household-groups/${group.id}`);
-                                  await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
-                                  toast({
-                                    title: "Success",
-                                    description: "Household group deleted successfully",
-                                  });
-                                } catch (error) {
-                                  toast({
-                                    variant: "destructive",
-                                    title: "Error",
-                                    description: "Failed to delete household group",
-                                  });
-                                }
-                              }}
+                              onClick={() => handleGroupDelete(group.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -913,9 +949,7 @@ export default function Household() {
                                                     )}
                                                   </div>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                  Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
-                                                </p>
+                                                <p className="text-sm text-muted-foreground">Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student</p>
                                                 <FormMessage />
                                               </FormItem>
                                             )}
