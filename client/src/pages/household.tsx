@@ -206,7 +206,7 @@ export default function Household() {
         (old: HouseholdMember[] | undefined) => {
           const currentMembers = Array.isArray(old) ? old : [];
           if (editingMemberId) {
-            return currentMembers.map(member => 
+            return currentMembers.map(member =>
               member.id === editingMemberId ? response : member
             );
           }
@@ -416,13 +416,15 @@ export default function Household() {
 
                   <div className="grid gap-4">
                     {householdGroups.map((group) => (
-                      <Card key={group.id} className="bg-muted">
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">
-                              <Users className="h-4 w-4 inline-block mr-2" />
-                              {group.name}
-                            </CardTitle>
+                      <div key={group.id} className="bg-muted rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <h4 className="font-medium">{group.name}</h4>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {group.type.replace('_', ' ')}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -430,24 +432,44 @@ export default function Household() {
                             >
                               Manage Members
                             </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await apiRequest("DELETE", `/api/household-groups/${group.id}`);
+                                  await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+                                  toast({
+                                    title: "Success",
+                                    description: "Household group deleted successfully",
+                                  });
+                                } catch (error) {
+                                  toast({
+                                    variant: "destructive",
+                                    title: "Error",
+                                    description: "Failed to delete household group",
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </CardHeader>
+                        </div>
+
                         {selectedGroupId === group.id && (
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-semibold">Household Members</h3>
-                                <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-                                  <DialogTrigger asChild onClick={() => {
-                                    memberForm.reset();
-                                    setEditingMemberId(null);
-                                  }}>
-                                    <Button variant="outline" size="sm">
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Add Member
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <h3 className="text-lg font-semibold">Members</h3>
+                              <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Member
+                                  </Button>
+                                </DialogTrigger>
+                                {/* Member form dialog content remains the same */}
+                                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle>
                                         {editingMemberId ? "Edit Household Member" : "Add Household Member"}
@@ -911,8 +933,7 @@ export default function Household() {
                                                                   type="button"
                                                                   className="w-full px-3 py-2 text-left hover:bg-muted"
                                                                   onClick={() => {
-                                                                    const currentTags = field.value || [];
-                                                                    if (!currentTags.includes(tag)) {
+                                                                    const currentTags = field.value || [];                                                                    if (!currentTags.includes(tag)) {
                                                                       field.onChange([...currentTags, tag]);
                                                                     }
                                                                     setTagInput("");
@@ -943,69 +964,59 @@ export default function Household() {
                                       </form>
                                     </Form>
                                   </DialogContent>
-                                </Dialog>
-                              </div>
-
-                              <div className="space-y-4">
-                                {householdMembers.length > 0 ? (
-                                  <div className="space-y-4">
-                                    {householdMembers.map((member) => (
-                                      <div
-                                        key={member.id}
-                                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                                      >
-                                        <div>
-                                          <p className="font-medium">{member.name}</p>
-                                          <p className="text-sm text-muted-foreground capitalize">
-                                            {member.type} • {member.relationship || "Unknown relationship"}
-                                          </p>
-                                          {member.qualifyingTags?.length > 0 && (
-                                            <div className="flex gap-1 mt-1 flex-wrap">
-                                              {member.qualifyingTags.map((tag, index) => (
-                                                <span
-                                                  key={index}
-                                                  className="text-xs bgprimary/10 text-primary px-2 py-0.5 rounded-full"
-                                                >
-                                                  {tag}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-2">
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                              memberForm.reset(member);
-                                              setEditingMemberId(member.id);
-                                              setAddMemberOpen(true);
-                                            }}
-                                          >
-                                            <Pencil className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => deleteMember(member.id)}
-                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground">
-                                    No household members added yet.
-                                  </p>
-                                )}
-                              </div>
+                              </Dialog>
                             </div>
-                          </CardContent>
+
+                            <div className="space-y-4">
+                              {householdMembers.map((member) => (
+                                <div
+                                  key={member.id}
+                                  className="flex justify-between items-start p-4 bg-background rounded-lg border"
+                                >
+                                  <div>
+                                    <p className="font-medium">{member.name}</p>
+                                    <p className="text-sm text-muted-foreground capitalize">
+                                      {member.type?.replace('_', ' ')} • {member.relationship?.replace('_', ' ')}
+                                    </p>
+                                    {member.qualifyingTags?.length > 0 && (
+                                      <div className="flex gap-1 mt-1 flex-wrap">
+                                        {member.qualifyingTags.map((tag, index) => (
+                                          <span
+                                            key={index}
+                                            className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingMemberId(member.id);
+                                        memberForm.reset(member);
+                                        setAddMemberOpen(true);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => deleteMember(member.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      </Card>
+                      </div>
                     ))}
                   </div>
                 </div>
