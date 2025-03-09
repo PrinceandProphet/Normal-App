@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,8 @@ export default function Household() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   // Fetch properties and related data
   const { data: properties = [] } = useQuery<Property[]>({
@@ -201,6 +203,24 @@ export default function Household() {
       });
     }
   };
+
+  // Function to handle fuzzy search
+  const searchTags = (query: string) => {
+    const normalizedQuery = query.toLowerCase();
+    return availableTags.filter(tag =>
+      tag.toLowerCase().includes(normalizedQuery)
+    );
+  };
+
+  useEffect(() => {
+    if (householdMembers) {
+      const tags = new Set<string>();
+      householdMembers.forEach(member => {
+        member.qualifyingTags?.forEach(tag => tags.add(tag));
+      });
+      setAvailableTags(Array.from(tags));
+    }
+  }, [householdMembers]);
 
   return (
     <div className="space-y-6">
@@ -772,9 +792,9 @@ export default function Household() {
                                                 </FormItem>
                                               )}
                                             />
-                                            {/* Added Tag Input Field */}
+                                            {/* Updated Tag Input Field */}
                                             <div className="space-y-4">
-                                              <h3 className="font-semibold">Grant Qualification Information</h3>
+                                              <h3 className="font-semibold">Grant Qualification Tags</h3>
                                               <div className="grid gap-4 grid-cols-1">
                                                 <FormField
                                                   control={memberForm.control}
@@ -782,18 +802,80 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Qualifying Tags</FormLabel>
-                                                      <FormControl>
-                                                        <Input
-                                                          placeholder="Enter tags separated by commas"
-                                                          value={field.value?.join(', ') || ''}
-                                                          onChange={(e) => {
-                                                            const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
-                                                            field.onChange(tags);
-                                                          }}
-                                                        />
-                                                      </FormControl>
+                                                      <div className="space-y-2">
+                                                        {/* Display existing tags */}
+                                                        <div className="flex flex-wrap gap-2">
+                                                          {field.value?.map((tag, index) => (
+                                                            <span
+                                                              key={index}
+                                                              className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm flex items-center gap-1"
+                                                            >
+                                                              {tag}
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                  const newTags = field.value?.filter((_, i) => i !== index) || [];
+                                                                  field.onChange(newTags);
+                                                                }}
+                                                                className="hover:text-destructive"
+                                                              >
+                                                                ×
+                                                              </button>
+                                                            </span>
+                                                          ))}
+                                                        </div>
+
+                                                        {/* Tag input */}
+                                                        <div className="relative">
+                                                          <FormControl>
+                                                            <Input
+                                                              placeholder="Type a tag and press Enter"
+                                                              value={tagInput}
+                                                              onChange={(e) => setTagInput(e.target.value)}
+                                                              onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && tagInput.trim()) {
+                                                                  e.preventDefault();
+                                                                  const newTag = tagInput.trim();
+                                                                  const currentTags = field.value || [];
+                                                                  if (!currentTags.includes(newTag)) {
+                                                                    const newTags = [...currentTags, newTag];
+                                                                    field.onChange(newTags);
+                                                                    // Add to available tags if it's new
+                                                                    if (!availableTags.includes(newTag)) {
+                                                                      setAvailableTags([...availableTags, newTag]);
+                                                                    }
+                                                                  }
+                                                                  setTagInput("");
+                                                                }
+                                                              }}
+                                                            />
+                                                          </FormControl>
+
+                                                          {/* Fuzzy search suggestions */}
+                                                          {tagInput.trim() && (
+                                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg">
+                                                              {searchTags(tagInput).map((tag, index) => (
+                                                                <button
+                                                                  key={index}
+                                                                  type="button"
+                                                                  className="w-full px-3 py-2 text-left hover:bg-muted"
+                                                                  onClick={() => {
+                                                                    const currentTags = field.value || [];
+                                                                    if (!currentTags.includes(tag)) {
+                                                                      field.onChange([...currentTags, tag]);
+                                                                    }
+                                                                    setTagInput("");
+                                                                  }}
+                                                                >
+                                                                  {tag}
+                                                                </button>
+                                                              ))}
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      </div>
                                                       <p className="text-sm text-muted-foreground">
-                                                        Add any additional qualifying attributes (e.g., first-time homebuyer, caregiver)
+                                                        Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
                                                       </p>
                                                       <FormMessage />
                                                     </FormItem>

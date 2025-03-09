@@ -158,7 +158,9 @@ export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
 
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
-    type: z.enum(['adult', 'child', 'senior', 'dependent']),
+    name: z.string().min(1, "Name is required"),
+    dateOfBirth: z.date({ required_error: "Date of birth is required" }),
+    type: z.enum(['adult', 'child', 'senior', 'dependent']).optional(),
     relationship: z.enum([
       'head',
       'spouse',
@@ -204,7 +206,6 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       .optional(),
 
     annualIncome: z.number().min(0).optional(),
-    dateOfBirth: z.date().optional(),
 
     // Arrays and Other Fields
     qualifyingTags: z.array(z.string()).optional(),
