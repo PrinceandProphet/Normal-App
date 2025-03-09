@@ -60,11 +60,12 @@ export default function Household() {
     queryFn: async () => {
       if (!selectedGroupId) return [];
       try {
+        console.log("[DEBUG] Fetching members for group:", selectedGroupId);
         const response = await apiRequest<HouseholdMember[]>(
           "GET",
           `/api/household-members?groupId=${selectedGroupId}`
         );
-        console.log("[DEBUG] Members response for group", selectedGroupId, ":", response);
+        console.log("[DEBUG] API Response:", response);
         return Array.isArray(response) ? response : [];
       } catch (error) {
         console.error("[DEBUG] Error fetching members:", error);
@@ -135,10 +136,12 @@ export default function Household() {
     },
   });
 
-  // Add this to the member form submission
+  // Update the addOrUpdateMember function
   const addOrUpdateMember = async (values: any) => {
     try {
       console.log("[DEBUG] Starting member add/update with values:", values);
+      console.log("[DEBUG] Selected group ID:", selectedGroupId);
+
       const formattedValues = {
         ...values,
         name: values.name.trim(),
@@ -160,14 +163,14 @@ export default function Household() {
 
       console.log("[DEBUG] Save response:", response);
 
-      // Force immediate cache invalidation and refetch
+      // Force immediate cache invalidation
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members"],
         exact: false,
       });
 
-      // Also invalidate the specific group query
-      await queryClient.invalidateQueries({
+      // Explicitly refetch the current group's members
+      await queryClient.refetchQueries({
         queryKey: ["/api/household-members", selectedGroupId],
         exact: true,
       });
