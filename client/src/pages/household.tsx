@@ -178,6 +178,9 @@ export default function Household() {
       console.log("[DEBUG] Starting member add/update with values:", values);
       const formattedValues = {
         ...values,
+        name: values.name.trim(),
+        type: values.type || "adult",
+        relationship: values.relationship || "head",
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
         groupId: selectedGroupId,
       };
@@ -206,7 +209,7 @@ export default function Household() {
         (old: HouseholdMember[] | undefined) => {
           const currentMembers = Array.isArray(old) ? old : [];
           if (editingMemberId) {
-            return currentMembers.map(member =>
+            return currentMembers.map(member => 
               member.id === editingMemberId ? response : member
             );
           }
@@ -926,7 +929,7 @@ export default function Household() {
 
                                                           {/* Fuzzy search suggestions */}
                                                           {tagInput.trim() && (
-                                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg">
+                                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadowlg">
                                                               {searchTags(tagInput).map((tag, index) => (
                                                                 <button
                                                                   key={index}
@@ -974,18 +977,9 @@ export default function Household() {
                                   className="flex justify-between items-start p-4 bg-background rounded-lg border"
                                 >
                                   <div>
-                                    <p className="font-medium">{member.name}</p>
+                                    <p className="font-medium">{member.name || 'Unnamed Member'}</p>
                                     <p className="text-sm text-muted-foreground capitalize">
-                                      {member.type === 'adult' ? 'Adult' :
-                                       member.type === 'child' ? 'Child' :
-                                       member.type === 'senior' ? 'Senior' :
-                                       member.type === 'dependent' ? 'Dependent' : 'Unknown'} • 
-                                      {member.relationship === 'head' ? 'Head of Household' :
-                                       member.relationship === 'spouse' ? 'Spouse' :
-                                       member.relationship === 'child' ? 'Child' :
-                                       member.relationship === 'parent' ? 'Parent' :
-                                       member.relationship === 'grandparent' ? 'Grandparent' :
-                                       member.relationship === 'other' ? 'Other' : 'Unknown relationship'}
+                                      {member.type || 'adult'} • {member.relationship || 'head'}
                                     </p>
                                     {member.qualifyingTags?.length > 0 && (
                                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -1005,11 +999,15 @@ export default function Household() {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        setEditingMemberId(member.id);
-                                        memberForm.reset({
+                                        const defaultValues = {
                                           ...member,
-                                          dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : undefined,
-                                        });
+                                          dateOfBirth: member.dateOfBirth 
+                                            ? new Date(member.dateOfBirth).toISOString().split('T')[0] 
+                                            : undefined,
+                                        };
+                                        console.log("[DEBUG] Setting form values for edit:", defaultValues);
+                                        memberForm.reset(defaultValues);
+                                        setEditingMemberId(member.id);
                                         setAddMemberOpen(true);
                                       }}
                                     >
