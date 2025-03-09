@@ -58,14 +58,12 @@ export default function Household() {
   const { data: householdMembers = [], isLoading: membersLoading } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
-      if (!selectedGroupId) return [];
       try {
-        console.log("[DEBUG] Fetching members for group:", selectedGroupId);
+        if (!selectedGroupId) return [];
         const response = await apiRequest<HouseholdMember[]>(
           "GET",
           `/api/household-members?groupId=${selectedGroupId}`
         );
-        console.log("[DEBUG] API Response:", response);
         return Array.isArray(response) ? response : [];
       } catch (error) {
         console.error("[DEBUG] Error fetching members:", error);
@@ -183,40 +181,27 @@ export default function Household() {
   // Update the addOrUpdateMember function
   const addOrUpdateMember = async (values: any) => {
     try {
-      console.log("[DEBUG] Starting member add/update with values:", values);
-      console.log("[DEBUG] Selected group ID:", selectedGroupId);
-
       const formattedValues = {
         ...values,
         name: values.name.trim(),
         type: values.type || "adult",
         relationship: values.relationship || "head",
-        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
+        dateOfBirth: values.dateOfBirth || undefined,
         groupId: selectedGroupId,
         qualifyingTags: values.qualifyingTags || [],
       };
 
-      console.log("[DEBUG] Formatted values:", formattedValues);
       let response;
-
       if (editingMemberId) {
         response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, formattedValues);
       } else {
         response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
 
-      console.log("[DEBUG] Save response:", response);
-
-      // Invalidate both queries to ensure data is fresh
+      // Invalidate queries to ensure fresh data
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members"],
         exact: false,
-      });
-
-      // Explicitly refetch the current group's members
-      await queryClient.refetchQueries({
-        queryKey: ["/api/household-members", selectedGroupId],
-        exact: true,
       });
 
       setAddMemberOpen(false);
@@ -625,14 +610,8 @@ export default function Household() {
                                                   <Input
                                                     type="date"
                                                     {...field}
-                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                                                    onChange={(e) => {
-                                                      if (e.target.value) {
-                                                        field.onChange(e.target.value);
-                                                      } else {
-                                                        field.onChange(undefined);
-                                                      }
-                                                    }}
+                                                    value={field.value || ''}
+                                                    onChange={(e) => field.onChange(e.target.value)}
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
@@ -1041,9 +1020,7 @@ export default function Household() {
                                           console.log("[DEBUG] Editing member:", member);
                                           const formData = {
                                             ...member,
-                                            dateOfBirth: member.dateOfBirth
-                                              ? new Date(member.dateOfBirth).toISOString().split('T')[0]
-                                              : undefined,
+                                            dateOfBirth: member.dateOfBirth || undefined,
                                           };
                                           console.log("[DEBUG] Setting form data:", formData);
                                           setEditingMemberId(member.id);

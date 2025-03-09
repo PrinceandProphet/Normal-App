@@ -94,7 +94,7 @@ export const householdMembers = pgTable("household_members", {
 
   // Sensitive Information - Consider encryption at rest
   ssn: text("ssn"),
-  dateOfBirth: timestamp("date_of_birth"),
+  dateOfBirth: text("date_of_birth"),
 
   // Employment Information
   employer: text("employer"),
@@ -159,8 +159,8 @@ export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     name: z.string().min(1, "Name is required"),
-    dateOfBirth: z.string().optional(),
     type: z.enum(['adult', 'child', 'senior', 'dependent']),
+    dateOfBirth: z.string().optional(),
     relationship: z.enum([
       'head',
       'spouse',
