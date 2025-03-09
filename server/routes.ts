@@ -3,7 +3,16 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { documentService } from "./services/documents";
-import { insertDocumentSchema, insertContactSchema, insertMessageSchema, insertSystemConfigSchema, insertCapitalSourceSchema } from "@shared/schema";
+import { 
+  insertDocumentSchema, 
+  insertContactSchema, 
+  insertMessageSchema, 
+  insertSystemConfigSchema, 
+  insertCapitalSourceSchema,
+  insertPropertySchema,
+  insertHouseholdGroupSchema,
+  insertHouseholdMemberSchema
+} from "@shared/schema";
 import path from "path";
 import express from 'express';
 import { mailslurpService } from "./services/mailslurp";
