@@ -54,17 +54,17 @@ export default function Household() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: householdMembers = [] } = useQuery({
+  // Update the householdMembers query
+  const { data: householdMembers = [], isLoading: membersLoading } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
-      console.log("[DEBUG] Fetching members, selectedGroupId:", selectedGroupId);
       if (!selectedGroupId) return [];
       try {
         const response = await apiRequest<HouseholdMember[]>(
           "GET",
           `/api/household-members?groupId=${selectedGroupId}`
         );
-        console.log("[DEBUG] API Response for members:", response);
+        console.log("[DEBUG] Members response for group", selectedGroupId, ":", response);
         return Array.isArray(response) ? response : [];
       } catch (error) {
         console.error("[DEBUG] Error fetching members:", error);
@@ -72,14 +72,20 @@ export default function Household() {
       }
     },
     enabled: !!selectedGroupId,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
   });
 
   // Monitor changes to householdMembers
   useEffect(() => {
     console.log("[DEBUG] householdMembers updated:", householdMembers);
   }, [householdMembers]);
+
+  // Add useEffect for debugging
+  useEffect(() => {
+    if (selectedGroupId) {
+      console.log("[DEBUG] Selected group:", selectedGroupId);
+      console.log("[DEBUG] Current members:", householdMembers);
+    }
+  }, [selectedGroupId, householdMembers]);
 
   // Form setup for property
   const propertyForm = useForm({
@@ -129,6 +135,7 @@ export default function Household() {
     },
   });
 
+  // Add this to the member form submission
   const addOrUpdateMember = async (values: any) => {
     try {
       console.log("[DEBUG] Starting member add/update with values:", values);
@@ -138,7 +145,7 @@ export default function Household() {
         type: values.type || "adult",
         relationship: values.relationship || "head",
         dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
-        groupId: selectedGroupId,
+        groupId: selectedGroupId, // Ensure groupId is set
         qualifyingTags: values.qualifyingTags || [],
       };
 
@@ -153,12 +160,13 @@ export default function Household() {
 
       console.log("[DEBUG] Save response:", response);
 
-      // Invalidate both queries to ensure data is fresh
+      // Force immediate cache invalidation and refetch
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members"],
         exact: false,
       });
 
+      // Also invalidate the specific group query
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members", selectedGroupId],
         exact: true,
@@ -221,7 +229,6 @@ export default function Household() {
       toast({ variant: "destructive", title: "Error", description: "Failed to delete household member" });
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -922,57 +929,66 @@ export default function Household() {
                               </Dialog>
                             </div>
 
-                            <div className="space-y-4">
-                              {householdMembers.map((member) => (
-                                <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
-                                  <div>
-                                    <p className="font-medium">{member.name}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {formatMemberType(member.type)} • {formatRelationship(member.relationship)}                                    </p>
-                                    {member.qualifyingTags?.length > 0 && (
-                                      <div className="flex gap-1 mt-1 flex-wrap">
-                                        {member.qualifyingTags.map((tag, index) => (
-                                          <span
-                                            key={index}
-                                            className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
+                            {/* Display members for the selected group */}
+                            {householdMembers && householdMembers.length > 0 ? (
+                              <div className="space-y-4">
+                                {householdMembers.map((member) => (
+                                  <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
+                                    <div>
+                                      <p className="font-medium">{member.name}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {formatMemberType(member.type)} • {formatRelationship(member.relationship)}
+                                      </p>
+                                      {member.qualifyingTags?.length > 0 && (
+                                        <div className="flex gap-1 mt-1 flex-wrap">
+                                          {member.qualifyingTags.map((tag, index) => (
+                                            <span
+                                              key={index}
+                                              className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          console.log("[DEBUG] Editing member:", member);
+                                          const formData = {
+                                            ...member,
+                                            dateOfBirth: member.dateOfBirth
+                                              ? new Date(member.dateOfBirth).toISOString().split('T')[0]
+                                              : undefined,
+                                          };
+                                          console.log("[DEBUG] Setting form data:", formData);
+                                          setEditingMemberId(member.id);
+                                          memberForm.reset(formData);
+                                          setAddMemberOpen(true);
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => deleteMember(member.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        console.log("[DEBUG] Editing member:", member);
-                                        const formData = {
-                                          ...member,
-                                          dateOfBirth: member.dateOfBirth
-                                            ? new Date(member.dateOfBirth).toISOString().split('T')[0]
-                                            : undefined,
-                                        };
-                                        console.log("[DEBUG] Setting form data:", formData);
-                                        setEditingMemberId(member.id);
-                                        memberForm.reset(formData);
-                                        setAddMemberOpen(true);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => deleteMember(member.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                No members in this group yet.
+                              </p>
+                            )}
+
                           </div>
                         )}
                       </div>
