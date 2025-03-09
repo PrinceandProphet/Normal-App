@@ -180,7 +180,15 @@ export default function Household() {
         });
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      // Invalidate both the general members query and the specific group query
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/household-members"]
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/household-members", selectedGroupId]
+      });
+
       setAddMemberOpen(false);
       setEditingMemberId(null);
       memberForm.reset();
@@ -218,7 +226,7 @@ export default function Household() {
   };
 
   useEffect(() => {
-    const memberTags = Array.isArray(householdMembers) 
+    const memberTags = Array.isArray(householdMembers)
       ? householdMembers.reduce((tags: string[], member) => {
           if (Array.isArray(member.qualifyingTags)) {
             return [...tags, ...member.qualifyingTags];
@@ -233,9 +241,7 @@ export default function Household() {
   // Function to handle fuzzy search
   const searchTags = (query: string) => {
     const normalizedQuery = query.toLowerCase();
-    return availableTags.filter(tag =>
-      tag.toLowerCase().includes(normalizedQuery)
-    );
+    return availableTags.filter((tag) => tag.toLowerCase().includes(normalizedQuery));
   };
 
   return (
@@ -307,7 +313,7 @@ export default function Household() {
       {/* Properties Grid */}
       <div className="grid gap-6">
         {properties.map((property) => (
-          <Card key={property.id} className={selectedPropertyId === property.id ? 'border-primary' : ''}>
+          <Card key={property.id} className={selectedPropertyId === property.id ? "border-primary" : ""}>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-xl">
@@ -315,14 +321,11 @@ export default function Household() {
                   {property.address}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground capitalize">
-                  {property.type.replace('_', ' ')} • {property.ownershipStatus}
+                  {property.type.replace("_", " ")} • {property.ownershipStatus}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedPropertyId(property.id)}
-              >
-                {selectedPropertyId === property.id ? 'Selected' : 'Select'}
+              <Button variant="ghost" onClick={() => setSelectedPropertyId(property.id)}>
+                {selectedPropertyId === property.id ? "Selected" : "Select"}
               </Button>
             </CardHeader>
 
@@ -422,7 +425,7 @@ export default function Household() {
                                   <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle>
-                                        {editingMemberId ? 'Edit Household Member' : 'Add Household Member'}
+                                        {editingMemberId ? "Edit Household Member" : "Add Household Member"}
                                       </DialogTitle>
                                     </DialogHeader>
                                     <Form {...memberForm}>
@@ -856,7 +859,7 @@ export default function Household() {
                                                               value={tagInput}
                                                               onChange={(e) => setTagInput(e.target.value)}
                                                               onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && tagInput.trim()) {
+                                                                if (e.key === "Enter" && tagInput.trim()) {
                                                                   e.preventDefault();
                                                                   const newTag = tagInput.trim();
                                                                   const currentTags = field.value || [];
@@ -910,7 +913,7 @@ export default function Household() {
                                         </div>
 
                                         <Button type="submit">
-                                          {editingMemberId ? 'Update Member' : 'Add Member'}
+                                          {editingMemberId ? "Update Member" : "Add Member"}
                                         </Button>
                                       </form>
                                     </Form>
@@ -929,13 +932,14 @@ export default function Household() {
                                         <div>
                                           <p className="font-medium">{member.name}</p>
                                           <p className="text-sm text-muted-foreground capitalize">
-                                            {member.type} • {member.relationship || 'Unknown relationship'}
+                                            {member.type} • {member.relationship || "Unknown relationship"}
                                           </p>
                                           {member.qualifyingTags?.length > 0 && (
                                             <div className="flex gap-1 mt-1 flex-wrap">
                                               {member.qualifyingTags.map((tag, index) => (
                                                 <span
-                                                  key={index}                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                                  key={index}
+                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
                                                 >
                                                   {tag}
                                                 </span>
