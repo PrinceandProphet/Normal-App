@@ -107,8 +107,8 @@ export default function Household() {
     resolver: zodResolver(insertHouseholdMemberSchema),
     defaultValues: {
       name: "",
-      type: "adult",
-      relationship: "head",
+      type: "adult", // Set a default type
+      relationship: "head", // Set a default relationship
       dateOfBirth: undefined,
       ssn: "",
       employer: "",
@@ -976,7 +976,16 @@ export default function Household() {
                                   <div>
                                     <p className="font-medium">{member.name}</p>
                                     <p className="text-sm text-muted-foreground capitalize">
-                                      {member.type?.replace('_', ' ')} • {member.relationship?.replace('_', ' ')}
+                                      {member.type === 'adult' ? 'Adult' :
+                                       member.type === 'child' ? 'Child' :
+                                       member.type === 'senior' ? 'Senior' :
+                                       member.type === 'dependent' ? 'Dependent' : 'Unknown'} • 
+                                      {member.relationship === 'head' ? 'Head of Household' :
+                                       member.relationship === 'spouse' ? 'Spouse' :
+                                       member.relationship === 'child' ? 'Child' :
+                                       member.relationship === 'parent' ? 'Parent' :
+                                       member.relationship === 'grandparent' ? 'Grandparent' :
+                                       member.relationship === 'other' ? 'Other' : 'Unknown relationship'}
                                     </p>
                                     {member.qualifyingTags?.length > 0 && (
                                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -997,7 +1006,10 @@ export default function Household() {
                                       size="sm"
                                       onClick={() => {
                                         setEditingMemberId(member.id);
-                                        memberForm.reset(member);
+                                        memberForm.reset({
+                                          ...member,
+                                          dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : undefined,
+                                        });
                                         setAddMemberOpen(true);
                                       }}
                                     >
