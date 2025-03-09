@@ -180,6 +180,10 @@ export default function Household() {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
         groupId: selectedGroupId,
+        // Ensure these fields are explicitly set
+        name: values.name,
+        type: values.type || 'adult',
+        relationship: values.relationship || 'other',
       };
 
       console.log("[DEBUG] Formatted values:", formattedValues);
@@ -200,7 +204,7 @@ export default function Household() {
         refetchType: 'active',
       });
 
-      // Optimistically update the cache
+      // Optimistically update the cache with the complete member data
       queryClient.setQueryData(
         ["/api/household-members", selectedGroupId],
         (old: HouseholdMember[] | undefined) => {
