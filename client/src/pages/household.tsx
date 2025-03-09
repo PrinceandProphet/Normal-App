@@ -148,7 +148,7 @@ export default function Household() {
         type: values.type || "adult",
         relationship: values.relationship || "head",
         dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
-        groupId: selectedGroupId, // Ensure groupId is set
+        groupId: selectedGroupId,
         qualifyingTags: values.qualifyingTags || [],
       };
 
@@ -163,7 +163,7 @@ export default function Household() {
 
       console.log("[DEBUG] Save response:", response);
 
-      // Force immediate cache invalidation
+      // Invalidate both queries to ensure data is fresh
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members"],
         exact: false,
@@ -933,7 +933,7 @@ export default function Household() {
                                                           <button
                                                             key={index}
                                                             type="button"
-                                                            className="w-full px-3 py-2 text-left hover:bg-muted"
+                                                            className="w-full px-3 py-2 textleft hover:bg-muted"
                                                             onClick={() => {
                                                               const currentTags = field.value || [];
                                                               if (!currentTags.includes(tag)) {

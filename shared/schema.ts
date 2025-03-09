@@ -81,7 +81,7 @@ export const properties = pgTable("properties", {
 export const householdGroups = pgTable("household_groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  propertyId: integer("property_id").references(() => properties.id),
+  propertyId: integer("property_id").references(() => properties.id, { onDelete: 'cascade' }),
   type: text("type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -90,7 +90,7 @@ export const householdMembers = pgTable("household_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type").notNull(),
-  groupId: integer("group_id").references(() => householdGroups.id),
+  groupId: integer("group_id").references(() => householdGroups.id, { onDelete: 'cascade' }),
 
   // Sensitive Information - Consider encryption at rest
   ssn: text("ssn"),
