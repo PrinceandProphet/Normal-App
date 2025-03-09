@@ -54,8 +54,10 @@ export default function Household() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: householdMembers = [], isLoading, refetch } = useQuery<HouseholdMember[]>({
+  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members", selectedGroupId],
+    queryFn: () =>
+      apiRequest("GET", `/api/household-members${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`),
     enabled: !!selectedGroupId,
   });
 
@@ -924,14 +926,14 @@ export default function Household() {
                                             {member.type} • {member.relationship || 'Unknown relationship'}
                                           </p>
                                           {member.qualifyingTags?.length > 0 && (
-                                            <div className="flex gap-1 mt-1 flex-wrap">
+                                            <div classNamediv className="flex gap-1 mt-1 flex-wrap">
                                               {member.qualifyingTags.map((tag, index) => (
                                                 <span
                                                   key={index}
                                                   className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
                                                 >
                                                   {tag}
-                                                                                                </span>
+                                                </span>
                                               ))}
                                             </div>
                                           )}
