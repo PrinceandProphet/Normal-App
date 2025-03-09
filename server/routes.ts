@@ -205,5 +205,82 @@ export async function registerRoutes(app: Express) {
     res.json(documents);
   });
 
+  // Properties
+  app.get("/api/properties", async (req, res) => {
+    const properties = await storage.getProperties();
+    res.json(properties);
+  });
+
+  app.post("/api/properties", async (req, res) => {
+    const property = insertPropertySchema.parse(req.body);
+    const created = await storage.createProperty(property);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/properties/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const property = insertPropertySchema.partial().parse(req.body);
+    const updated = await storage.updateProperty(id, property);
+    res.json(updated);
+  });
+
+  app.delete("/api/properties/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteProperty(id);
+    res.status(204).send();
+  });
+
+  // Household Groups
+  app.get("/api/household-groups", async (req, res) => {
+    const propertyId = req.query.propertyId ? parseInt(req.query.propertyId as string) : undefined;
+    const groups = await storage.getHouseholdGroups(propertyId);
+    res.json(groups);
+  });
+
+  app.post("/api/household-groups", async (req, res) => {
+    const group = insertHouseholdGroupSchema.parse(req.body);
+    const created = await storage.createHouseholdGroup(group);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/household-groups/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const group = insertHouseholdGroupSchema.partial().parse(req.body);
+    const updated = await storage.updateHouseholdGroup(id, group);
+    res.json(updated);
+  });
+
+  app.delete("/api/household-groups/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteHouseholdGroup(id);
+    res.status(204).send();
+  });
+
+  // Household Members
+  app.get("/api/household-members", async (req, res) => {
+    const groupId = req.query.groupId ? parseInt(req.query.groupId as string) : undefined;
+    const members = await storage.getHouseholdMembers(groupId);
+    res.json(members);
+  });
+
+  app.post("/api/household-members", async (req, res) => {
+    const member = insertHouseholdMemberSchema.parse(req.body);
+    const created = await storage.createHouseholdMember(member);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/household-members/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const member = insertHouseholdMemberSchema.partial().parse(req.body);
+    const updated = await storage.updateHouseholdMember(id, member);
+    res.json(updated);
+  });
+
+  app.delete("/api/household-members/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteHouseholdMember(id);
+    res.status(204).send();
+  });
+
   return server;
 }

@@ -6,8 +6,10 @@ import {
   type Checklist, type InsertChecklist,
   documents, contacts, messages, documentTemplates, checklists,
   type SystemConfig, type InsertSystemConfig, systemConfig,
-  type CapitalSource, type InsertCapitalSource,
-  capitalSources,
+  type CapitalSource, type InsertCapitalSource, capitalSources,
+  type Property, type InsertProperty, properties,
+  type HouseholdGroup, type InsertHouseholdGroup, householdGroups,
+  type HouseholdMember, type InsertHouseholdMember, householdMembers,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -49,6 +51,24 @@ export interface IStorage {
   updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource>;
   deleteCapitalSource(id: number): Promise<void>;
   getDocumentsByCapitalSource(capitalSourceId: number): Promise<Document[]>;
+
+  // Properties
+  getProperties(): Promise<Property[]>;
+  createProperty(property: InsertProperty): Promise<Property>;
+  updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property>;
+  deleteProperty(id: number): Promise<void>;
+
+  // Household Groups
+  getHouseholdGroups(propertyId?: number): Promise<HouseholdGroup[]>;
+  createHouseholdGroup(group: InsertHouseholdGroup): Promise<HouseholdGroup>;
+  updateHouseholdGroup(id: number, group: Partial<InsertHouseholdGroup>): Promise<HouseholdGroup>;
+  deleteHouseholdGroup(id: number): Promise<void>;
+
+  // Household Members
+  getHouseholdMembers(groupId?: number): Promise<HouseholdMember[]>;
+  createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember>;
+  updateHouseholdMember(id: number, member: Partial<InsertHouseholdMember>): Promise<HouseholdMember>;
+  deleteHouseholdMember(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -203,6 +223,86 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(documents)
       .where(eq(documents.capitalSourceId, capitalSourceId));
+  }
+
+  // Properties
+  async getProperties(): Promise<Property[]> {
+    return await db.select().from(properties);
+  }
+
+  async createProperty(property: InsertProperty): Promise<Property> {
+    const [created] = await db.insert(properties).values(property).returning();
+    return created;
+  }
+
+  async updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property> {
+    const [updated] = await db
+      .update(properties)
+      .set(property)
+      .where(eq(properties.id, id))
+      .returning();
+    if (!updated) throw new Error("Property not found");
+    return updated;
+  }
+
+  async deleteProperty(id: number): Promise<void> {
+    await db.delete(properties).where(eq(properties.id, id));
+  }
+
+  // Household Groups
+  async getHouseholdGroups(propertyId?: number): Promise<HouseholdGroup[]> {
+    let query = db.select().from(householdGroups);
+    if (propertyId) {
+      query = query.where(eq(householdGroups.propertyId, propertyId));
+    }
+    return await query;
+  }
+
+  async createHouseholdGroup(group: InsertHouseholdGroup): Promise<HouseholdGroup> {
+    const [created] = await db.insert(householdGroups).values(group).returning();
+    return created;
+  }
+
+  async updateHouseholdGroup(id: number, group: Partial<InsertHouseholdGroup>): Promise<HouseholdGroup> {
+    const [updated] = await db
+      .update(householdGroups)
+      .set(group)
+      .where(eq(householdGroups.id, id))
+      .returning();
+    if (!updated) throw new Error("Household group not found");
+    return updated;
+  }
+
+  async deleteHouseholdGroup(id: number): Promise<void> {
+    await db.delete(householdGroups).where(eq(householdGroups.id, id));
+  }
+
+  // Household Members
+  async getHouseholdMembers(groupId?: number): Promise<HouseholdMember[]> {
+    let query = db.select().from(householdMembers);
+    if (groupId) {
+      query = query.where(eq(householdMembers.groupId, groupId));
+    }
+    return await query;
+  }
+
+  async createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember> {
+    const [created] = await db.insert(householdMembers).values(member).returning();
+    return created;
+  }
+
+  async updateHouseholdMember(id: number, member: Partial<InsertHouseholdMember>): Promise<HouseholdMember> {
+    const [updated] = await db
+      .update(householdMembers)
+      .set(member)
+      .where(eq(householdMembers.id, id))
+      .returning();
+    if (!updated) throw new Error("Household member not found");
+    return updated;
+  }
+
+  async deleteHouseholdMember(id: number): Promise<void> {
+    await db.delete(householdMembers).where(eq(householdMembers.id, id));
   }
 }
 
