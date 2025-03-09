@@ -159,7 +159,7 @@ export default function Household() {
         exact: false,
       });
 
-      await queryClient.refetchQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["/api/household-members", selectedGroupId],
         exact: true,
       });
@@ -181,6 +181,13 @@ export default function Household() {
       });
     }
   };
+
+  const searchTags = (searchTerm: string): string[] => {
+    // Implement your fuzzy search logic here
+    // This is a placeholder, replace with your actual search implementation
+    return availableTags.filter((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  };
+
 
   // Member display helper functions
   const formatMemberType = (type: string | undefined): string => {
@@ -491,6 +498,76 @@ export default function Household() {
                                         </div>
                                       </div>
 
+                                      {/* Demographics Section */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Demographics</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="maritalStatus"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Marital Status</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                  <FormControl>
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                  </FormControl>
+                                                  <SelectContent>
+                                                    <SelectItem value="single">Single</SelectItem>
+                                                    <SelectItem value="married">Married</SelectItem>
+                                                    <SelectItem value="divorced">Divorced</SelectItem>
+                                                    <SelectItem value="widowed">Widowed</SelectItem>
+                                                    <SelectItem value="separated">Separated</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="educationLevel"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Education Level</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                  <FormControl>
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select education level" />
+                                                    </SelectTrigger>
+                                                  </FormControl>
+                                                  <SelectContent>
+                                                    <SelectItem value="less_than_high_school">Less than High School</SelectItem>
+                                                    <SelectItem value="high_school">High School</SelectItem>
+                                                    <SelectItem value="some_college">Some College</SelectItem>
+                                                    <SelectItem value="associates">Associate's Degree</SelectItem>
+                                                    <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                                                    <SelectItem value="masters">Master's Degree</SelectItem>
+                                                    <SelectItem value="doctorate">Doctorate</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="primaryLanguage"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Primary Language</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Primary language spoken" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+
                                       {/* Sensitive Information Section */}
                                       <div className="space-y-4">
                                         <div className="flex items-center gap-2">
@@ -614,6 +691,221 @@ export default function Household() {
                                                     onChange={(e) => field.onChange(parseFloat(e.target.value))}
                                                   />
                                                 </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Grant Qualification Attributes */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Grant Qualification Information</h3>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isVeteran"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Veteran Status</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="hasDisabilities"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Has Disabilities</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="disabilityNotes"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Disability Notes</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Additional disability information" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="specialNeeds"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Special Needs</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Special needs or requirements" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isStudentFullTime"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Full-time Student</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isSenior"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Senior Citizen</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isPregnant"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Pregnant</FormLabel>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Qualifying Tags Section */}
+                                      <div className="space-y-4">
+                                        <h3 className="font-semibold">Grant Qualification Tags</h3>
+                                        <div className="grid gap-4 grid-cols-1">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="qualifyingTags"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Qualifying Tags</FormLabel>
+                                                <div className="space-y-2">
+                                                  {/* Display existing tags */}
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {field.value?.map((tag, index) => (
+                                                      <span
+                                                        key={index}
+                                                        className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm flex items-center gap-1"
+                                                      >
+                                                        {tag}
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const newTags = field.value?.filter((_, i) => i !== index) || [];
+                                                            field.onChange(newTags);
+                                                          }}
+                                                          className="hover:text-destructive"
+                                                        >
+                                                          ×
+                                                        </button>
+                                                      </span>
+                                                    ))}
+                                                  </div>
+
+                                                  {/* Tag input */}
+                                                  <div className="relative">
+                                                    <FormControl>
+                                                      <Input
+                                                        placeholder="Type a tag and press Enter"
+                                                        value={tagInput}
+                                                        onChange={(e) => setTagInput(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                          if (e.key === "Enter" && tagInput.trim()) {
+                                                            e.preventDefault();
+                                                            const newTag = tagInput.trim();
+                                                            const currentTags = field.value || [];
+                                                            if (!currentTags.includes(newTag)) {
+                                                              const newTags = [...currentTags, newTag];
+                                                              field.onChange(newTags);
+                                                              // Add to available tags if it's new
+                                                              if (!availableTags.includes(newTag)) {
+                                                                setAvailableTags([...availableTags, newTag]);
+                                                              }
+                                                            }
+                                                            setTagInput("");
+                                                          }
+                                                        }}
+                                                      />
+                                                    </FormControl>
+
+                                                    {/* Fuzzy search suggestions */}
+                                                    {tagInput.trim() && (
+                                                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg">
+                                                        {searchTags(tagInput).map((tag, index) => (
+                                                          <button
+                                                            key={index}
+                                                            type="button"
+                                                            className="w-full px-3 py-2 text-left hover:bg-muted"
+                                                            onClick={() => {
+                                                              const currentTags = field.value || [];
+                                                              if (!currentTags.includes(tag)) {
+                                                                field.onChange([...currentTags, tag]);
+                                                              }
+                                                              setTagInput("");
+                                                            }}
+                                                          >
+                                                            {tag}
+                                                          </button>
+                                                        ))}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">
+                                                  Press Enter to add a tag. Common tags: first-time homebuyer, caregiver, low-income, student
+                                                </p>
                                                 <FormMessage />
                                               </FormItem>
                                             )}
