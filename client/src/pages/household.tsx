@@ -50,11 +50,16 @@ export default function HouseholdPage() {
     queryKey: ["/api/household-groups", selectedPropertyId],
     queryFn: async () => {
       if (!selectedPropertyId) return [];
-      const response = await apiRequest<HouseholdGroup[]>(
-        "GET",
-        `/api/household-groups?propertyId=${selectedPropertyId}`
-      );
-      return response;
+      try {
+        const response = await apiRequest<HouseholdGroup[]>(
+          "GET",
+          `/api/household-groups?propertyId=${selectedPropertyId}`
+        );
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("Error fetching household groups:", error);
+        return [];
+      }
     },
     enabled: !!selectedPropertyId,
   });
@@ -63,11 +68,16 @@ export default function HouseholdPage() {
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
       if (!selectedGroupId) return [];
-      const response = await apiRequest<HouseholdMember[]>(
-        "GET",
-        `/api/household-members?groupId=${selectedGroupId}`
-      );
-      return response;
+      try {
+        const response = await apiRequest<HouseholdMember[]>(
+          "GET",
+          `/api/household-members?groupId=${selectedGroupId}`
+        );
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("Error fetching household members:", error);
+        return [];
+      }
     },
     enabled: !!selectedGroupId,
   });
@@ -120,7 +130,10 @@ export default function HouseholdPage() {
         ...values,
         propertyId: selectedPropertyId,
       });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedPropertyId] });
+      await queryClient.invalidateQueries({ 
+        queryKey: ["/api/household-groups", selectedPropertyId],
+        exact: true,
+      });
       setAddGroupOpen(false);
       groupForm.reset();
       toast({
@@ -205,7 +218,7 @@ export default function HouseholdPage() {
 
       {/* Properties Grid */}
       <div className="grid gap-6">
-        {properties.map((property) => (
+        {Array.isArray(properties) && properties.map((property) => (
           <Card key={property.id} className={selectedPropertyId === property.id ? "border-primary" : ""}>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -283,7 +296,7 @@ export default function HouseholdPage() {
                   </div>
 
                   <div className="grid gap-4">
-                    {householdGroups.map((group) => (
+                    {Array.isArray(householdGroups) && householdGroups.map((group) => (
                       <Card key={group.id} className="bg-muted">
                         <CardHeader>
                           <div className="flex justify-between items-center">
