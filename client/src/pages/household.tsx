@@ -49,6 +49,19 @@ export default function Household() {
 
   const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
     queryKey: ["/api/household-groups", selectedPropertyId],
+    queryFn: async () => {
+      if (!selectedPropertyId) return [];
+      try {
+        const response = await apiRequest<HouseholdGroup[]>(
+          "GET",
+          `/api/household-groups?propertyId=${selectedPropertyId}`
+        );
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("Failed to fetch household groups:", error);
+        return [];
+      }
+    },
     enabled: !!selectedPropertyId,
   });
 
