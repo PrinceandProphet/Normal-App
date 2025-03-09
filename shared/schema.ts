@@ -159,12 +159,8 @@ export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     name: z.string().min(1, "Name is required"),
-    dateOfBirth: z.string()
-      .transform((str) => new Date(str))
-      .refine((date) => !isNaN(date.getTime()), {
-        message: "Invalid date format"
-      }),
-    type: z.enum(['adult', 'child', 'senior', 'dependent']).optional(),
+    dateOfBirth: z.string().optional(),
+    type: z.enum(['adult', 'child', 'senior', 'dependent']),
     relationship: z.enum([
       'head',
       'spouse',

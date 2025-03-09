@@ -136,6 +136,50 @@ export default function Household() {
     },
   });
 
+  // Add these functions after the form setup
+  const addProperty = async (values: any) => {
+    try {
+      const response = await apiRequest("POST", "/api/properties", values);
+      await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      setAddPropertyOpen(false);
+      propertyForm.reset();
+      toast({
+        title: "Success",
+        description: "Property added successfully",
+      });
+    } catch (error) {
+      console.error("Failed to add property:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add property",
+      });
+    }
+  };
+
+  const addGroup = async (values: any) => {
+    try {
+      const response = await apiRequest("POST", "/api/household-groups", {
+        ...values,
+        propertyId: selectedPropertyId,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      setAddGroupOpen(false);
+      groupForm.reset();
+      toast({
+        title: "Success",
+        description: "Household group added successfully",
+      });
+    } catch (error) {
+      console.error("Failed to add household group:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add household group",
+      });
+    }
+  };
+
   // Update the addOrUpdateMember function
   const addOrUpdateMember = async (values: any) => {
     try {
@@ -305,7 +349,7 @@ export default function Household() {
               <DialogTitle>Add Property</DialogTitle>
             </DialogHeader>
             <Form {...propertyForm}>
-              <form onSubmit={propertyForm.handleSubmit(addOrUpdateMember)} className="space-y-4">
+              <form onSubmit={propertyForm.handleSubmit(addProperty)} className="space-y-4">
                 <FormField
                   control={propertyForm.control}
                   name="address"
@@ -386,7 +430,7 @@ export default function Household() {
                           <DialogTitle>Add Household Group</DialogTitle>
                         </DialogHeader>
                         <Form {...groupForm}>
-                          <form onSubmit={groupForm.handleSubmit(addOrUpdateMember)} className="space-y-4">
+                          <form onSubmit={groupForm.handleSubmit(addGroup)} className="space-y-4">
                             <FormField
                               control={groupForm.control}
                               name="name"
