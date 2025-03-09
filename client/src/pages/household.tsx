@@ -36,8 +36,12 @@ export default function Household() {
   const { toast } = useToast();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
 
-  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
+  // Add console log to track query updates
+  const { data: householdMembers = [], isLoading, refetch } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members"],
+    onSuccess: (data) => {
+      console.log("Household members fetched:", data);
+    },
   });
 
   const form = useForm({
@@ -50,10 +54,16 @@ export default function Household() {
 
   const addHouseholdMember = async (values: any) => {
     try {
-      await apiRequest("POST", "/api/household-members", values);
+      const response = await apiRequest("POST", "/api/household-members", values);
+      console.log("Member added:", response);
+
+      // Force a refetch of the household members
       await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      await refetch(); // Explicitly refetch after adding
+
       setAddMemberOpen(false);
       form.reset();
+
       toast({
         title: "Success",
         description: "Household member added successfully",
@@ -72,11 +82,14 @@ export default function Household() {
     try {
       await apiRequest("DELETE", `/api/household-members/${id}`);
       await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      await refetch(); // Explicitly refetch after deleting
+
       toast({
         title: "Success",
         description: "Member removed successfully",
       });
     } catch (error) {
+      console.error("Failed to delete member:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -161,7 +174,7 @@ export default function Household() {
           <CardContent>
             <div className="space-y-4">
               {isLoading ? (
-                <p>Loading...</p>
+                <p>Loading household members...</p>
               ) : householdMembers?.length > 0 ? (
                 <div className="space-y-4">
                   {householdMembers.map((member) => (
