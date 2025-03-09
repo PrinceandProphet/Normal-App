@@ -516,7 +516,11 @@ export default function Household() {
                                                     <Input
                                                       {...field}
                                                       type="date"
-                                                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                                                      onChange={(e) => {
+                                                        const date = new Date(e.target.value);
+                                                        field.onChange(date);
+                                                      }}
                                                     />
                                                   </FormControl>
                                                   <FormMessage />
