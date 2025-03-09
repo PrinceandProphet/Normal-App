@@ -926,7 +926,7 @@ export default function Household() {
                                             {member.type} • {member.relationship || 'Unknown relationship'}
                                           </p>
                                           {member.qualifyingTags?.length > 0 && (
-                                            <div classNamediv className="flex gap-1 mt-1 flex-wrap">
+                                            <div className="flex gap-1 mt-1 flex-wrap">
                                               {member.qualifyingTags.map((tag, index) => (
                                                 <span
                                                   key={index}
