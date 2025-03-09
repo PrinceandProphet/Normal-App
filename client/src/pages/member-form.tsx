@@ -3,32 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { insertHouseholdMemberSchema, type HouseholdMember } from "@shared/schema";
+import { insertHouseholdMemberSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormLabel,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormLabel, FormItem, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import type { HouseholdMember } from "@shared/schema";
 
 type MemberFormProps = {
   groupId: number;
@@ -44,55 +26,27 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
     resolver: zodResolver(insertHouseholdMemberSchema),
     defaultValues: {
       name: "",
-      type: "adult",
-      relationship: "head",
+      type: "adult" as const,
+      relationship: "head" as const,
       dateOfBirth: "",
-      ssn: "",
-      employer: "",
-      occupation: "",
-      employmentStatus: "full_time" as const,
-      annualIncome: 0,
-      maritalStatus: "single" as const,
-      educationLevel: "high_school" as const,
-      primaryLanguage: "",
-      isVeteran: false,
-      hasDisabilities: false,
-      disabilityNotes: "",
-      specialNeeds: "",
-      isStudentFullTime: false,
-      isSenior: false,
-      isPregnant: false,
-      qualifyingTags: [] as string[],
-      groupId,
+      groupId: groupId,
     },
   });
 
-  const addOrUpdateMember = async (values: any) => {
+  const onSubmit = async (values: any) => {
     try {
       const formattedValues = {
         ...values,
-        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString() : undefined,
         groupId,
-        // Ensure numeric values are properly converted
-        annualIncome: values.annualIncome ? Number(values.annualIncome) : undefined,
+        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString() : undefined,
       };
 
-      let response;
       if (editingMemberId) {
-        response = await apiRequest(
-          "PATCH",
-          `/api/household-members/${editingMemberId}`,
-          formattedValues
-        );
+        await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, formattedValues);
       } else {
-        response = await apiRequest(
-          "POST",
-          "/api/household-members",
-          formattedValues
-        );
+        await apiRequest("POST", "/api/household-members", formattedValues);
       }
 
-      // Invalidate the query for this specific group
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members", groupId],
         exact: true,
@@ -128,75 +82,95 @@ export function MemberForm({ groupId, onSuccess }: MemberFormProps) {
           Add Member
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {editingMemberId ? "Edit Member" : "Add New Member"}
           </DialogTitle>
         </DialogHeader>
         <Form {...memberForm}>
-          <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold">Basic Information</h3>
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                <FormField
-                  control={memberForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter full name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={memberForm.control}
-                  name="relationship"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Relationship</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select relationship" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="head">Head of Household</SelectItem>
-                          <SelectItem value="spouse">Spouse</SelectItem>
-                          <SelectItem value="child">Child</SelectItem>
-                          <SelectItem value="parent">Parent</SelectItem>
-                          <SelectItem value="grandparent">Grandparent</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={memberForm.control}
-                  name="dateOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Birth</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+          <form onSubmit={memberForm.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={memberForm.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter full name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={memberForm.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Member Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="adult">Adult</SelectItem>
+                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="senior">Senior</SelectItem>
+                      <SelectItem value="dependent">Dependent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={memberForm.control}
+              name="relationship"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Relationship</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="head">Head of Household</SelectItem>
+                      <SelectItem value="spouse">Spouse</SelectItem>
+                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
+                      <SelectItem value="grandparent">Grandparent</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={memberForm.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <Button type="submit">
               {editingMemberId ? "Update Member" : "Add Member"}
@@ -215,6 +189,11 @@ type MemberListProps = {
 
 export function MemberList({ groupId, members }: MemberListProps) {
   const { toast } = useToast();
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const memberForm = useForm({
+    resolver: zodResolver(insertHouseholdMemberSchema),
+  });
 
   const deleteMember = async (id: number) => {
     try {
@@ -235,6 +214,17 @@ export function MemberList({ groupId, members }: MemberListProps) {
         description: "Failed to remove member",
       });
     }
+  };
+
+  const handleEditMember = (member: HouseholdMember) => {
+    memberForm.reset({
+      ...member,
+      dateOfBirth: member.dateOfBirth 
+        ? new Date(member.dateOfBirth).toISOString().split('T')[0]
+        : '',
+    });
+    setEditingMemberId(member.id);
+    setAddMemberOpen(true);
   };
 
   return (
@@ -278,17 +268,7 @@ export function MemberList({ groupId, members }: MemberListProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => {
-                    // Reset the form with the current member's data
-                    memberForm.reset({
-                      ...member,
-                      dateOfBirth: member.dateOfBirth 
-                        ? new Date(member.dateOfBirth).toISOString().split('T')[0]
-                        : '',
-                    });
-                    setEditingMemberId(member.id);
-                    setAddMemberOpen(true);
-                  }}
+                  onClick={() => handleEditMember(member)}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>

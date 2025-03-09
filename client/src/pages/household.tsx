@@ -41,43 +41,35 @@ export default function HouseholdPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
-  // Fetch properties and related data
+  // Fetch properties
   const { data: properties = [] } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
   });
 
+  // Fetch household groups for selected property
   const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
     queryKey: ["/api/household-groups", selectedPropertyId],
     queryFn: async () => {
       if (!selectedPropertyId) return [];
-      try {
-        const response = await apiRequest<HouseholdGroup[]>(
-          "GET",
-          `/api/household-groups?propertyId=${selectedPropertyId}`
-        );
-        return Array.isArray(response) ? response : [];
-      } catch (error) {
-        console.error("Error fetching household groups:", error);
-        return [];
-      }
+      const response = await apiRequest<HouseholdGroup[]>(
+        "GET",
+        `/api/household-groups?propertyId=${selectedPropertyId}`
+      );
+      return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedPropertyId,
   });
 
+  // Fetch household members for selected group
   const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
       if (!selectedGroupId) return [];
-      try {
-        const response = await apiRequest<HouseholdMember[]>(
-          "GET",
-          `/api/household-members?groupId=${selectedGroupId}`
-        );
-        return Array.isArray(response) ? response : [];
-      } catch (error) {
-        console.error("Error fetching household members:", error);
-        return [];
-      }
+      const response = await apiRequest<HouseholdMember[]>(
+        "GET",
+        `/api/household-members?groupId=${selectedGroupId}`
+      );
+      return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedGroupId,
   });
@@ -130,7 +122,7 @@ export default function HouseholdPage() {
         ...values,
         propertyId: selectedPropertyId,
       });
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["/api/household-groups", selectedPropertyId],
         exact: true,
       });
