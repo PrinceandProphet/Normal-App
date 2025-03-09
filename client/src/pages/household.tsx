@@ -33,6 +33,41 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPropertySchema, insertHouseholdGroupSchema, insertHouseholdMemberSchema } from "@shared/schema";
 
+const deleteProperty = async (propertyId: number) => {
+    try {
+      // Delete all groups and members associated with this property
+      const propertyGroups = householdGroups.filter(group => group.propertyId === propertyId);
+      for (const group of propertyGroups) {
+        await apiRequest("DELETE", `/api/household-groups/${group.id}`);
+      }
+
+      // Delete the property itself
+      await apiRequest("DELETE", `/api/properties/${propertyId}`);
+
+      // Invalidate queries to refresh the UI
+      await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+
+      // Reset selections if the deleted property was selected
+      if (selectedPropertyId === propertyId) {
+        handlePropertyDeselect();
+      }
+
+      toast({
+        title: "Success",
+        description: "Property and associated data deleted successfully",
+      });
+    } catch (error) {
+      console.error("Failed to delete property:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete property",
+      });
+    }
+  };
+
 export default function Household() {
   const { toast } = useToast();
   const [addPropertyOpen, setAddPropertyOpen] = useState(false);
@@ -329,6 +364,13 @@ export default function Household() {
                     Select
                   </Button>
                 )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteProperty(property.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardHeader>
 
