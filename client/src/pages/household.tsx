@@ -65,6 +65,8 @@ export default function Household() {
       return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedGroupId,
+    staleTime: 0, // Ensure we always get fresh data
+    cacheTime: 0, // Don't cache the results
   });
 
   // Form setup for property
@@ -161,7 +163,6 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
-      // Convert the date to ISO string format for API submission
       const formattedValues = {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
@@ -175,9 +176,10 @@ export default function Household() {
         response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
 
-      // Invalidate the specific group query only
-      await queryClient.invalidateQueries({
-        queryKey: ["/api/household-members", selectedGroupId]
+      // Force a refetch immediately
+      await queryClient.refetchQueries({
+        queryKey: ["/api/household-members", selectedGroupId],
+        exact: true
       });
 
       setAddMemberOpen(false);
