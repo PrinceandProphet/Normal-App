@@ -91,12 +91,40 @@ export const householdMembers = pgTable("household_members", {
   name: text("name").notNull(),
   type: text("type").notNull(), 
   groupId: integer("group_id").references(() => householdGroups.id),
+
+  // Sensitive Information - Consider encryption at rest
+  ssn: text("ssn"),
   dateOfBirth: timestamp("date_of_birth"),
-  relationship: text("relationship"), 
+
+  // Employment Information
+  employer: text("employer"),
   occupation: text("occupation"),
-  income: text("income_range"), 
+  employmentStatus: text("employment_status"),
+  annualIncome: numeric("annual_income"),
+
+  // Demographic & Relationship Info
+  relationship: text("relationship"),
+  maritalStatus: text("marital_status"),
+  educationLevel: text("education_level"),
+  primaryLanguage: text("primary_language"),
+
+  // Grant Qualification Attributes
+  isVeteran: boolean("is_veteran").default(false),
+  hasDisabilities: boolean("has_disabilities").default(false),
+  disabilityNotes: text("disability_notes"),
   specialNeeds: text("special_needs"),
+
+  // Additional Qualifiers
+  isStudentFullTime: boolean("is_student_full_time").default(false),
+  isSenior: boolean("is_senior").default(false),
+  isPregnant: boolean("is_pregnant").default(false),
+
+  // Tags for Grant Matching
+  qualifyingTags: text("qualifying_tags").array(),
+
+  // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertCapitalSourceSchema = z.object({
@@ -139,18 +167,56 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       'grandparent',
       'other'
     ]).optional(),
-    dateOfBirth: z.date().optional(),
-    occupation: z.string().optional(),
-    income: z.enum([
-      'under_15000',
-      '15000_30000',
-      '30000_50000',
-      '50000_75000',
-      'over_75000'
+
+    // Employment Status Options
+    employmentStatus: z.enum([
+      'full_time',
+      'part_time',
+      'self_employed',
+      'unemployed',
+      'retired',
+      'student'
     ]).optional(),
-    specialNeeds: z.string().optional(),
+
+    // Education Level Options
+    educationLevel: z.enum([
+      'less_than_high_school',
+      'high_school',
+      'some_college',
+      'associates',
+      'bachelors',
+      'masters',
+      'doctorate'
+    ]).optional(),
+
+    // Marital Status Options
+    maritalStatus: z.enum([
+      'single',
+      'married',
+      'divorced',
+      'widowed',
+      'separated'
+    ]).optional(),
+
+    // Sensitive Data Validation
+    ssn: z.string()
+      .regex(/^\d{3}-?\d{2}-?\d{4}$/, "Invalid SSN format")
+      .optional(),
+
+    annualIncome: z.number().min(0).optional(),
+    dateOfBirth: z.date().optional(),
+
+    // Arrays and Other Fields
+    qualifyingTags: z.array(z.string()).optional(),
+
+    // Boolean Fields
+    isVeteran: z.boolean().optional(),
+    hasDisabilities: z.boolean().optional(),
+    isStudentFullTime: z.boolean().optional(),
+    isSenior: z.boolean().optional(),
+    isPregnant: z.boolean().optional(),
   })
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, createdAt: true, updatedAt: true });
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
