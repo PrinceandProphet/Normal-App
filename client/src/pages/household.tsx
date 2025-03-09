@@ -165,26 +165,17 @@ export default function Household() {
       const formattedValues = {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
+        groupId: selectedGroupId,
       };
 
       let response;
       if (editingMemberId) {
-        response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, {
-          ...formattedValues,
-          groupId: selectedGroupId,
-        });
+        response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, formattedValues);
       } else {
-        response = await apiRequest("POST", "/api/household-members", {
-          ...formattedValues,
-          groupId: selectedGroupId,
-        });
+        response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
 
-      // Invalidate both the general members query and the specific group query
-      await queryClient.invalidateQueries({
-        queryKey: ["/api/household-members"]
-      });
-
+      // Invalidate the specific group query only
       await queryClient.invalidateQueries({
         queryKey: ["/api/household-members", selectedGroupId]
       });
@@ -939,7 +930,7 @@ export default function Household() {
                                               {member.qualifyingTags.map((tag, index) => (
                                                 <span
                                                   key={index}
-                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                                  className="text-xs bgprimary/10 text-primary px-2 py-0.5 rounded-full"
                                                 >
                                                   {tag}
                                                 </span>
