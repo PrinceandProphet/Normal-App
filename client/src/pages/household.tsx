@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Building2, Home, Users, Trash2, Pencil } from "lucide-react";
+import { Plus, Home, Users } from "lucide-react";
 import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
 import {
   Dialog,
@@ -31,9 +31,8 @@ import {
 } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertPropertySchema, insertHouseholdGroupSchema, insertHouseholdMemberSchema } from "@shared/schema";
+import { insertPropertySchema, insertHouseholdGroupSchema } from "@shared/schema";
 import { MemberForm, MemberList } from "./member-form";
-
 
 export default function HouseholdPage() {
   const { toast } = useToast();
@@ -41,8 +40,6 @@ export default function HouseholdPage() {
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
 
   // Fetch properties and related data
   const { data: properties = [] } = useQuery<Property[]>({
@@ -51,35 +48,29 @@ export default function HouseholdPage() {
 
   const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
     queryKey: ["/api/household-groups", selectedPropertyId],
+    queryFn: async () => {
+      if (!selectedPropertyId) return [];
+      const response = await apiRequest<HouseholdGroup[]>(
+        "GET",
+        `/api/household-groups?propertyId=${selectedPropertyId}`
+      );
+      return response;
+    },
     enabled: !!selectedPropertyId,
   });
 
-  const { data: householdMembers = [] } = useQuery({
+  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
-      console.log("[DEBUG] Fetching members, selectedGroupId:", selectedGroupId);
       if (!selectedGroupId) return [];
-      try {
-        const response = await apiRequest<HouseholdMember[]>(
-          "GET",
-          `/api/household-members?groupId=${selectedGroupId}`
-        );
-        console.log("[DEBUG] API Response for members:", response);
-        return Array.isArray(response) ? response : [];
-      } catch (error) {
-        console.error("[DEBUG] Error fetching members:", error);
-        return [];
-      }
+      const response = await apiRequest<HouseholdMember[]>(
+        "GET",
+        `/api/household-members?groupId=${selectedGroupId}`
+      );
+      return response;
     },
     enabled: !!selectedGroupId,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
   });
-
-  // Monitor changes to householdMembers
-  useEffect(() => {
-    console.log("[DEBUG] householdMembers updated:", householdMembers);
-  }, [householdMembers]);
 
   // Form setup for property
   const propertyForm = useForm({
@@ -102,11 +93,10 @@ export default function HouseholdPage() {
     },
   });
 
-
   // Form submission handlers
   const addProperty = async (values: any) => {
     try {
-      const response = await apiRequest("POST", "/api/properties", values);
+      await apiRequest("POST", "/api/properties", values);
       await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       setAddPropertyOpen(false);
       propertyForm.reset();
@@ -126,11 +116,11 @@ export default function HouseholdPage() {
 
   const addGroup = async (values: any) => {
     try {
-      const response = await apiRequest("POST", "/api/household-groups", {
+      await apiRequest("POST", "/api/household-groups", {
         ...values,
         propertyId: selectedPropertyId,
       });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedPropertyId] });
       setAddGroupOpen(false);
       groupForm.reset();
       toast({
@@ -145,26 +135,6 @@ export default function HouseholdPage() {
         description: "Failed to add household group",
       });
     }
-  };
-
-
-  useEffect(() => {
-    const memberTags = Array.isArray(householdMembers)
-      ? householdMembers.reduce((tags: string[], member) => {
-          if (Array.isArray(member.qualifyingTags)) {
-            return [...tags, ...member.qualifyingTags];
-          }
-          return tags;
-        }, [])
-      : [];
-
-    setAvailableTags([...new Set(memberTags)]);
-  }, [householdMembers]);
-
-  // Function to handle fuzzy search
-  const searchTags = (query: string) => {
-    const normalizedQuery = query.toLowerCase();
-    return availableTags.filter((tag) => tag.toLowerCase().includes(normalizedQuery));
   };
 
   return (
@@ -208,7 +178,7 @@ export default function HouseholdPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Property Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select property type" />
@@ -289,7 +259,7 @@ export default function HouseholdPage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Group Type</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                       <SelectTrigger>
                                         <SelectValue placeholder="Select group type" />
@@ -298,7 +268,7 @@ export default function HouseholdPage() {
                                     <SelectContent>
                                       <SelectItem value="nuclear">Nuclear Family</SelectItem>
                                       <SelectItem value="extended">Extended Family</SelectItem>
-                                      <SelectItem value="other">Other</SelectItem>
+                                      <SelectItem value="multi_generational">Multi-Generational</SelectItem>
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
