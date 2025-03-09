@@ -680,6 +680,37 @@ export default function Household() {
                                               </FormItem>
                                             )}
                                           />
+                                          {/* Add Student Status Fields */}
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="isStudentFullTime"
+                                            render={({ field }) => (
+                                              <FormItem className="flex items-center gap-2">
+                                                <FormControl>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="!mt-0">Full-time Student</FormLabel>
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="institution"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Educational Institution</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="Name of school/university" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
                                         </div>
                                       </div>
 
@@ -732,6 +763,57 @@ export default function Household() {
                                                 <FormControl>
                                                   <Input {...field} placeholder="Additional disability information" />
                                                 </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+
+                                          {/* Add Eligibility Tags Field */}
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="qualifyingTags"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Additional Eligibility Criteria</FormLabel>
+                                                <FormControl>
+                                                  <Input 
+                                                    placeholder="Type criteria and press Enter to add"
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                                                        e.preventDefault();
+                                                        const newTag = e.currentTarget.value.trim();
+                                                        const currentTags = field.value || [];
+                                                        if (!currentTags.includes(newTag)) {
+                                                          field.onChange([...currentTags, newTag]);
+                                                        }
+                                                        e.currentTarget.value = '';
+                                                      }
+                                                    }}
+                                                  />
+                                                </FormControl>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                  {(field.value || []).map((tag, index) => (
+                                                    <div
+                                                      key={index}
+                                                      className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm"
+                                                    >
+                                                      {tag}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          const newTags = field.value?.filter((_, i) => i !== index) || [];
+                                                          field.onChange(newTags);
+                                                        }}
+                                                        className="hover:text-destructive"
+                                                      >
+                                                        ×
+                                                      </button>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                                <p className="text-sm text-muted-foreground mt-2">
+                                                  Add custom eligibility criteria (e.g., "First-time homebuyer", "Low-income", "Foster parent")
+                                                </p>
                                                 <FormMessage />
                                               </FormItem>
                                             )}
