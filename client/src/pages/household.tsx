@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPropertySchema, insertHouseholdGroupSchema } from "@shared/schema";
-import { MemberList } from "./member-form";
+import { MemberForm, MemberList } from "./member-form";
 
 export default function HouseholdPage() {
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export default function HouseholdPage() {
     queryKey: ["/api/household-groups", selectedPropertyId],
     queryFn: async () => {
       if (!selectedPropertyId) return [];
-      const response = await apiRequest<HouseholdGroup[]>(
+      const response = await apiRequest(
         "GET",
         `/api/household-groups?propertyId=${selectedPropertyId}`
       );
@@ -46,7 +46,7 @@ export default function HouseholdPage() {
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
       if (!selectedGroupId) return [];
-      const response = await apiRequest<HouseholdMember[]>(
+      const response = await apiRequest(
         "GET",
         `/api/household-members?groupId=${selectedGroupId}`
       );
@@ -203,7 +203,10 @@ export default function HouseholdPage() {
                   {property.type.replace("_", " ")} • {property.ownershipStatus}
                 </p>
               </div>
-              <Button variant="ghost" onClick={() => setSelectedPropertyId(property.id)}>
+              <Button 
+                variant={selectedPropertyId === property.id ? "default" : "ghost"}
+                onClick={() => setSelectedPropertyId(property.id)}
+              >
                 {selectedPropertyId === property.id ? "Selected" : "Select"}
               </Button>
             </CardHeader>
@@ -269,8 +272,8 @@ export default function HouseholdPage() {
                   </div>
 
                   <div className="grid gap-4">
-                    {Array.isArray(householdGroups) && householdGroups.map((group) => (
-                      <Card key={group.id} className="bg-muted">
+                    {householdGroups.map((group) => (
+                      <Card key={group.id} className={selectedGroupId === group.id ? "border-primary" : "bg-muted"}>
                         <CardHeader>
                           <div className="flex justify-between items-center">
                             <CardTitle className="text-lg">
@@ -278,17 +281,17 @@ export default function HouseholdPage() {
                               {group.name}
                             </CardTitle>
                             <Button
-                              variant="ghost"
+                              variant={selectedGroupId === group.id ? "default" : "ghost"}
                               size="sm"
                               onClick={() => setSelectedGroupId(group.id)}
                             >
-                              Manage Members
+                              {selectedGroupId === group.id ? "Managing Members" : "Manage Members"}
                             </Button>
                           </div>
                         </CardHeader>
                         {selectedGroupId === group.id && (
                           <CardContent>
-                            <MemberList groupId={selectedGroupId} members={householdMembers} />
+                            <MemberList groupId={group.id} members={householdMembers} />
                           </CardContent>
                         )}
                       </Card>

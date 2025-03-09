@@ -18,7 +18,6 @@ type MemberFormProps = {
   onEdit?: (member: HouseholdMember) => void;
   editingMember?: HouseholdMember | null;
   onClose?: () => void;
-
 };
 
 export function MemberForm({ groupId, onSuccess, onEdit, editingMember, onClose }: MemberFormProps) {
@@ -186,13 +185,9 @@ export function MemberForm({ groupId, onSuccess, onEdit, editingMember, onClose 
   );
 }
 
-type MemberListProps = {
-  groupId: number;
-  members: HouseholdMember[];
-};
-
-export function MemberList({ groupId, members }: MemberListProps) {
+export function MemberList({ groupId, members }: { groupId: number; members: HouseholdMember[] }) {
   const { toast } = useToast();
+  const [editingMember, setEditingMember] = useState<HouseholdMember | null>(null);
 
   const deleteMember = async (id: number) => {
     try {
@@ -234,11 +229,6 @@ export function MemberList({ groupId, members }: MemberListProps) {
                 <p className="text-sm text-muted-foreground capitalize">
                   {member.type} • {member.relationship || "Unknown relationship"}
                 </p>
-                {member.employer && (
-                  <p className="text-sm text-muted-foreground">
-                    Works at {member.employer}
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
