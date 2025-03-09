@@ -42,27 +42,12 @@ export default function Household() {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
 
-  // Fetch properties and related data
   const { data: properties = [] } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
   });
 
   const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
-    queryKey: ["/api/household-groups", selectedPropertyId],
-    queryFn: async () => {
-      if (!selectedPropertyId) return [];
-      try {
-        const response = await apiRequest<HouseholdGroup[]>(
-          "GET",
-          `/api/household-groups?propertyId=${selectedPropertyId}`
-        );
-        return Array.isArray(response) ? response : [];
-      } catch (error) {
-        console.error("Failed to fetch household groups:", error);
-        return [];
-      }
-    },
-    enabled: !!selectedPropertyId,
+    queryKey: ["/api/household-groups"],
   });
 
   const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
@@ -122,7 +107,8 @@ export default function Household() {
 
   const addGroup = async (values: any) => {
     try {
-      await apiRequest("POST", "/api/household-groups", {
+      // Ensure the propertyId is set when creating a group
+      const response = await apiRequest("POST", "/api/household-groups", {
         ...values,
         propertyId: selectedPropertyId,
       });
@@ -217,6 +203,11 @@ export default function Household() {
   // Helper function to get members for a specific group
   const getMembersForGroup = (groupId: number) => {
     return householdMembers.filter(member => member.groupId === groupId);
+  };
+
+  // Helper function to get groups for a specific property
+  const getGroupsForProperty = (propertyId: number) => {
+    return householdGroups.filter(group => group.propertyId === propertyId);
   };
 
   return (
@@ -368,7 +359,7 @@ export default function Household() {
                   </div>
 
                   <div className="grid gap-4">
-                    {householdGroups.map((group) => (
+                    {getGroupsForProperty(property.id).map((group) => (
                       <div key={group.id} className="bg-muted rounded-lg p-4">
                         <div className="flex justify-between items-center mb-4">
                           <div>
@@ -459,47 +450,45 @@ export default function Household() {
                               </Dialog>
                             </div>
 
-                            {/* Display members for the current group */}
-                            <div className="space-y-2">
-                              {getMembersForGroup(group.id).map((member) => (
-                                <div
-                                  key={member.id}
-                                  className="flex justify-between items-center p-3 bg-background rounded-lg border"
-                                >
-                                  <div>
-                                    <p className="font-medium">{member.name}</p>
-                                    <p className="text-sm text-muted-foreground capitalize">
-                                      {member.type}
-                                    </p>
+                            {/* Display members for the selected group */}
+                            {getMembersForGroup(group.id).length > 0 ? (
+                              <div className="space-y-4">
+                                {getMembersForGroup(group.id).map((member) => (
+                                  <div key={member.id} className="flex justify-between items-start p-4 bg-background rounded-lg border">
+                                    <div>
+                                      <p className="font-medium">{member.name}</p>
+                                      <p className="text-sm text-muted-foreground capitalize">
+                                        {member.type}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingMemberId(member.id);
+                                          memberForm.reset(member);
+                                          setAddMemberOpen(true);
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => deleteMember(member.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setEditingMemberId(member.id);
-                                        memberForm.reset(member);
-                                        setAddMemberOpen(true);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => deleteMember(member.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                              {getMembersForGroup(group.id).length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-4">
-                                  No members in this group yet
-                                </p>
-                              )}
-                            </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                No members in this group yet
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
