@@ -57,16 +57,16 @@ export default function Household() {
   const { data: householdMembers = [] } = useQuery({
     queryKey: ["/api/household-members", selectedGroupId],
     queryFn: async () => {
+      console.log("Fetching members for group:", selectedGroupId);
       if (!selectedGroupId) return [];
       const response = await apiRequest<HouseholdMember[]>(
         "GET",
         `/api/household-members?groupId=${selectedGroupId}`
       );
+      console.log("Received members:", response);
       return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedGroupId,
-    staleTime: 0, // Ensure we always get fresh data
-    cacheTime: 0, // Don't cache the results
   });
 
   // Form setup for property
@@ -163,6 +163,7 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
+      console.log("Adding/Updating member with values:", values);
       const formattedValues = {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString().split('T')[0] : undefined,
@@ -175,11 +176,14 @@ export default function Household() {
       } else {
         response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
+      console.log("Member save response:", response);
 
-      // Force a refetch immediately
+      // Force an immediate refetch
+      queryClient.removeQueries({ queryKey: ["/api/household-members", selectedGroupId] });
       await queryClient.refetchQueries({
         queryKey: ["/api/household-members", selectedGroupId],
-        exact: true
+        exact: true,
+        type: 'active',
       });
 
       setAddMemberOpen(false);
