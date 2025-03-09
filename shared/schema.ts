@@ -101,6 +101,7 @@ export const householdMembers = pgTable("household_members", {
   occupation: text("occupation"),
   employmentStatus: text("employment_status"),
   annualIncome: numeric("annual_income"),
+  institution: text("institution"),
 
   // Demographic & Relationship Info
   relationship: text("relationship"),
@@ -125,7 +126,6 @@ export const householdMembers = pgTable("household_members", {
   // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  institution: text("institution")
 });
 
 export const insertCapitalSourceSchema = z.object({
@@ -207,6 +207,7 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       .optional(),
 
     annualIncome: z.number().min(0).optional(),
+    institution: z.string().optional(),
 
     // Arrays and Other Fields
     qualifyingTags: z.array(z.string()).optional(),
@@ -217,7 +218,6 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
     isStudentFullTime: z.boolean().optional(),
     isSenior: z.boolean().optional(),
     isPregnant: z.boolean().optional(),
-    institution: z.string().optional()
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
