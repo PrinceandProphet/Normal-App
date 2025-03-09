@@ -62,7 +62,7 @@ export default function Household() {
         "GET",
         `/api/household-members?groupId=${selectedGroupId}`
       );
-      return response;
+      return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedGroupId,
   });
@@ -217,6 +217,19 @@ export default function Household() {
     }
   };
 
+  useEffect(() => {
+    const memberTags = Array.isArray(householdMembers) 
+      ? householdMembers.reduce((tags: string[], member) => {
+          if (Array.isArray(member.qualifyingTags)) {
+            return [...tags, ...member.qualifyingTags];
+          }
+          return tags;
+        }, [])
+      : [];
+
+    setAvailableTags([...new Set(memberTags)]);
+  }, [householdMembers]);
+
   // Function to handle fuzzy search
   const searchTags = (query: string) => {
     const normalizedQuery = query.toLowerCase();
@@ -224,16 +237,6 @@ export default function Household() {
       tag.toLowerCase().includes(normalizedQuery)
     );
   };
-
-  useEffect(() => {
-    if (householdMembers) {
-      const tags = new Set<string>();
-      householdMembers.forEach(member => {
-        member.qualifyingTags?.forEach(tag => tags.add(tag));
-      });
-      setAvailableTags(Array.from(tags));
-    }
-  }, [householdMembers]);
 
   return (
     <div className="space-y-6">
