@@ -153,15 +153,21 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
+      // Ensure dateOfBirth is a proper Date object
+      const formattedValues = {
+        ...values,
+        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth) : undefined,
+      };
+
       let response;
       if (editingMemberId) {
         response = await apiRequest("PATCH", `/api/household-members/${editingMemberId}`, {
-          ...values,
+          ...formattedValues,
           groupId: selectedGroupId,
         });
       } else {
         response = await apiRequest("POST", "/api/household-members", {
-          ...values,
+          ...formattedValues,
           groupId: selectedGroupId,
         });
       }
@@ -514,12 +520,15 @@ export default function Household() {
                                                   <FormLabel>Date of Birth</FormLabel>
                                                   <FormControl>
                                                     <Input
-                                                      {...field}
                                                       type="date"
-                                                      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                                                      {...field}
+                                                      value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                                                       onChange={(e) => {
-                                                        const date = new Date(e.target.value);
-                                                        field.onChange(date);
+                                                        if (e.target.value) {
+                                                          field.onChange(new Date(e.target.value));
+                                                        } else {
+                                                          field.onChange(undefined);
+                                                        }
                                                       }}
                                                     />
                                                   </FormControl>
