@@ -498,6 +498,60 @@ export default function Household() {
                                         </div>
                                       </div>
 
+                                      {/* Sensitive Information Section */}
+                                      <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="font-semibold">Sensitive Information</h3>
+                                          <p className="text-sm text-muted-foreground">
+                                            (This information is encrypted and stored securely)
+                                          </p>
+                                        </div>
+                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="ssn"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Social Security Number</FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    {...field}
+                                                    type="password"
+                                                    placeholder="XXX-XX-XXXX"
+                                                    autoComplete="off"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={memberForm.control}
+                                            name="dateOfBirth"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Date of Birth</FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    type="date"
+                                                    {...field}
+                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => {
+                                                      if (e.target.value) {
+                                                        field.onChange(e.target.value);
+                                                      } else {
+                                                        field.onChange(undefined);
+                                                      }
+                                                    }}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+
                                       {/* Demographics Section */}
                                       <div className="space-y-4">
                                         <h3 className="font-semibold">Demographics</h3>
@@ -560,60 +614,6 @@ export default function Household() {
                                                 <FormLabel>Primary Language</FormLabel>
                                                 <FormControl>
                                                   <Input {...field} placeholder="Primary language spoken" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                        </div>
-                                      </div>
-
-                                      {/* Sensitive Information Section */}
-                                      <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                          <h3 className="font-semibold">Sensitive Information</h3>
-                                          <p className="text-sm text-muted-foreground">
-                                            (This information is encrypted and stored securely)
-                                          </p>
-                                        </div>
-                                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="ssn"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Social Security Number</FormLabel>
-                                                <FormControl>
-                                                  <Input
-                                                    {...field}
-                                                    type="password"
-                                                    placeholder="XXX-XX-XXXX"
-                                                    autoComplete="off"
-                                                  />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={memberForm.control}
-                                            name="dateOfBirth"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel>Date of Birth</FormLabel>
-                                                <FormControl>
-                                                  <Input
-                                                    type="date"
-                                                    {...field}
-                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                                                    onChange={(e) => {
-                                                      if (e.target.value) {
-                                                        field.onChange(e.target.value);
-                                                      } else {
-                                                        field.onChange(undefined);
-                                                      }
-                                                    }}
-                                                  />
                                                 </FormControl>
                                                 <FormMessage />
                                               </FormItem>
@@ -928,8 +928,7 @@ export default function Household() {
                                   <div>
                                     <p className="font-medium">{member.name}</p>
                                     <p className="text-sm text-muted-foreground">
-                                      {formatMemberType(member.type)} • {formatRelationship(member.relationship)}
-                                    </p>
+                                      {formatMemberType(member.type)} • {formatRelationship(member.relationship)}                                    </p>
                                     {member.qualifyingTags?.length > 0 && (
                                       <div className="flex gap-1 mt-1 flex-wrap">
                                         {member.qualifyingTags.map((tag, index) => (
