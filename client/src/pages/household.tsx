@@ -54,10 +54,16 @@ export default function Household() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: householdMembers = [], isLoading } = useQuery<HouseholdMember[]>({
+  const { data: householdMembers = [] } = useQuery({
     queryKey: ["/api/household-members", selectedGroupId],
-    queryFn: () =>
-      apiRequest("GET", `/api/household-members${selectedGroupId ? `?groupId=${selectedGroupId}` : ''}`),
+    queryFn: async () => {
+      if (!selectedGroupId) return [];
+      const response = await apiRequest<HouseholdMember[]>(
+        "GET",
+        `/api/household-members?groupId=${selectedGroupId}`
+      );
+      return response;
+    },
     enabled: !!selectedGroupId,
   });
 
@@ -197,7 +203,6 @@ export default function Household() {
     try {
       await apiRequest("DELETE", `/api/household-members/${id}`);
       await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
-      await refetch();
       toast({
         title: "Success",
         description: "Member removed successfully",
@@ -911,9 +916,7 @@ export default function Household() {
                               </div>
 
                               <div className="space-y-4">
-                                {isLoading ? (
-                                  <p>Loading household members...</p>
-                                ) : householdMembers?.length > 0 ? (
+                                {householdMembers.length > 0 ? (
                                   <div className="space-y-4">
                                     {householdMembers.map((member) => (
                                       <div
@@ -929,8 +932,7 @@ export default function Household() {
                                             <div className="flex gap-1 mt-1 flex-wrap">
                                               {member.qualifyingTags.map((tag, index) => (
                                                 <span
-                                                  key={index}
-                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                                                  key={index}                                                  className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
                                                 >
                                                   {tag}
                                                 </span>
