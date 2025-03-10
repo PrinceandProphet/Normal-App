@@ -87,9 +87,6 @@ export default function SurvivorsManagement() {
   // Fetch survivors managed by this case manager
   const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
     queryKey: ["/api/survivors"],
-    onSuccess: (data) => {
-      console.log("Survivors data:", data);
-    },
   });
 
   // Fetch funding opportunities
@@ -99,73 +96,41 @@ export default function SurvivorsManagement() {
 
   const onSubmit = async (data: any) => {
     try {
-      // Create the user
-      const userResponse = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          role: "survivor",
-        }),
+      // Step 1: Create the user
+      const userResult = await apiRequest("POST", "/api/users", {
+        name: data.name,
+        email: data.email,
+        role: "survivor",
       });
 
-      if (!userResponse.ok) {
-        throw new Error("Failed to create user");
-      }
-
-      const newUser = await userResponse.json();
-
-      // Create case management entry
-      const caseResponse = await fetch('/api/case-management', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          survivorId: newUser.id,
-          organizationId: organizations[0]?.id,
-          status: "active",
-          startDate: new Date().toISOString(),
-        }),
+      // Step 2: Create case management entry
+      await apiRequest("POST", "/api/case-management", {
+        survivorId: userResult.id,
+        organizationId: organizations[0]?.id,
+        status: "active",
+        startDate: new Date().toISOString(),
       });
 
-      if (!caseResponse.ok) {
-        throw new Error("Failed to create case management entry");
-      }
-
-      // Create household member entry
-      const memberResponse = await fetch('/api/household-members', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: data.name,
-          type: data.type,
-          dateOfBirth: data.dateOfBirth,
-          employer: data.employer,
-          occupation: data.occupation,
-          employmentStatus: data.employmentStatus,
-          annualIncome: data.annualIncome,
-          educationLevel: data.educationLevel,
-          primaryLanguage: data.primaryLanguage,
-          isVeteran: data.isVeteran,
-          hasDisabilities: data.hasDisabilities,
-          disabilityNotes: data.disabilityNotes,
-          isStudentFullTime: data.isStudentFullTime,
-          isSenior: data.isSenior,
-          qualifyingTags: data.qualifyingTags || [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }),
+      // Step 3: Create household member entry
+      await apiRequest("POST", "/api/household-members", {
+        name: data.name,
+        type: data.type,
+        dateOfBirth: data.dateOfBirth,
+        employer: data.employer,
+        occupation: data.occupation,
+        employmentStatus: data.employmentStatus,
+        annualIncome: data.annualIncome,
+        educationLevel: data.educationLevel,
+        primaryLanguage: data.primaryLanguage,
+        isVeteran: data.isVeteran,
+        hasDisabilities: data.hasDisabilities,
+        disabilityNotes: data.disabilityNotes,
+        isStudentFullTime: data.isStudentFullTime,
+        isSenior: data.isSenior,
+        qualifyingTags: data.qualifyingTags || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
-
-      if (!memberResponse.ok) {
-        throw new Error("Failed to create household member");
-      }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
       setAddSurvivorDialogOpen(false);
