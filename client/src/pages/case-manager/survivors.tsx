@@ -37,7 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import type { User, CaseManagement, Organization } from "@shared/schema";
+import type { User, CaseManagement } from "@shared/schema";
 import { insertUserSchema } from "@shared/schema";
 
 // Type for survivor with case management data
@@ -59,31 +59,33 @@ export default function SurvivorsManagement() {
     },
   });
 
-  // Fetch survivors managed by this case manager
+  // Fetch survivors with case management data
   const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
     queryKey: ["/api/survivors"],
-  });
-
-  // Fetch organizations
-  const { data: organizations = [] } = useQuery<Organization[]>({
-    queryKey: ["/api/organizations"],
+    onSuccess: (data) => {
+      console.log("Fetched survivors:", data);
+    },
   });
 
   const onSubmit = async (data: any) => {
     try {
+      console.log("Submitting form data:", data);
+
       // Step 1: Create the user record
-      const userResult = await apiRequest("POST", "/api/users", {
+      const userResponse = await apiRequest("POST", "/api/users", {
         name: data.name,
         email: data.email,
         role: "survivor",
       });
 
+      console.log("Created user:", userResponse);
+
       // Step 2: Create case management entry
       await apiRequest("POST", "/api/case-management", {
-        survivorId: userResult.id,
-        organizationId: organizations[0]?.id,
+        survivorId: userResponse.id,
         status: "active",
         startDate: new Date().toISOString(),
+        notes: `Initial case created for ${data.name}`,
       });
 
       await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
@@ -104,8 +106,9 @@ export default function SurvivorsManagement() {
     }
   };
 
-  // Filter active survivors
+  // Filter active survivors and log the result
   const activeSurvivors = survivors.filter(s => s.role === 'survivor');
+  console.log("Active survivors:", activeSurvivors);
 
   return (
     <div className="space-y-6">
