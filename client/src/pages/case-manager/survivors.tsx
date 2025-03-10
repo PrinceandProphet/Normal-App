@@ -158,6 +158,7 @@ export default function SurvivorsManagement() {
 
       if (!userResponse.ok) {
         const errorText = await userResponse.text();
+        console.error("User creation error response:", errorText);
         throw new Error(`Failed to create user: ${errorText}`);
       }
 
@@ -169,40 +170,63 @@ export default function SurvivorsManagement() {
       }
 
       // Create household member entry with additional details
+      const memberData = {
+        name: data.name,
+        type: data.type || "adult",
+        dateOfBirth: data.dateOfBirth,
+        employer: data.employer,
+        occupation: data.occupation,
+        employmentStatus: data.employmentStatus,
+        annualIncome: data.annualIncome,
+        educationLevel: data.educationLevel,
+        primaryLanguage: data.primaryLanguage,
+        isVeteran: data.isVeteran,
+        hasDisabilities: data.hasDisabilities,
+        disabilityNotes: data.disabilityNotes,
+        isStudentFullTime: data.isStudentFullTime,
+        isSenior: data.isSenior,
+        qualifyingTags: data.qualifyingTags || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log("Sending household member data:", memberData);
+
       const memberResponse = await fetch('/api/household-members', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...data,
-          userId: newUser.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(memberData),
       });
 
       if (!memberResponse.ok) {
         const errorText = await memberResponse.text();
+        console.error("Household member creation error:", errorText);
         throw new Error(`Failed to create household member: ${errorText}`);
       }
 
       // Create case management entry
+      const caseData = {
+        survivorId: newUser.id,
+        organizationId: organizations[0]?.id,
+        status: "active",
+        startDate: new Date().toISOString(),
+      };
+
+      console.log("Sending case management data:", caseData);
+
       const caseResponse = await fetch('/api/case-management', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          survivorId: newUser.id,
-          organizationId: organizations[0]?.id,
-          status: "active",
-          startDate: new Date().toISOString(),
-        }),
+        body: JSON.stringify(caseData),
       });
 
       if (!caseResponse.ok) {
         const errorText = await caseResponse.text();
+        console.error("Case management creation error:", errorText);
         throw new Error(`Failed to create case management: ${errorText}`);
       }
 
