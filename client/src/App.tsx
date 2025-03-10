@@ -14,6 +14,7 @@ import CapitalSources from "@/pages/capital-sources";
 import ActionPlan from "@/pages/action-plan";
 import Household from "@/pages/household";
 import CaseManager from "@/pages/case-manager";
+import SurvivorsManagement from "@/pages/case-manager/survivors";
 
 // Split into two router components for cleaner organization
 function SurvivorRouter() {
@@ -41,7 +42,7 @@ function CaseManagerRouter() {
     <CaseManagerLayout>
       <Switch>
         <Route path="/case-manager" component={CaseManager} />
-        <Route path="/case-manager/survivors" component={() => <div>Survivors Management</div>} />
+        <Route path="/case-manager/survivors" component={SurvivorsManagement} />
         <Route path="/case-manager/funding" component={() => <div>Funding Opportunities</div>} />
         <Route path="/case-manager/settings" component={() => <div>Organization Settings</div>} />
       </Switch>
