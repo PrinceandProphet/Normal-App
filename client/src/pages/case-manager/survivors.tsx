@@ -96,25 +96,17 @@ export default function SurvivorsManagement() {
 
   const onSubmit = async (data: any) => {
     try {
-      // Step 1: Create the user
+      // Step 1: Create the user record
       const userResult = await apiRequest("POST", "/api/users", {
         name: data.name,
         email: data.email,
         role: "survivor",
       });
 
-      // Step 2: Create case management entry
-      await apiRequest("POST", "/api/case-management", {
-        survivorId: userResult.id,
-        organizationId: organizations[0]?.id,
-        status: "active",
-        startDate: new Date().toISOString(),
-      });
-
-      // Step 3: Create household member entry
+      // Step 2: Create household member entry
       await apiRequest("POST", "/api/household-members", {
         name: data.name,
-        type: data.type,
+        type: data.type || "adult",
         dateOfBirth: data.dateOfBirth,
         employer: data.employer,
         occupation: data.occupation,
@@ -128,8 +120,18 @@ export default function SurvivorsManagement() {
         isStudentFullTime: data.isStudentFullTime,
         isSenior: data.isSenior,
         qualifyingTags: data.qualifyingTags || [],
+        userId: userResult.id, // Link to user
+        groupId: null, // Will be set when survivor claims account
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+      });
+
+      // Step 3: Create case management entry
+      await apiRequest("POST", "/api/case-management", {
+        survivorId: userResult.id,
+        organizationId: organizations[0]?.id,
+        status: "active",
+        startDate: new Date().toISOString(),
       });
 
       await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
@@ -138,14 +140,14 @@ export default function SurvivorsManagement() {
 
       toast({
         title: "Success",
-        description: "New survivor added successfully",
+        description: "New survivor profile created successfully",
       });
     } catch (error) {
-      console.error("Error adding survivor:", error);
+      console.error("Error creating survivor profile:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add survivor",
+        description: error instanceof Error ? error.message : "Failed to create survivor profile",
       });
     }
   };
