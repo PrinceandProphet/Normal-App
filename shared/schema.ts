@@ -128,49 +128,6 @@ export const householdMembers = pgTable("household_members", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const organizations = pgTable("organizations", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(), // non-profit, for-profit
-  email: text("email").notNull(),
-  phone: text("phone"),
-  website: text("website"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull(),
-  name: text("name").notNull(),
-  role: text("role").notNull(), // survivor, case_manager
-  organizationId: integer("organization_id").references(() => organizations.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const fundingOpportunities = pgTable("funding_opportunities", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  amount: numeric("amount"),
-  organizationId: integer("organization_id").references(() => organizations.id),
-  createdById: integer("created_by_id").references(() => users.id),
-  requirements: text("requirements").array(),
-  deadline: timestamp("deadline"),
-  status: text("status").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const caseManagement = pgTable("case_management", {
-  id: serial("id").primaryKey(),
-  survivorId: integer("survivor_id").references(() => users.id),
-  caseManagerId: integer("case_manager_id").references(() => users.id),
-  organizationId: integer("organization_id").references(() => organizations.id),
-  status: text("status").notNull(), // active, transferred, closed
-  notes: text("notes"),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date"),
-});
-
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
   name: z.string().min(1, "Name is required"),
@@ -264,33 +221,6 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertOrganizationSchema = createInsertSchema(organizations)
-  .extend({
-    type: z.enum(["non_profit", "for_profit"]),
-  })
-  .omit({ id: true, createdAt: true });
-
-export const insertUserSchema = createInsertSchema(users)
-  .extend({
-    role: z.enum(["survivor", "case_manager"]),
-    email: z.string().email("Invalid email address"),
-  })
-  .omit({ id: true, createdAt: true });
-
-export const insertFundingOpportunitySchema = createInsertSchema(fundingOpportunities)
-  .extend({
-    status: z.enum(["active", "pending", "expired"]),
-    requirements: z.array(z.string()),
-    amount: z.number().min(0, "Amount must be non-negative"),
-  })
-  .omit({ id: true, createdAt: true });
-
-export const insertCaseManagementSchema = createInsertSchema(caseManagement)
-  .extend({
-    status: z.enum(["active", "transferred", "closed"]),
-  })
-  .omit({ id: true });
-
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -302,10 +232,6 @@ export type Task = typeof tasks.$inferSelect;
 export type HouseholdMember = typeof householdMembers.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type HouseholdGroup = typeof householdGroups.$inferSelect;
-export type Organization = typeof organizations.$inferSelect;
-export type User = typeof users.$inferSelect;
-export type FundingOpportunity = typeof fundingOpportunities.$inferSelect;
-export type CaseManagement = typeof caseManagement.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -318,7 +244,3 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertHouseholdGroup = z.infer<typeof insertHouseholdGroupSchema>;
 export type InsertHouseholdMember = z.infer<typeof insertHouseholdMemberSchema>;
-export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertFundingOpportunity = z.infer<typeof insertFundingOpportunitySchema>;
-export type InsertCaseManagement = z.infer<typeof insertCaseManagementSchema>;
