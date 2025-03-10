@@ -42,18 +42,20 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { User, CaseManagement, Organization } from "@shared/schema";
 import { insertUserSchema, insertHouseholdMemberSchema } from "@shared/schema";
 
+// Type for survivor with case management data
+type SurvivorWithCase = User & { 
+  caseManagement?: CaseManagement 
+};
+
 export default function SurvivorsManagement() {
   const { toast } = useToast();
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [addSurvivorDialogOpen, setAddSurvivorDialogOpen] = useState(false);
-  const [selectedSurvivor, setSelectedSurvivor] = useState<User | null>(null);
-  const [targetOrganizationId, setTargetOrganizationId] = useState<number | null>(null);
 
   // Form setup for new survivor with extended fields
   const form = useForm({
@@ -82,9 +84,6 @@ export default function SurvivorsManagement() {
     },
   });
 
-  // Type for survivor with case management data
-  type SurvivorWithCase = User & { caseManagement?: CaseManagement };
-
   // Fetch survivors managed by this case manager
   const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
     queryKey: ["/api/survivors"],
@@ -93,57 +92,14 @@ export default function SurvivorsManagement() {
     },
   });
 
-  // Fetch organizations for transfer
-  const { data: organizations = [], isLoading: isLoadingOrgs } = useQuery<Organization[]>({
+  // Fetch funding opportunities
+  const { data: organizations = [] } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
 
-  const handleTransferClick = (survivor: SurvivorWithCase) => {
-    if (!survivor.caseManagement) return;
-    setSelectedSurvivor(survivor);
-    setTransferDialogOpen(true);
-  };
-
-  const handleTransfer = async () => {
-    if (!selectedSurvivor?.caseManagement || !targetOrganizationId) return;
-
-    try {
-      await apiRequest("PATCH", `/api/case-management/${selectedSurvivor.caseManagement.id}`, {
-        status: "transferred",
-        organizationId: targetOrganizationId,
-        endDate: new Date().toISOString(),
-      });
-
-      await apiRequest("POST", "/api/case-management", {
-        survivorId: selectedSurvivor.id,
-        organizationId: targetOrganizationId,
-        status: "active",
-        startDate: new Date().toISOString(),
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
-
-      setTransferDialogOpen(false);
-      setSelectedSurvivor(null);
-      setTargetOrganizationId(null);
-
-      toast({
-        title: "Success",
-        description: "Survivor transferred successfully",
-      });
-    } catch (error) {
-      console.error("Failed to transfer survivor:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to transfer survivor",
-      });
-    }
-  };
-
   const onSubmit = async (data: any) => {
     try {
-      // Create the user first
+      // Create the user
       const userResponse = await fetch('/api/users', {
         method: 'POST',
         headers: {
@@ -157,81 +113,61 @@ export default function SurvivorsManagement() {
       });
 
       if (!userResponse.ok) {
-        const errorText = await userResponse.text();
-        console.error("User creation error response:", errorText);
-        throw new Error(`Failed to create user: ${errorText}`);
+        throw new Error("Failed to create user");
       }
 
       const newUser = await userResponse.json();
-      console.log("Created user:", newUser);
-
-      if (!newUser.id) {
-        throw new Error("Failed to create user - no ID returned");
-      }
-
-      // Create household member entry with additional details
-      const memberData = {
-        name: data.name,
-        type: data.type || "adult",
-        dateOfBirth: data.dateOfBirth,
-        employer: data.employer,
-        occupation: data.occupation,
-        employmentStatus: data.employmentStatus,
-        annualIncome: data.annualIncome,
-        educationLevel: data.educationLevel,
-        primaryLanguage: data.primaryLanguage,
-        isVeteran: data.isVeteran,
-        hasDisabilities: data.hasDisabilities,
-        disabilityNotes: data.disabilityNotes,
-        isStudentFullTime: data.isStudentFullTime,
-        isSenior: data.isSenior,
-        qualifyingTags: data.qualifyingTags || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      console.log("Sending household member data:", memberData);
-
-      const memberResponse = await fetch('/api/household-members', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(memberData),
-      });
-
-      if (!memberResponse.ok) {
-        const errorText = await memberResponse.text();
-        console.error("Household member creation error:", errorText);
-        throw new Error(`Failed to create household member: ${errorText}`);
-      }
 
       // Create case management entry
-      const caseData = {
-        survivorId: newUser.id,
-        organizationId: organizations[0]?.id,
-        status: "active",
-        startDate: new Date().toISOString(),
-      };
-
-      console.log("Sending case management data:", caseData);
-
       const caseResponse = await fetch('/api/case-management', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(caseData),
+        body: JSON.stringify({
+          survivorId: newUser.id,
+          organizationId: organizations[0]?.id,
+          status: "active",
+          startDate: new Date().toISOString(),
+        }),
       });
 
       if (!caseResponse.ok) {
-        const errorText = await caseResponse.text();
-        console.error("Case management creation error:", errorText);
-        throw new Error(`Failed to create case management: ${errorText}`);
+        throw new Error("Failed to create case management entry");
+      }
+
+      // Create household member entry
+      const memberResponse = await fetch('/api/household-members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          type: data.type,
+          dateOfBirth: data.dateOfBirth,
+          employer: data.employer,
+          occupation: data.occupation,
+          employmentStatus: data.employmentStatus,
+          annualIncome: data.annualIncome,
+          educationLevel: data.educationLevel,
+          primaryLanguage: data.primaryLanguage,
+          isVeteran: data.isVeteran,
+          hasDisabilities: data.hasDisabilities,
+          disabilityNotes: data.disabilityNotes,
+          isStudentFullTime: data.isStudentFullTime,
+          isSenior: data.isSenior,
+          qualifyingTags: data.qualifyingTags || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!memberResponse.ok) {
+        throw new Error("Failed to create household member");
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
-
       setAddSurvivorDialogOpen(false);
       form.reset();
 
@@ -240,7 +176,7 @@ export default function SurvivorsManagement() {
         description: "New survivor added successfully",
       });
     } catch (error) {
-      console.error("Failed to add survivor:", error);
+      console.error("Error adding survivor:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -251,7 +187,6 @@ export default function SurvivorsManagement() {
 
   // Filter active survivors
   const activeSurvivors = survivors.filter(s => s.role === 'survivor');
-  console.log("Active survivors:", activeSurvivors);
 
   return (
     <div className="space-y-6">
@@ -300,21 +235,9 @@ export default function SurvivorsManagement() {
                         new Date(survivor.caseManagement.startDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
-                        {organizations.length > 0 && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleTransferClick(survivor)}
-                          >
-                            <ArrowRight className="h-4 w-4 mr-2" />
-                            Transfer
-                          </Button>
-                        )}
-                      </div>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -323,42 +246,6 @@ export default function SurvivorsManagement() {
           )}
         </CardContent>
       </Card>
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Cases</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {survivors.filter(s => s.role === 'survivor').length}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Transferred Cases</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement?.status === 'transferred').length}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Closed Cases</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement?.status === 'closed').length}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Add Survivor Dialog */}
       <Dialog open={addSurvivorDialogOpen} onOpenChange={setAddSurvivorDialogOpen}>
@@ -515,41 +402,9 @@ export default function SurvivorsManagement() {
                 </div>
               </div>
 
-              {/* Education and Status */}
+              {/* Status Information */}
               <div className="space-y-4">
-                <h3 className="font-semibold">Education & Status</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="educationLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Education Level</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="less_than_high_school">Less than High School</SelectItem>
-                            <SelectItem value="high_school">High School</SelectItem>
-                            <SelectItem value="some_college">Some College</SelectItem>
-                            <SelectItem value="associates">Associate's Degree</SelectItem>
-                            <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-                            <SelectItem value="masters">Master's Degree</SelectItem>
-                            <SelectItem value="doctorate">Doctorate</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+                <h3 className="font-semibold">Additional Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -609,52 +464,6 @@ export default function SurvivorsManagement() {
               </DialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Transfer Dialog */}
-      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Transfer Survivor</DialogTitle>
-            <DialogDescription>
-              Select an organization to transfer this survivor to.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {isLoadingOrgs ? (
-              <div>Loading organizations...</div>
-            ) : (
-              <Select
-                onValueChange={(value) => setTargetOrganizationId(Number(value))}
-                value={targetOrganizationId?.toString()}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id.toString()}>
-                      {org.name} ({org.type === "non_profit" ? "Non-Profit" : "For-Profit"})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTransferDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleTransfer}
-              disabled={!targetOrganizationId || isLoadingOrgs}
-            >
-              Confirm Transfer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
