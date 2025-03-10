@@ -47,6 +47,9 @@ export default function SurvivorsManagement() {
   // Fetch survivors managed by this case manager
   const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
     queryKey: ["/api/survivors"],
+    onSuccess: (data) => {
+      console.log("Survivors data:", data); // Debug log
+    },
   });
 
   // Fetch organizations for transfer
@@ -99,7 +102,8 @@ export default function SurvivorsManagement() {
   };
 
   // Filter active survivors
-  const activeSurvivors = survivors.filter(s => s.role === 'survivor' && s.caseManagement?.status === 'active');
+  const activeSurvivors = survivors.filter(s => s.role === 'survivor');
+  console.log("Active survivors:", activeSurvivors); // Debug log
 
   return (
     <div className="space-y-6">
