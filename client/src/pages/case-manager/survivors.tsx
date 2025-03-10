@@ -32,14 +32,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Plus, ArrowRight } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import type { User, CaseManagement, Organization } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 
 export default function SurvivorsManagement() {
   const { toast } = useToast();
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [addSurvivorDialogOpen, setAddSurvivorDialogOpen] = useState(false);
   const [selectedSurvivor, setSelectedSurvivor] = useState<User | null>(null);
   const [targetOrganizationId, setTargetOrganizationId] = useState<number | null>(null);
+
+  // Form setup for new survivor
+  const form = useForm({
+    resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "survivor" as const,
+    },
+  });
 
   // Type for survivor with case management data
   type SurvivorWithCase = User & { caseManagement?: CaseManagement };
@@ -101,6 +124,38 @@ export default function SurvivorsManagement() {
     }
   };
 
+  const onSubmit = async (data: typeof form.getValues) => {
+    try {
+      // Create the user
+      const user = await apiRequest("POST", "/api/users", data);
+
+      // Create case management entry
+      await apiRequest("POST", "/api/case-management", {
+        survivorId: user.id,
+        organizationId: organizations[0]?.id, // Use first org for now
+        status: "active",
+        startDate: new Date().toISOString(),
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
+
+      setAddSurvivorDialogOpen(false);
+      form.reset();
+
+      toast({
+        title: "Success",
+        description: "New survivor added successfully",
+      });
+    } catch (error) {
+      console.error("Failed to add survivor:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add survivor",
+      });
+    }
+  };
+
   // Filter active survivors
   const activeSurvivors = survivors.filter(s => s.role === 'survivor');
   console.log("Active survivors:", activeSurvivors); // Debug log
@@ -114,7 +169,7 @@ export default function SurvivorsManagement() {
             Manage and support survivors through their recovery journey
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setAddSurvivorDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add New Survivor
         </Button>
@@ -210,6 +265,57 @@ export default function SurvivorsManagement() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Survivor Dialog */}
+      <Dialog open={addSurvivorDialogOpen} onOpenChange={setAddSurvivorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Survivor</DialogTitle>
+            <DialogDescription>
+              Enter the survivor's information to create a new case.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setAddSurvivorDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Add Survivor</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Transfer Dialog */}
       <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
