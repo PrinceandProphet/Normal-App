@@ -22,7 +22,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
@@ -43,12 +42,12 @@ export default function SurvivorsManagement() {
   const [targetOrganizationId, setTargetOrganizationId] = useState<number | null>(null);
 
   // Fetch survivors managed by this case manager
-  const { data: survivors = [] } = useQuery<(User & { caseManagement: CaseManagement })[]>({
+  const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<(User & { caseManagement: CaseManagement })[]>({
     queryKey: ["/api/case-manager/survivors"],
   });
 
   // Fetch organizations for transfer
-  const { data: organizations = [] } = useQuery<Organization[]>({
+  const { data: organizations = [], isLoading: isLoadingOrgs } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
 
@@ -115,42 +114,52 @@ export default function SurvivorsManagement() {
           <CardTitle>Active Cases</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Case Start Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {survivors.map((survivor) => (
-                <TableRow key={survivor.id}>
-                  <TableCell className="font-medium">{survivor.name}</TableCell>
-                  <TableCell>{survivor.caseManagement.status}</TableCell>
-                  <TableCell>
-                    {new Date(survivor.caseManagement.startDate).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleTransferClick(survivor)}
-                      >
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                        Transfer
-                      </Button>
-                    </div>
-                  </TableCell>
+          {isLoadingSurvivors ? (
+            <div className="text-center py-8">Loading survivors...</div>
+          ) : survivors.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No active survivors found
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Case Start Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {survivors.map((survivor) => (
+                  <TableRow key={survivor.id}>
+                    <TableCell className="font-medium">{survivor.name}</TableCell>
+                    <TableCell>{survivor.caseManagement.status}</TableCell>
+                    <TableCell>
+                      {new Date(survivor.caseManagement.startDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                        {organizations.length > 0 && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleTransferClick(survivor)}
+                          >
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            Transfer
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -201,21 +210,25 @@ export default function SurvivorsManagement() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <Select
-              onValueChange={(value) => setTargetOrganizationId(Number(value))}
-              value={targetOrganizationId?.toString()}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select organization" />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations.map((org) => (
-                  <SelectItem key={org.id} value={org.id.toString()}>
-                    {org.name} ({org.type === "non_profit" ? "Non-Profit" : "For-Profit"})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isLoadingOrgs ? (
+              <div>Loading organizations...</div>
+            ) : (
+              <Select
+                onValueChange={(value) => setTargetOrganizationId(Number(value))}
+                value={targetOrganizationId?.toString()}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id.toString()}>
+                      {org.name} ({org.type === "non_profit" ? "Non-Profit" : "For-Profit"})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <DialogFooter>
@@ -224,7 +237,7 @@ export default function SurvivorsManagement() {
             </Button>
             <Button 
               onClick={handleTransfer}
-              disabled={!targetOrganizationId}
+              disabled={!targetOrganizationId || isLoadingOrgs}
             >
               Confirm Transfer
             </Button>
