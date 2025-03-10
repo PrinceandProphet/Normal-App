@@ -41,11 +41,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, ArrowRight } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { User, CaseManagement, Organization } from "@shared/schema";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertHouseholdMemberSchema } from "@shared/schema";
 
 export default function SurvivorsManagement() {
   const { toast } = useToast();
@@ -54,13 +55,30 @@ export default function SurvivorsManagement() {
   const [selectedSurvivor, setSelectedSurvivor] = useState<User | null>(null);
   const [targetOrganizationId, setTargetOrganizationId] = useState<number | null>(null);
 
-  // Form setup for new survivor
+  // Form setup for new survivor with extended fields
   const form = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(insertHouseholdMemberSchema.extend({
+      email: insertUserSchema.shape.email,
+      role: insertUserSchema.shape.role,
+    })),
     defaultValues: {
       name: "",
       email: "",
       role: "survivor" as const,
+      type: "adult" as const,
+      dateOfBirth: "",
+      employer: "",
+      occupation: "",
+      employmentStatus: undefined,
+      annualIncome: undefined,
+      educationLevel: undefined,
+      primaryLanguage: "",
+      isVeteran: false,
+      hasDisabilities: false,
+      disabilityNotes: "",
+      isStudentFullTime: false,
+      isSenior: false,
+      qualifyingTags: [],
     },
   });
 
@@ -71,7 +89,7 @@ export default function SurvivorsManagement() {
   const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
     queryKey: ["/api/survivors"],
     onSuccess: (data) => {
-      console.log("Survivors data:", data); // Debug log
+      console.log("Survivors data:", data);
     },
   });
 
@@ -126,13 +144,23 @@ export default function SurvivorsManagement() {
 
   const onSubmit = async (data: typeof form.getValues) => {
     try {
-      // Create the user
-      const user = await apiRequest("POST", "/api/users", data);
+      // Create the user first
+      const user = await apiRequest("POST", "/api/users", {
+        name: data.name,
+        email: data.email,
+        role: "survivor",
+      });
+
+      // Create household member entry with additional details
+      await apiRequest("POST", "/api/household-members", {
+        ...data,
+        userId: user.id,
+      });
 
       // Create case management entry
       await apiRequest("POST", "/api/case-management", {
         survivorId: user.id,
-        organizationId: organizations[0]?.id, // Use first org for now
+        organizationId: organizations[0]?.id,
         status: "active",
         startDate: new Date().toISOString(),
       });
@@ -158,7 +186,7 @@ export default function SurvivorsManagement() {
 
   // Filter active survivors
   const activeSurvivors = survivors.filter(s => s.role === 'survivor');
-  console.log("Active survivors:", activeSurvivors); // Debug log
+  console.log("Active survivors:", activeSurvivors);
 
   return (
     <div className="space-y-6">
@@ -175,6 +203,7 @@ export default function SurvivorsManagement() {
         </Button>
       </div>
 
+      {/* Active Cases Card */}
       <Card>
         <CardHeader>
           <CardTitle>Active Cases</CardTitle>
@@ -268,7 +297,7 @@ export default function SurvivorsManagement() {
 
       {/* Add Survivor Dialog */}
       <Dialog open={addSurvivorDialogOpen} onOpenChange={setAddSurvivorDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Survivor</DialogTitle>
             <DialogDescription>
@@ -277,34 +306,235 @@ export default function SurvivorsManagement() {
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Birth</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="primaryLanguage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Primary Language</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Employment Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Employment Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="employer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Employer</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="occupation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Occupation</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="employmentStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Employment Status</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="full_time">Full Time</SelectItem>
+                            <SelectItem value="part_time">Part Time</SelectItem>
+                            <SelectItem value="self_employed">Self Employed</SelectItem>
+                            <SelectItem value="unemployed">Unemployed</SelectItem>
+                            <SelectItem value="retired">Retired</SelectItem>
+                            <SelectItem value="student">Student</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="annualIncome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Annual Income</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Education and Status */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Education & Status</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="educationLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Education Level</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="less_than_high_school">Less than High School</SelectItem>
+                            <SelectItem value="high_school">High School</SelectItem>
+                            <SelectItem value="some_college">Some College</SelectItem>
+                            <SelectItem value="associates">Associate's Degree</SelectItem>
+                            <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                            <SelectItem value="masters">Master's Degree</SelectItem>
+                            <SelectItem value="doctorate">Doctorate</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="isVeteran"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">Veteran Status</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hasDisabilities"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">Has Disabilities</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isStudentFullTime"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">Full-time Student</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
               <DialogFooter>
                 <Button variant="outline" type="button" onClick={() => setAddSurvivorDialogOpen(false)}>
