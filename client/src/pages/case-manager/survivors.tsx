@@ -151,19 +151,25 @@ export default function SurvivorsManagement() {
         role: "survivor",
       });
 
-      const user = await response.json();
+      // Parse response
+      const newUser = await response.json();
+      console.log("Created user:", newUser);
+
+      if (!newUser.id) {
+        throw new Error("Failed to create user - no ID returned");
+      }
 
       // Create household member entry with additional details
       await apiRequest("POST", "/api/household-members", {
         ...data,
-        userId: user.id,
+        userId: newUser.id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
       // Create case management entry
       await apiRequest("POST", "/api/case-management", {
-        survivorId: user.id,
+        survivorId: newUser.id,
         organizationId: organizations[0]?.id,
         status: "active",
         startDate: new Date().toISOString(),
@@ -183,7 +189,7 @@ export default function SurvivorsManagement() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add survivor",
+        description: error instanceof Error ? error.message : "Failed to add survivor",
       });
     }
   };
