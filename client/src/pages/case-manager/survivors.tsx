@@ -26,13 +26,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Form,
   FormControl,
   FormField,
@@ -41,12 +34,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { User, CaseManagement, Organization } from "@shared/schema";
-import { insertUserSchema, insertHouseholdMemberSchema } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 
 // Type for survivor with case management data
 type SurvivorWithCase = User & { 
@@ -57,30 +49,13 @@ export default function SurvivorsManagement() {
   const { toast } = useToast();
   const [addSurvivorDialogOpen, setAddSurvivorDialogOpen] = useState(false);
 
-  // Form setup for new survivor with extended fields
+  // Form setup for new survivor
   const form = useForm({
-    resolver: zodResolver(insertHouseholdMemberSchema.extend({
-      email: insertUserSchema.shape.email,
-      role: insertUserSchema.shape.role,
-    })),
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       name: "",
       email: "",
       role: "survivor" as const,
-      type: "adult" as const,
-      dateOfBirth: "",
-      employer: "",
-      occupation: "",
-      employmentStatus: undefined,
-      annualIncome: undefined,
-      educationLevel: undefined,
-      primaryLanguage: "",
-      isVeteran: false,
-      hasDisabilities: false,
-      disabilityNotes: "",
-      isStudentFullTime: false,
-      isSenior: false,
-      qualifyingTags: [],
     },
   });
 
@@ -89,7 +64,7 @@ export default function SurvivorsManagement() {
     queryKey: ["/api/survivors"],
   });
 
-  // Fetch funding opportunities
+  // Fetch organizations
   const { data: organizations = [] } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
@@ -103,30 +78,7 @@ export default function SurvivorsManagement() {
         role: "survivor",
       });
 
-      // Step 2: Create household member entry
-      await apiRequest("POST", "/api/household-members", {
-        name: data.name,
-        type: data.type || "adult",
-        dateOfBirth: data.dateOfBirth,
-        employer: data.employer,
-        occupation: data.occupation,
-        employmentStatus: data.employmentStatus,
-        annualIncome: data.annualIncome,
-        educationLevel: data.educationLevel,
-        primaryLanguage: data.primaryLanguage,
-        isVeteran: data.isVeteran,
-        hasDisabilities: data.hasDisabilities,
-        disabilityNotes: data.disabilityNotes,
-        isStudentFullTime: data.isStudentFullTime,
-        isSenior: data.isSenior,
-        qualifyingTags: data.qualifyingTags || [],
-        userId: userResult.id, // Link to user
-        groupId: null, // Will be set when survivor claims account
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      // Step 3: Create case management entry
+      // Step 2: Create case management entry
       await apiRequest("POST", "/api/case-management", {
         survivorId: userResult.id,
         organizationId: organizations[0]?.id,
@@ -140,14 +92,14 @@ export default function SurvivorsManagement() {
 
       toast({
         title: "Success",
-        description: "New survivor profile created successfully",
+        description: "New survivor case created successfully",
       });
     } catch (error) {
-      console.error("Error creating survivor profile:", error);
+      console.error("Error creating survivor case:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create survivor profile",
+        description: error instanceof Error ? error.message : "Failed to create survivor case",
       });
     }
   };
@@ -216,212 +168,43 @@ export default function SurvivorsManagement() {
 
       {/* Add Survivor Dialog */}
       <Dialog open={addSurvivorDialogOpen} onOpenChange={setAddSurvivorDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Survivor</DialogTitle>
             <DialogDescription>
-              Enter the survivor's information to create a new case.
+              Enter the survivor's basic information to create a new case.
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="primaryLanguage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Language</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Employment Information */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">Employment Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="employer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Employer</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="occupation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Occupation</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="employmentStatus"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Employment Status</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="full_time">Full Time</SelectItem>
-                            <SelectItem value="part_time">Part Time</SelectItem>
-                            <SelectItem value="self_employed">Self Employed</SelectItem>
-                            <SelectItem value="unemployed">Unemployed</SelectItem>
-                            <SelectItem value="retired">Retired</SelectItem>
-                            <SelectItem value="student">Student</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="annualIncome"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Annual Income</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Status Information */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">Additional Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="isVeteran"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">Veteran Status</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="hasDisabilities"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">Has Disabilities</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isStudentFullTime"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">Full-time Student</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <DialogFooter>
                 <Button variant="outline" type="button" onClick={() => setAddSurvivorDialogOpen(false)}>
