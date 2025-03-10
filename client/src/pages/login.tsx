@@ -8,7 +8,8 @@ import {
   signInWithPopup, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  AuthError
 } from "firebase/auth";
 import { useLocation } from "wouter";
 import { SiGoogle } from "react-icons/si";
@@ -27,6 +28,49 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  const handleAuthError = (error: any) => {
+    console.error("Authentication error:", error);
+    let errorMessage = "An error occurred during authentication.";
+
+    if (error instanceof Error) {
+      const authError = error as AuthError;
+      switch (authError.code) {
+        case 'auth/invalid-email':
+          errorMessage = "Invalid email address format.";
+          break;
+        case 'auth/user-disabled':
+          errorMessage = "This account has been disabled.";
+          break;
+        case 'auth/user-not-found':
+          errorMessage = "No account found with this email.";
+          break;
+        case 'auth/wrong-password':
+          errorMessage = "Incorrect password.";
+          break;
+        case 'auth/email-already-in-use':
+          errorMessage = "An account already exists with this email.";
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = "This authentication method is not enabled.";
+          break;
+        case 'auth/weak-password':
+          errorMessage = "Password should be at least 6 characters.";
+          break;
+        case 'auth/popup-closed-by-user':
+          errorMessage = "Sign-in popup was closed before completion.";
+          break;
+        default:
+          errorMessage = error.message || "Failed to authenticate. Please try again.";
+      }
+    }
+
+    toast({
+      variant: "destructive",
+      title: "Authentication Error",
+      description: errorMessage,
+    });
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
@@ -37,12 +81,7 @@ export default function Login() {
         description: "Successfully signed in!",
       });
     } catch (error) {
-      console.error("Authentication failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to sign in. Please try again.",
-      });
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
@@ -59,12 +98,7 @@ export default function Login() {
         description: "Successfully signed in!",
       });
     } catch (error) {
-      console.error("Email sign-in failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Invalid email or password.",
-      });
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
@@ -81,12 +115,7 @@ export default function Login() {
         description: "Account created successfully!",
       });
     } catch (error) {
-      console.error("Sign-up failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create account. Email might already be in use.",
-      });
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
@@ -111,12 +140,7 @@ export default function Login() {
         description: "Password reset email sent. Please check your inbox.",
       });
     } catch (error) {
-      console.error("Password reset failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send reset email. Please check your email address.",
-      });
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
