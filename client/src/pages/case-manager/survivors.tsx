@@ -183,7 +183,7 @@ export default function SurvivorsManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement?.status === 'active').length}
+              {survivors.filter(s => s.role === 'survivor').length}
             </p>
           </CardContent>
         </Card>
