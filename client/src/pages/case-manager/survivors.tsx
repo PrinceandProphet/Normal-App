@@ -114,7 +114,7 @@ export default function SurvivorsManagement() {
         endDate: new Date().toISOString(),
       });
 
-      // Create new case management entry for target organization
+      // Create new case management entry
       await apiRequest("POST", "/api/case-management", {
         survivorId: selectedSurvivor.id,
         organizationId: targetOrganizationId,
@@ -142,19 +142,23 @@ export default function SurvivorsManagement() {
     }
   };
 
-  const onSubmit = async (data: typeof form.getValues) => {
+  const onSubmit = async (data: any) => {
     try {
       // Create the user first
-      const user = await apiRequest("POST", "/api/users", {
+      const response = await apiRequest("POST", "/api/users", {
         name: data.name,
         email: data.email,
         role: "survivor",
       });
 
+      const user = await response.json();
+
       // Create household member entry with additional details
       await apiRequest("POST", "/api/household-members", {
         ...data,
         userId: user.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
 
       // Create case management entry
