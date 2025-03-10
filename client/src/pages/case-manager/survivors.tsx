@@ -99,7 +99,7 @@ export default function SurvivorsManagement() {
   };
 
   // Filter active survivors
-  const activeSurvivors = survivors.filter(s => s.caseManagement?.status === 'active');
+  const activeSurvivors = survivors.filter(s => s.role === 'survivor' && s.caseManagement?.status === 'active');
 
   return (
     <div className="space-y-6">
