@@ -41,9 +41,12 @@ export default function SurvivorsManagement() {
   const [selectedSurvivor, setSelectedSurvivor] = useState<User | null>(null);
   const [targetOrganizationId, setTargetOrganizationId] = useState<number | null>(null);
 
+  // Type for survivor with case management data
+  type SurvivorWithCase = User & { caseManagement?: CaseManagement };
+
   // Fetch survivors managed by this case manager
-  const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<(User & { caseManagement: CaseManagement })[]>({
-    queryKey: ["/api/case-manager/survivors"],
+  const { data: survivors = [], isLoading: isLoadingSurvivors } = useQuery<SurvivorWithCase[]>({
+    queryKey: ["/api/survivors"],
   });
 
   // Fetch organizations for transfer
@@ -51,13 +54,14 @@ export default function SurvivorsManagement() {
     queryKey: ["/api/organizations"],
   });
 
-  const handleTransferClick = (survivor: User & { caseManagement: CaseManagement }) => {
+  const handleTransferClick = (survivor: SurvivorWithCase) => {
+    if (!survivor.caseManagement) return;
     setSelectedSurvivor(survivor);
     setTransferDialogOpen(true);
   };
 
   const handleTransfer = async () => {
-    if (!selectedSurvivor || !targetOrganizationId) return;
+    if (!selectedSurvivor?.caseManagement || !targetOrganizationId) return;
 
     try {
       await apiRequest("PATCH", `/api/case-management/${selectedSurvivor.caseManagement.id}`, {
@@ -74,7 +78,7 @@ export default function SurvivorsManagement() {
         startDate: new Date().toISOString(),
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/case-manager/survivors"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
 
       setTransferDialogOpen(false);
       setSelectedSurvivor(null);
@@ -93,6 +97,9 @@ export default function SurvivorsManagement() {
       });
     }
   };
+
+  // Filter active survivors
+  const activeSurvivors = survivors.filter(s => s.caseManagement?.status === 'active');
 
   return (
     <div className="space-y-6">
@@ -116,7 +123,7 @@ export default function SurvivorsManagement() {
         <CardContent>
           {isLoadingSurvivors ? (
             <div className="text-center py-8">Loading survivors...</div>
-          ) : survivors.length === 0 ? (
+          ) : activeSurvivors.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No active survivors found
             </div>
@@ -125,18 +132,19 @@ export default function SurvivorsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Case Start Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {survivors.map((survivor) => (
+                {activeSurvivors.map((survivor) => (
                   <TableRow key={survivor.id}>
                     <TableCell className="font-medium">{survivor.name}</TableCell>
-                    <TableCell>{survivor.caseManagement.status}</TableCell>
+                    <TableCell>{survivor.email}</TableCell>
                     <TableCell>
-                      {new Date(survivor.caseManagement.startDate).toLocaleDateString()}
+                      {survivor.caseManagement?.startDate && 
+                        new Date(survivor.caseManagement.startDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -171,7 +179,7 @@ export default function SurvivorsManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement.status === 'active').length}
+              {survivors.filter(s => s.caseManagement?.status === 'active').length}
             </p>
           </CardContent>
         </Card>
@@ -182,7 +190,7 @@ export default function SurvivorsManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement.status === 'transferred').length}
+              {survivors.filter(s => s.caseManagement?.status === 'transferred').length}
             </p>
           </CardContent>
         </Card>
@@ -193,7 +201,7 @@ export default function SurvivorsManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {survivors.filter(s => s.caseManagement.status === 'closed').length}
+              {survivors.filter(s => s.caseManagement?.status === 'closed').length}
             </p>
           </CardContent>
         </Card>
