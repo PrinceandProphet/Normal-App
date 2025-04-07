@@ -26,11 +26,17 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DollarSign, Plus, Trash2 } from "lucide-react";
+import { DollarSign, Plus, Trash2, InfoIcon } from "lucide-react";
 import { z } from "zod";
 import { Label } from "@/components/ui/label";
 
@@ -48,7 +54,7 @@ export default function CapitalSources() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { data: sources } = useQuery({
+  const { data: sources = [] } = useQuery<any[]>({
     queryKey: ["/api/capital-sources"],
   });
 
@@ -65,14 +71,14 @@ export default function CapitalSources() {
 
   const getAllCurrentTotal = () => {
     return sources
-      ?.filter((s) => s.status === "current")
-      .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
+      .filter((s: any) => s.status === "current")
+      .reduce((sum: number, source: any) => sum + Number(source.amount), 0);
   };
 
   const getAllProjectedTotal = () => {
     return sources
-      ?.filter((s) => s.status === "projected")
-      .reduce((sum, source) => sum + Number(source.amount), 0) || 0;
+      .filter((s: any) => s.status === "projected")
+      .reduce((sum: number, source: any) => sum + Number(source.amount), 0);
   };
 
   const getAllTotal = () => {
@@ -81,7 +87,7 @@ export default function CapitalSources() {
 
   async function onSubmit(values: FormValues) {
     try {
-      const source = await apiRequest("POST", "/api/capital-sources", {
+      const source: any = await apiRequest("POST", "/api/capital-sources", {
         ...values,
         amount: Number(values.amount),
       });
@@ -330,7 +336,35 @@ export default function CapitalSources() {
 
       {/* Capital Sources Section */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Your Capital Sources</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-semibold">Your Capital Sources</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button aria-label="Information about capital sources">
+                  <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="w-80 p-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Types of Capital Sources:</h3>
+                  <div>
+                    <h4 className="font-medium">FEMA</h4>
+                    <p className="text-sm">Federal Emergency Management Agency assistance including Individual Assistance, Public Assistance, and Hazard Mitigation grants.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Insurance</h4>
+                    <p className="text-sm">Payouts from homeowners, flood, or other disaster-related insurance policies.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Grant</h4>
+                    <p className="text-sm">State, local, or nonprofit funding for disaster recovery that doesn't require repayment.</p>
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sources?.map((source) => (
             <Card key={source.id}>

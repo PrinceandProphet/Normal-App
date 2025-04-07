@@ -132,6 +132,7 @@ export default function Household() {
       disabilityNotes: "",
       specialNeeds: "",
       isStudentFullTime: false,
+      institution: "",
       isSenior: false,
       isPregnant: false,
       qualifyingTags: [],
@@ -856,7 +857,8 @@ export default function Household() {
                                                         const newTag = e.currentTarget.value.trim();
                                                         const currentTags = field.value || [];
                                                         if (!currentTags.includes(newTag)) {
-                                                          field.onChange([...currentTags, newTag]);
+                                                          // Type assertion to handle the never[] issue
+                                                          field.onChange([...currentTags, newTag] as string[]);
                                                         }
                                                         e.currentTarget.value = '';
                                                       }
@@ -919,7 +921,13 @@ export default function Household() {
                                         size="sm"
                                         onClick={() => {
                                           setEditingMemberId(member.id);
-                                          memberForm.reset(member);
+                                          // Handle null values by converting them to undefined for the form
+                                          const formattedMember = Object.fromEntries(
+                                            Object.entries(member).map(([key, value]) => 
+                                              [key, value === null ? undefined : value]
+                                            )
+                                          );
+                                          memberForm.reset(formattedMember as any);
                                           setAddMemberOpen(true);
                                         }}
                                       >
