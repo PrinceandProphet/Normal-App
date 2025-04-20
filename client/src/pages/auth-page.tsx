@@ -100,11 +100,13 @@ export default function AuthPage() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <div className="px-8 pt-6 pb-2">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login" className="px-4 py-3 text-sm font-medium">Login</TabsTrigger>
-                <TabsTrigger value="register" className="px-4 py-3 text-sm font-medium">Register</TabsTrigger>
-              </TabsList>
+            <div className="border-b border-gray-200">
+              <div className="px-8 pt-6 pb-2">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="login" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none bg-transparent px-4 py-3 text-sm font-medium">Login</TabsTrigger>
+                  <TabsTrigger value="register" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none bg-transparent px-4 py-3 text-sm font-medium">Register</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
             {/* Login Form */}
