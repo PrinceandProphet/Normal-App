@@ -84,13 +84,13 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full bg-slate-50">
       {/* Auth Form Section */}
       <div className="flex flex-1 items-center justify-center p-6 md:p-12">
-        <Card className="w-full max-w-md shadow-lg border-0">
-          <CardHeader className="px-6 py-5">
-            <CardTitle className="text-2xl font-bold">Welcome to Disaster Recovery</CardTitle>
-            <CardDescription className="text-muted-foreground mt-2">
+        <Card className="w-full max-w-md shadow-xl border-0 overflow-hidden">
+          <CardHeader className="px-8 py-6 bg-slate-50 border-b">
+            <CardTitle className="text-2xl font-bold text-slate-900">Welcome to Disaster Recovery</CardTitle>
+            <CardDescription className="text-slate-600 mt-2 text-base">
               Sign in to your account or create a new one to access the disaster recovery platform.
             </CardDescription>
           </CardHeader>
@@ -100,10 +100,12 @@ export default function AuthPage() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 mb-2 px-6">
-              <TabsTrigger value="login" className="px-4 py-2">Login</TabsTrigger>
-              <TabsTrigger value="register" className="px-4 py-2">Register</TabsTrigger>
-            </TabsList>
+            <div className="px-8 pt-6 pb-2">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="login" className="px-4 py-3 text-sm font-medium">Login</TabsTrigger>
+                <TabsTrigger value="register" className="px-4 py-3 text-sm font-medium">Register</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Login Form */}
             <TabsContent value="login">
@@ -112,17 +114,21 @@ export default function AuthPage() {
                   onSubmit={loginForm.handleSubmit(onLoginSubmit)}
                   className="space-y-4"
                 >
-                  <CardContent className="space-y-5 px-5 pt-4">
+                  <CardContent className="space-y-6 px-8 pt-4">
                     <FormField
                       control={loginForm.control}
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel className="text-sm font-medium">Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your username" {...field} />
+                            <Input 
+                              className="py-5 px-4" 
+                              placeholder="Enter your username" 
+                              {...field} 
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs font-medium" />
                         </FormItem>
                       )}
                     />
@@ -132,20 +138,25 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel className="text-sm font-medium">Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Enter your password" {...field} />
+                            <Input 
+                              className="py-5 px-4" 
+                              type="password" 
+                              placeholder="Enter your password" 
+                              {...field} 
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs font-medium" />
                         </FormItem>
                       )}
                     />
                   </CardContent>
 
-                  <CardFooter className="px-5 pt-2 pb-4">
+                  <CardFooter className="px-8 py-6 flex justify-end">
                     <Button 
                       type="submit" 
-                      className="w-full"
+                      className="w-full py-6 text-base font-medium"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -169,18 +180,22 @@ export default function AuthPage() {
                   onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
                   className="space-y-4"
                 >
-                  <CardContent className="space-y-5 px-5 pt-4">
+                  <CardContent className="space-y-6 px-8 pt-4">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={registerForm.control}
                         name="firstName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>First Name</FormLabel>
+                            <FormLabel className="text-sm font-medium">First Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="First name" {...field} />
+                              <Input 
+                                className="py-5 px-4" 
+                                placeholder="First name" 
+                                {...field} 
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-xs font-medium" />
                           </FormItem>
                         )}
                       />
@@ -190,11 +205,15 @@ export default function AuthPage() {
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Last Name</FormLabel>
+                            <FormLabel className="text-sm font-medium">Last Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Last name" {...field} />
+                              <Input 
+                                className="py-5 px-4" 
+                                placeholder="Last name" 
+                                {...field} 
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-xs font-medium" />
                           </FormItem>
                         )}
                       />
@@ -205,15 +224,16 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="text-sm font-medium">Email</FormLabel>
                           <FormControl>
                             <Input 
+                              className="py-5 px-4"
                               type="email" 
                               placeholder="your.email@example.com" 
                               {...field} 
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs font-medium" />
                         </FormItem>
                       )}
                     />
@@ -223,11 +243,15 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel className="text-sm font-medium">Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="Choose a username" {...field} />
+                            <Input 
+                              className="py-5 px-4"
+                              placeholder="Choose a username" 
+                              {...field} 
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs font-medium" />
                         </FormItem>
                       )}
                     />
@@ -237,20 +261,25 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel className="text-sm font-medium">Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Create a password" {...field} />
+                            <Input 
+                              className="py-5 px-4"
+                              type="password" 
+                              placeholder="Create a password" 
+                              {...field} 
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs font-medium" />
                         </FormItem>
                       )}
                     />
                   </CardContent>
 
-                  <CardFooter className="px-5 pt-2 pb-4">
+                  <CardFooter className="px-8 py-6 flex justify-end">
                     <Button 
                       type="submit" 
-                      className="w-full"
+                      className="w-full py-6 text-base font-medium"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
