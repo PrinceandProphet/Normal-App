@@ -10,11 +10,40 @@ import {
   type Property, type InsertProperty, properties,
   type HouseholdGroup, type InsertHouseholdGroup, householdGroups,
   type HouseholdMember, type InsertHouseholdMember, householdMembers,
+  type User, type InsertUser, users,
+  type Organization, type InsertOrganization, organizations,
+  type OrganizationMember, type InsertOrganizationMember, organizationMembers,
 } from "@shared/schema";
+import connectPg from "connect-pg-simple";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
+  // Session Store (for authentication)
+  sessionStore: session.Store;
+
+  // Users
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
+
+  // Organizations
+  getOrganizations(): Promise<Organization[]>;
+  getOrganization(id: number): Promise<Organization | undefined>;
+  createOrganization(org: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, org: Partial<InsertOrganization>): Promise<Organization>;
+  deleteOrganization(id: number): Promise<void>;
+
+  // Organization Members
+  getOrganizationMembers(orgId: number): Promise<OrganizationMember[]>;
+  addOrganizationMember(member: InsertOrganizationMember): Promise<OrganizationMember>;
+  removeOrganizationMember(userId: number, orgId: number): Promise<void>;
+  updateOrganizationMember(userId: number, orgId: number, role: string): Promise<OrganizationMember>;
+
   // Documents
   getDocuments(): Promise<Document[]>;
   getDocument(id: number): Promise<Document | undefined>;
@@ -72,6 +101,130 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Create PostgreSQL session store for authentication
+  public sessionStore: session.Store;
+
+  constructor() {
+    // Initialize memory session store for simplicity
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+  }
+
+  // Users
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [created] = await db.insert(users).values({
+      ...user,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    return created;
+  }
+
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({
+        ...user,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    if (!updated) throw new Error("User not found");
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Organizations
+  async getOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations);
+  }
+
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    const [org] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return org;
+  }
+
+  async createOrganization(org: InsertOrganization): Promise<Organization> {
+    const [created] = await db.insert(organizations).values({
+      ...org,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    return created;
+  }
+
+  async updateOrganization(id: number, org: Partial<InsertOrganization>): Promise<Organization> {
+    const [updated] = await db
+      .update(organizations)
+      .set({
+        ...org,
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, id))
+      .returning();
+    if (!updated) throw new Error("Organization not found");
+    return updated;
+  }
+
+  async deleteOrganization(id: number): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.id, id));
+  }
+
+  // Organization Members
+  async getOrganizationMembers(orgId: number): Promise<OrganizationMember[]> {
+    return await db
+      .select()
+      .from(organizationMembers)
+      .where(eq(organizationMembers.organizationId, orgId));
+  }
+
+  async addOrganizationMember(member: InsertOrganizationMember): Promise<OrganizationMember> {
+    const [created] = await db
+      .insert(organizationMembers)
+      .values({
+        ...member,
+        joinedAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+
+  async removeOrganizationMember(userId: number, orgId: number): Promise<void> {
+    await db
+      .delete(organizationMembers)
+      .where(
+        eq(organizationMembers.userId, userId) && 
+        eq(organizationMembers.organizationId, orgId)
+      );
+  }
+
+  async updateOrganizationMember(userId: number, orgId: number, role: string): Promise<OrganizationMember> {
+    const [updated] = await db
+      .update(organizationMembers)
+      .set({ role })
+      .where(
+        eq(organizationMembers.userId, userId) && 
+        eq(organizationMembers.organizationId, orgId)
+      )
+      .returning();
+    if (!updated) throw new Error("Organization member not found");
+    return updated;
+  }
   // Documents
   async getDocuments(): Promise<Document[]> {
     return await db.select().from(documents);

@@ -12,33 +12,44 @@ import Profile from "@/pages/profile";
 import CapitalSources from "@/pages/capital-sources";
 import ActionPlan from "@/pages/action-plan";
 import Household from "@/pages/household";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/action-plan" component={ActionPlan} />
-          <Route path="/household" component={Household} />
-          <Route path="/documents" component={Documents} />
-          <Route path="/messages" component={Messages} />
-          <Route path="/contacts" component={Contacts} />
-          <Route path="/capital-sources" component={CapitalSources} />
-          <Route path="/profile" component={Profile} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-    </div>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      
+      <Route path="*">
+        <div className="flex h-screen bg-background">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto p-8">
+            <Switch>
+              <ProtectedRoute path="/" component={Home} />
+              <ProtectedRoute path="/action-plan" component={ActionPlan} />
+              <ProtectedRoute path="/household" component={Household} />
+              <ProtectedRoute path="/documents" component={Documents} />
+              <ProtectedRoute path="/messages" component={Messages} />
+              <ProtectedRoute path="/contacts" component={Contacts} />
+              <ProtectedRoute path="/capital-sources" component={CapitalSources} />
+              <ProtectedRoute path="/profile" component={Profile} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+        </div>
+      </Route>
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -11,11 +11,14 @@ import {
   insertCapitalSourceSchema,
   insertPropertySchema,
   insertHouseholdGroupSchema,
-  insertHouseholdMemberSchema
+  insertHouseholdMemberSchema,
+  insertUserSchema,
+  insertOrganizationSchema
 } from "@shared/schema";
 import path from "path";
 import express from 'express';
 import { mailslurpService } from "./services/mailslurp";
+import { setupAuth } from "./auth";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -39,6 +42,9 @@ const upload = multer({
 
 export async function registerRoutes(app: Express) {
   const server = createServer(app);
+
+  // Set up authentication
+  setupAuth(app);
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), "uploads")));

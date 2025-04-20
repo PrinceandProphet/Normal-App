@@ -1,6 +1,43 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Organizations table - declaring first to avoid circular references
+export const organizations = pgTable("organizations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // government, non-profit, etc.
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Users table with organization reference
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  role: text("role").default("user"), // Options: user, admin, org_admin
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+});
+
+// Organization members junction table (for many-to-many relationship)
+export const organizationMembers = pgTable("organization_members", {
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  role: text("role").default("member"), // Options: member, admin, owner
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.organizationId] }),
+}));
 
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
@@ -11,70 +48,13 @@ export const systemConfig = pgTable("system_config", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const documents = pgTable("documents", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  path: text("path").notNull(),
-  type: text("type").notNull(),
-  size: integer("size").notNull(),
-  capitalSourceId: integer("capital_source_id").references(() => capitalSources.id),
-});
-
-export const contacts = pgTable("contacts", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  isEmergency: boolean("is_emergency").default(false),
-});
-
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  contactId: integer("contact_id").notNull(),
-  content: text("content").notNull(),
-  type: text("type").notNull(),
-  isInbound: boolean("is_inbound").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-});
-
-export const documentTemplates = pgTable("document_templates", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  content: text("content").notNull(),
-});
-
-export const checklists = pgTable("checklists", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  items: text("items").array().notNull(),
-  completed: boolean("completed").array().notNull(),
-});
-
-export const capitalSources = pgTable("capital_sources", {
-  id: serial("id").primaryKey(),
-  type: text("type").notNull(),
-  name: text("name").notNull(),
-  amount: numeric("amount").notNull(),
-  status: text("status").notNull(),
-  description: text("description"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
-  text: text("text").notNull(),
-  completed: boolean("completed").default(false),
-  urgent: boolean("urgent").default(false),
-  stage: text("stage").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   address: text("address").notNull(),
   type: text("type").notNull(),
   ownershipStatus: text("ownership_status").notNull(),
   primaryResidence: boolean("primary_residence").default(false),
+  organizationId: integer("organization_id").references(() => organizations.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -128,6 +108,65 @@ export const householdMembers = pgTable("household_members", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const capitalSources = pgTable("capital_sources", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  amount: numeric("amount").notNull(),
+  status: text("status").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  path: text("path").notNull(),
+  type: text("type").notNull(),
+  size: integer("size").notNull(),
+  capitalSourceId: integer("capital_source_id").references(() => capitalSources.id),
+});
+
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  isEmergency: boolean("is_emergency").default(false),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull(),
+  isInbound: boolean("is_inbound").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+});
+
+export const documentTemplates = pgTable("document_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  content: text("content").notNull(),
+});
+
+export const checklists = pgTable("checklists", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  items: text("items").array().notNull(),
+  completed: boolean("completed").array().notNull(),
+});
+
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  text: text("text").notNull(),
+  completed: boolean("completed").default(false),
+  urgent: boolean("urgent").default(false),
+  stage: text("stage").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Insert schemas
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
   name: z.string().min(1, "Name is required"),
@@ -221,6 +260,30 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+export const insertUserSchema = createInsertSchema(users)
+  .extend({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    email: z.string().email("Please enter a valid email"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    role: z.enum(["user", "admin", "org_admin"]).optional(),
+  })
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertOrganizationSchema = createInsertSchema(organizations)
+  .extend({
+    name: z.string().min(1, "Organization name is required"),
+    type: z.enum(["government", "non_profit", "private", "other"]),
+    email: z.string().email("Please enter a valid email").optional(),
+  })
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertOrganizationMemberSchema = createInsertSchema(organizationMembers)
+  .extend({
+    role: z.enum(["member", "admin", "owner"]).optional(),
+  })
+  .omit({ joinedAt: true });
+
+// Export types
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -232,6 +295,9 @@ export type Task = typeof tasks.$inferSelect;
 export type HouseholdMember = typeof householdMembers.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type HouseholdGroup = typeof householdGroups.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -244,3 +310,6 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertHouseholdGroup = z.infer<typeof insertHouseholdGroupSchema>;
 export type InsertHouseholdMember = z.infer<typeof insertHouseholdMemberSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
