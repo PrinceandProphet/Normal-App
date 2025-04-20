@@ -13,7 +13,8 @@ import {
   insertHouseholdGroupSchema,
   insertHouseholdMemberSchema,
   insertUserSchema,
-  insertOrganizationSchema
+  insertOrganizationSchema,
+  insertTaskSchema
 } from "@shared/schema";
 import path from "path";
 import express from 'express';

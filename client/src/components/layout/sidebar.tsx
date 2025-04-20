@@ -11,10 +11,12 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
-  Building2
+  Building2,
+  LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -30,10 +32,15 @@ const navigation = [
 export default function Sidebar() {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { logoutMutation, user } = useAuth();
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <div className={cn(
-      "relative bg-card shadow-lg transition-all duration-300",
+      "relative bg-card shadow-lg transition-all duration-300 h-full flex flex-col",
       collapsed ? "w-16" : "w-72"
     )}>
       <Button
@@ -58,7 +65,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      <nav className="px-4 py-6">
+      <nav className="px-4 py-6 flex-grow">
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
@@ -80,6 +87,29 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      
+      {/* Logout button */}
+      {user && (
+        <div className="px-4 pb-6 mt-auto">
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+              "bg-red-50 text-red-600 hover:bg-red-100"
+            )}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
+            {!collapsed && "Logout"}
+          </button>
+          
+          {!collapsed && (
+            <div className="mt-3 px-3 text-xs text-gray-500">
+              Logged in as: <span className="font-medium">{user.username || user.name}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
