@@ -13,6 +13,7 @@ import {
   type User, type InsertUser, users,
   type Organization, type InsertOrganization, organizations,
   type OrganizationMember, type InsertOrganizationMember, organizationMembers,
+  type Task, type InsertTask, tasks,
 } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
@@ -98,6 +99,12 @@ export interface IStorage {
   createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember>;
   updateHouseholdMember(id: number, member: Partial<InsertHouseholdMember>): Promise<HouseholdMember>;
   deleteHouseholdMember(id: number): Promise<void>;
+  
+  // Tasks
+  getTasks(): Promise<Task[]>;
+  createTask(task: InsertTask): Promise<Task>;
+  updateTask(id: number, task: Partial<InsertTask>): Promise<Task>;
+  deleteTask(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -473,6 +480,33 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHouseholdMember(id: number): Promise<void> {
     await db.delete(householdMembers).where(eq(householdMembers.id, id));
+  }
+
+  // Tasks
+  async getTasks(): Promise<Task[]> {
+    return await db.select().from(tasks);
+  }
+
+  async createTask(task: InsertTask): Promise<Task> {
+    const [created] = await db.insert(tasks).values({
+      ...task,
+      createdAt: new Date(),
+    }).returning();
+    return created;
+  }
+
+  async updateTask(id: number, task: Partial<InsertTask>): Promise<Task> {
+    const [updated] = await db
+      .update(tasks)
+      .set(task)
+      .where(eq(tasks.id, id))
+      .returning();
+    if (!updated) throw new Error("Task not found");
+    return updated;
+  }
+
+  async deleteTask(id: number): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
   }
 }
 

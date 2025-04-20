@@ -298,5 +298,30 @@ export async function registerRoutes(app: Express) {
     res.status(204).send();
   });
 
+  // Action Plan Tasks
+  app.get("/api/action-plan/tasks", async (req, res) => {
+    const tasks = await storage.getTasks();
+    res.json(tasks);
+  });
+
+  app.post("/api/action-plan/tasks", async (req, res) => {
+    const task = insertTaskSchema.parse(req.body);
+    const created = await storage.createTask(task);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/action-plan/tasks/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const task = insertTaskSchema.partial().parse(req.body);
+    const updated = await storage.updateTask(id, task);
+    res.json(updated);
+  });
+
+  app.delete("/api/action-plan/tasks/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteTask(id);
+    res.status(204).send();
+  });
+
   return server;
 }
