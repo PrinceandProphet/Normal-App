@@ -87,10 +87,10 @@ export default function AuthPage() {
     <div className="flex min-h-screen w-full">
       {/* Auth Form Section */}
       <div className="flex flex-1 items-center justify-center p-6 md:p-12">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Welcome to Disaster Recovery</CardTitle>
-            <CardDescription>
+        <Card className="w-full max-w-md shadow-lg border-0">
+          <CardHeader className="px-6 py-5">
+            <CardTitle className="text-2xl font-bold">Welcome to Disaster Recovery</CardTitle>
+            <CardDescription className="text-muted-foreground mt-2">
               Sign in to your account or create a new one to access the disaster recovery platform.
             </CardDescription>
           </CardHeader>
@@ -100,9 +100,9 @@ export default function AuthPage() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-2 px-6">
+              <TabsTrigger value="login" className="px-4 py-2">Login</TabsTrigger>
+              <TabsTrigger value="register" className="px-4 py-2">Register</TabsTrigger>
             </TabsList>
 
             {/* Login Form */}
@@ -110,9 +110,9 @@ export default function AuthPage() {
               <Form {...loginForm}>
                 <form
                   onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                  className="space-y-4 p-1"
+                  className="space-y-4"
                 >
-                  <CardContent className="space-y-4 pt-5">
+                  <CardContent className="space-y-5 px-5 pt-4">
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -142,7 +142,7 @@ export default function AuthPage() {
                     />
                   </CardContent>
 
-                  <CardFooter>
+                  <CardFooter className="px-5 pt-2 pb-4">
                     <Button 
                       type="submit" 
                       className="w-full"
@@ -167,9 +167,9 @@ export default function AuthPage() {
               <Form {...registerForm}>
                 <form 
                   onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
-                  className="space-y-4 p-1"
+                  className="space-y-4"
                 >
-                  <CardContent className="space-y-4 pt-5">
+                  <CardContent className="space-y-5 px-5 pt-4">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={registerForm.control}
@@ -247,7 +247,7 @@ export default function AuthPage() {
                     />
                   </CardContent>
 
-                  <CardFooter>
+                  <CardFooter className="px-5 pt-2 pb-4">
                     <Button 
                       type="submit" 
                       className="w-full"
