@@ -124,8 +124,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
+    // Generate a name from first name and last name if available, or use username
+    const name = user.firstName && user.lastName 
+      ? `${user.firstName} ${user.lastName}` 
+      : user.username;
+    
     const [created] = await db.insert(users).values({
       ...user,
+      name, // Add name field for backward compatibility
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning();
@@ -133,12 +139,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    // Update name field if firstName or lastName are changing
+    let updateData = { ...user, updatedAt: new Date() };
+    
+    if (user.firstName || user.lastName) {
+      const currentUser = await this.getUser(id);
+      if (currentUser) {
+        const firstName = user.firstName || currentUser.firstName;
+        const lastName = user.lastName || currentUser.lastName;
+        if (firstName && lastName) {
+          updateData.name = `${firstName} ${lastName}`;
+        }
+      }
+    }
+    
     const [updated] = await db
       .update(users)
-      .set({
-        ...user,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     if (!updated) throw new Error("User not found");

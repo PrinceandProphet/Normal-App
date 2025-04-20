@@ -18,14 +18,15 @@ export const organizations = pgTable("organizations", {
 // Users table with organization reference
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  name: text("name").notNull(),
+  username: text("username").unique(),
+  password: text("password"),
   email: text("email").notNull().unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
   role: text("role").default("user"), // Options: user, admin, org_admin
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
   organizationId: integer("organization_id").references(() => organizations.id),
 });
 
@@ -267,7 +268,7 @@ export const insertUserSchema = createInsertSchema(users)
     username: z.string().min(3, "Username must be at least 3 characters"),
     role: z.enum(["user", "admin", "org_admin"]).optional(),
   })
-  .omit({ id: true, createdAt: true, updatedAt: true });
+  .omit({ id: true, createdAt: true, updatedAt: true, name: true });
 
 export const insertOrganizationSchema = createInsertSchema(organizations)
   .extend({
