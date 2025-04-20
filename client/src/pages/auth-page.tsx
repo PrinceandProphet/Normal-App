@@ -40,7 +40,6 @@ const registerSchema = insertUserSchema.extend({
 });
 
 export default function AuthPage() {
-  const [activeTab, setActiveTab] = useState<string>('login');
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
 
@@ -83,155 +82,115 @@ export default function AuthPage() {
     registerMutation.mutate(values);
   };
 
+  // Determine which form to show
+  const [isLogin, setIsLogin] = useState(true);
+  const toggleForm = () => setIsLogin(!isLogin);
+
   return (
-    <div className="flex min-h-screen w-full bg-slate-50">
-      {/* Auth Form Section */}
+    <div className="flex min-h-screen w-full bg-gray-100">
+      {/* Left side - Form Section */}
       <div className="flex flex-1 items-center justify-center p-6 md:p-12">
-        <Card className="w-full max-w-md shadow-xl border-0 overflow-hidden">
-          <CardHeader className="px-8 py-6 bg-slate-50 border-b">
-            <CardTitle className="text-2xl font-bold text-slate-900">Welcome to Disaster Recovery</CardTitle>
-            <CardDescription className="text-slate-600 mt-2 text-base">
-              Sign in to your account or create a new one to access the disaster recovery platform.
-            </CardDescription>
-          </CardHeader>
-          <Tabs
-            defaultValue="login"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <div className="border-b border-gray-200">
-              <div className="px-8 pt-6 pb-2">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="login" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none bg-transparent px-4 py-3 text-sm font-medium">Login</TabsTrigger>
-                  <TabsTrigger value="register" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none bg-transparent px-4 py-3 text-sm font-medium">Register</TabsTrigger>
-                </TabsList>
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              Disaster Recovery Platform
+            </h1>
+            <p className="mt-3 text-gray-600">
+              {isLogin ? 'Sign in to your account' : 'Create a new account'}
+            </p>
+          </div>
+
+          {isLogin ? (
+            <div className="mt-8 bg-white py-8 px-10 shadow-lg rounded-xl">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Username
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                            placeholder="Enter your username" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs font-medium" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Password
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                            type="password" 
+                            placeholder="Enter your password" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs font-medium" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    className="w-full rounded-md bg-primary py-3 font-medium text-white shadow hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      'Sign in'
+                    )}
+                  </Button>
+                </form>
+              </Form>
+              
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <button 
+                    onClick={toggleForm} 
+                    className="font-medium text-primary hover:text-primary/80"
+                  >
+                    Create one
+                  </button>
+                </p>
               </div>
             </div>
-
-            {/* Login Form */}
-            <TabsContent value="login">
-              <Form {...loginForm}>
-                <form
-                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                  className="space-y-4"
-                >
-                  <CardContent className="space-y-6 px-8 pt-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Username</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="py-5 px-4" 
-                              placeholder="Enter your username" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs font-medium" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="py-5 px-4" 
-                              type="password" 
-                              placeholder="Enter your password" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs font-medium" />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-
-                  <CardFooter className="px-8 py-6 flex justify-end">
-                    <Button 
-                      type="submit" 
-                      className="w-full py-6 text-base font-medium"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Logging in...
-                        </>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Form>
-            </TabsContent>
-
-            {/* Register Form */}
-            <TabsContent value="register">
+          ) : (
+            <div className="mt-8 bg-white py-8 px-10 shadow-lg rounded-xl">
               <Form {...registerForm}>
-                <form 
-                  onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
-                  className="space-y-4"
-                >
-                  <CardContent className="space-y-6 px-8 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={registerForm.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-medium">First Name</FormLabel>
-                            <FormControl>
-                              <Input 
-                                className="py-5 px-4" 
-                                placeholder="First name" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs font-medium" />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={registerForm.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-medium">Last Name</FormLabel>
-                            <FormControl>
-                              <Input 
-                                className="py-5 px-4" 
-                                placeholder="Last name" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs font-medium" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={registerForm.control}
-                      name="email"
+                      name="firstName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Email</FormLabel>
+                          <FormLabel className="block text-sm font-medium text-gray-700">
+                            First Name
+                          </FormLabel>
                           <FormControl>
                             <Input 
-                              className="py-5 px-4"
-                              type="email" 
-                              placeholder="your.email@example.com" 
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                              placeholder="First name" 
                               {...field} 
                             />
                           </FormControl>
@@ -242,14 +201,16 @@ export default function AuthPage() {
 
                     <FormField
                       control={registerForm.control}
-                      name="username"
+                      name="lastName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Username</FormLabel>
+                          <FormLabel className="block text-sm font-medium text-gray-700">
+                            Last Name
+                          </FormLabel>
                           <FormControl>
                             <Input 
-                              className="py-5 px-4"
-                              placeholder="Choose a username" 
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                              placeholder="Last name" 
                               {...field} 
                             />
                           </FormControl>
@@ -257,77 +218,127 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                  </div>
 
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="py-5 px-4"
-                              type="password" 
-                              placeholder="Create a password" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs font-medium" />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Email
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                            type="email" 
+                            placeholder="your.email@example.com" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs font-medium" />
+                      </FormItem>
+                    )}
+                  />
 
-                  <CardFooter className="px-8 py-6 flex justify-end">
-                    <Button 
-                      type="submit" 
-                      className="w-full py-6 text-base font-medium"
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
-                        </>
-                      ) : (
-                        'Create Account'
-                      )}
-                    </Button>
-                  </CardFooter>
+                  <FormField
+                    control={registerForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Username
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                            placeholder="Choose a username" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs font-medium" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Password
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
+                            type="password" 
+                            placeholder="Create a password" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs font-medium" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    className="w-full rounded-md bg-primary py-3 font-medium text-white shadow hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </Button>
                 </form>
               </Form>
-            </TabsContent>
-          </Tabs>
-        </Card>
+              
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <button 
+                    onClick={toggleForm} 
+                    className="font-medium text-primary hover:text-primary/80"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Hero Section */}
-      <div className={cn(
-        "hidden md:flex flex-1 bg-gradient-to-br from-primary/90 to-primary/50",
-        "flex-col justify-center p-12 text-white"
-      )}>
-        <div className="max-w-md">
-          <h1 className="text-4xl font-bold mb-6">Disaster Recovery Platform</h1>
-          <p className="text-xl mb-8">
+      {/* Right side - Hero Section */}
+      <div className="hidden md:flex md:flex-1 bg-gradient-to-br from-primary/90 to-primary/50 items-center justify-center">
+        <div className="max-w-md px-8">
+          <h1 className="text-4xl font-bold mb-6 text-white">Disaster Recovery Platform</h1>
+          <p className="text-lg mb-8 text-white/90">
             A comprehensive tool for managing recovery processes after disasters, tracking assistance, 
             and organizing resources for affected households.
           </p>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             <li className="flex items-center">
-              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <p>Document management & secure storage</p>
+              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <p className="text-white">Document management & secure storage</p>
             </li>
             <li className="flex items-center">
-              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <p>Household tracking & eligibility assessment</p>
+              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <p className="text-white">Household tracking & eligibility assessment</p>
             </li>
             <li className="flex items-center">
-              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <p>S.T.A.R.T. recovery framework implementation</p>
+              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <p className="text-white">S.T.A.R.T. recovery framework implementation</p>
             </li>
             <li className="flex items-center">
-              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <p>Unified messaging & coordination tools</p>
+              <div className="mr-3 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <p className="text-white">Unified messaging & coordination tools</p>
             </li>
           </ul>
         </div>
