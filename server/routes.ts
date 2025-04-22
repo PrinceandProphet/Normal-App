@@ -322,10 +322,12 @@ export async function registerRoutes(app: Express) {
       const updated = await storage.updateProperty(id, propertyUpdate);
       res.json(updated);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      if (error instanceof Error) {
+        console.error("Error updating property:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
       }
-      console.error("Error updating property:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -457,10 +459,12 @@ export async function registerRoutes(app: Express) {
       const created = await storage.createHouseholdGroup(groupData);
       res.status(201).json(created);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      if (error instanceof Error) {
+        console.error("Error creating household group:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
       }
-      console.error("Error creating household group:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -519,10 +523,12 @@ export async function registerRoutes(app: Express) {
       const updated = await storage.updateHouseholdGroup(id, groupUpdate);
       res.json(updated);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      if (error instanceof Error) {
+        console.error("Error updating household group:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
       }
-      console.error("Error updating household group:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -569,28 +575,236 @@ export async function registerRoutes(app: Express) {
 
   // Household Members
   app.get("/api/household-members", async (req, res) => {
-    const groupId = req.query.groupId ? parseInt(req.query.groupId as string) : undefined;
-    const members = await storage.getHouseholdMembers(groupId);
-    res.json(members);
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const groupId = req.query.groupId ? parseInt(req.query.groupId as string) : undefined;
+      
+      if (groupId && isNaN(groupId)) {
+        return res.status(400).json({ message: "Invalid group ID" });
+      }
+
+      let members = [];
+      
+      // If a specific group is requested, check access to that group
+      if (groupId) {
+        const group = await storage.getHouseholdGroup(groupId);
+        if (!group) {
+          return res.status(404).json({ message: "Household group not found" });
+        }
+
+        // Check access to the property this group belongs to
+        if (group.propertyId) {
+          const property = await storage.getProperty(group.propertyId);
+          if (property) {
+            // Check access to this property
+            const canAccess = 
+              req.user.role === "super_admin" ||
+              (req.user.organizationId && property.organizationId === req.user.organizationId);
+
+            if (!canAccess) {
+              return res.status(403).json({ message: "Access denied" });
+            }
+          }
+        }
+
+        members = await storage.getHouseholdMembers(groupId);
+      } 
+      // If no group specified, apply user-based filtering
+      else {
+        // Super admins can access all members
+        if (req.user.role === "super_admin") {
+          members = await storage.getHouseholdMembers();
+        } 
+        // Practitioners can only access members of groups in their organization's properties
+        else if (req.user.userType === "practitioner" && req.user.organizationId) {
+          // Get all properties for this organization
+          const allProperties = await storage.getProperties();
+          const orgProperties = allProperties.filter(p => p.organizationId === req.user.organizationId);
+          const orgPropertyIds = orgProperties.map(p => p.id);
+          
+          // Get groups for these properties
+          const allGroups = await storage.getHouseholdGroups();
+          const orgGroups = allGroups.filter(g => g.propertyId && orgPropertyIds.includes(g.propertyId));
+          const orgGroupIds = orgGroups.map(g => g.id);
+          
+          // Get members for these groups
+          const allMembers = await storage.getHouseholdMembers();
+          members = allMembers.filter(m => m.groupId && orgGroupIds.includes(m.groupId));
+        }
+        // Survivors can only access their own household members
+        else if (req.user.userType === "survivor") {
+          // TODO: Implement survivor-specific filtering
+          members = await storage.getHouseholdMembers();
+        }
+      }
+      
+      res.json(members);
+    } catch (error) {
+      console.error("Error getting household members:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.post("/api/household-members", async (req, res) => {
-    const member = insertHouseholdMemberSchema.parse(req.body);
-    const created = await storage.createHouseholdMember(member);
-    res.status(201).json(created);
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const memberData = insertHouseholdMemberSchema.parse(req.body);
+      
+      // Check group access if groupId is provided
+      if (memberData.groupId) {
+        const group = await storage.getHouseholdGroup(memberData.groupId);
+        if (!group) {
+          return res.status(404).json({ message: "Household group not found" });
+        }
+
+        // Check access to the property this group belongs to
+        if (group.propertyId) {
+          const property = await storage.getProperty(group.propertyId);
+          if (property) {
+            // Check access to this property
+            const canAccess = 
+              req.user.role === "super_admin" ||
+              (req.user.organizationId && property.organizationId === req.user.organizationId);
+
+            if (!canAccess) {
+              return res.status(403).json({ message: "Access denied" });
+            }
+          }
+        }
+      }
+
+      const created = await storage.createHouseholdMember(memberData);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error creating household member:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.patch("/api/household-members/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     const id = parseInt(req.params.id);
-    const member = insertHouseholdMemberSchema.partial().parse(req.body);
-    const updated = await storage.updateHouseholdMember(id, member);
-    res.json(updated);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid member ID" });
+    }
+
+    try {
+      // Get the member to check access
+      const member = await storage.getHouseholdMember(id);
+      if (!member) {
+        return res.status(404).json({ message: "Household member not found" });
+      }
+
+      // If member is associated with a group, check group access
+      if (member.groupId) {
+        const group = await storage.getHouseholdGroup(member.groupId);
+        if (group && group.propertyId) {
+          const property = await storage.getProperty(group.propertyId);
+          if (property) {
+            // Check access to this property
+            const canAccess = 
+              req.user.role === "super_admin" ||
+              (req.user.organizationId && property.organizationId === req.user.organizationId);
+
+            if (!canAccess) {
+              return res.status(403).json({ message: "Access denied" });
+            }
+          }
+        }
+      }
+
+      const memberUpdate = insertHouseholdMemberSchema.partial().parse(req.body);
+      
+      // If groupId is being updated, check access to the new group
+      if (memberUpdate.groupId && memberUpdate.groupId !== member.groupId) {
+        const group = await storage.getHouseholdGroup(memberUpdate.groupId);
+        if (!group) {
+          return res.status(404).json({ message: "New household group not found" });
+        }
+
+        if (group.propertyId) {
+          const property = await storage.getProperty(group.propertyId);
+          if (property) {
+            // Check access to this property
+            const canAccess = 
+              req.user.role === "super_admin" ||
+              (req.user.organizationId && property.organizationId === req.user.organizationId);
+
+            if (!canAccess) {
+              return res.status(403).json({ message: "Access denied to new group" });
+            }
+          }
+        }
+      }
+
+      const updated = await storage.updateHouseholdMember(id, memberUpdate);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error updating household member:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.delete("/api/household-members/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     const id = parseInt(req.params.id);
-    await storage.deleteHouseholdMember(id);
-    res.status(204).send();
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid member ID" });
+    }
+
+    try {
+      // Get the member to check access
+      const member = await storage.getHouseholdMember(id);
+      if (!member) {
+        return res.status(404).json({ message: "Household member not found" });
+      }
+
+      // If member is associated with a group, check group access
+      if (member.groupId) {
+        const group = await storage.getHouseholdGroup(member.groupId);
+        if (group && group.propertyId) {
+          const property = await storage.getProperty(group.propertyId);
+          if (property) {
+            // Check access to this property
+            const canAccess = 
+              req.user.role === "super_admin" ||
+              (req.user.role === "admin" && req.user.organizationId && property.organizationId === req.user.organizationId);
+
+            if (!canAccess) {
+              return res.status(403).json({ message: "Access denied" });
+            }
+          }
+        }
+      }
+
+      await storage.deleteHouseholdMember(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting household member:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // Action Plan Tasks

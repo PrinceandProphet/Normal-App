@@ -543,6 +543,14 @@ export class DatabaseStorage implements IStorage {
     if (!updated) throw new Error("Property not found");
     return updated;
   }
+  
+  async getProperty(id: number): Promise<Property | undefined> {
+    const [property] = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.id, id));
+    return property;
+  }
 
   async deleteProperty(id: number): Promise<void> {
     await db.delete(properties).where(eq(properties.id, id));
@@ -555,6 +563,14 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(householdGroups.propertyId, propertyId));
     }
     return await query;
+  }
+  
+  async getHouseholdGroup(id: number): Promise<HouseholdGroup | undefined> {
+    const [group] = await db
+      .select()
+      .from(householdGroups)
+      .where(eq(householdGroups.id, id));
+    return group;
   }
 
   async createHouseholdGroup(group: InsertHouseholdGroup): Promise<HouseholdGroup> {
@@ -583,6 +599,14 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(householdMembers.groupId, groupId));
     }
     return await query;
+  }
+  
+  async getHouseholdMember(id: number): Promise<HouseholdMember | undefined> {
+    const [member] = await db
+      .select()
+      .from(householdMembers)
+      .where(eq(householdMembers.id, id));
+    return member;
   }
 
   async createHouseholdMember(member: InsertHouseholdMember): Promise<HouseholdMember> {
