@@ -646,10 +646,32 @@ export async function registerRoutes(app: Express) {
       if (group.propertyId) {
         const property = await storage.getProperty(group.propertyId);
         if (property) {
-          // Check access to this property
-          const canAccess = 
-            req.user.role === "super_admin" ||
-            (req.user.organizationId && property.organizationId === req.user.organizationId);
+          // Access control checks
+          let canAccess = false;
+          
+          // Super admins can access all properties
+          if (req.user.role === "super_admin") {
+            canAccess = true;
+          }
+          // Practitioners can access properties of survivors in their organization
+          else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+            // Check if the practitioner's organization has access to this survivor
+            const [relationship] = await db
+              .select()
+              .from(organizationSurvivors)
+              .where(
+                and(
+                  eq(organizationSurvivors.survivorId, property.survivorId),
+                  eq(organizationSurvivors.organizationId, req.user.organizationId)
+                )
+              );
+              
+            canAccess = !!relationship && relationship.status === "active";
+          }
+          // Survivors can only access their own properties
+          else if (req.user.userType === "survivor") {
+            canAccess = property.survivorId === req.user.id;
+          }
 
           if (!canAccess) {
             return res.status(403).json({ message: "Access denied" });
@@ -666,10 +688,32 @@ export async function registerRoutes(app: Express) {
           return res.status(404).json({ message: "New property not found" });
         }
 
-        // Check access to this property
-        const canAccess = 
-          req.user.role === "super_admin" ||
-          (req.user.organizationId && property.organizationId === req.user.organizationId);
+        // Access control checks
+        let canAccess = false;
+        
+        // Super admins can access all properties
+        if (req.user.role === "super_admin") {
+          canAccess = true;
+        }
+        // Practitioners can access properties of survivors in their organization
+        else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+          // Check if the practitioner's organization has access to this survivor
+          const [relationship] = await db
+            .select()
+            .from(organizationSurvivors)
+            .where(
+              and(
+                eq(organizationSurvivors.survivorId, property.survivorId),
+                eq(organizationSurvivors.organizationId, req.user.organizationId)
+              )
+            );
+            
+          canAccess = !!relationship && relationship.status === "active";
+        }
+        // Survivors can only access their own properties
+        else if (req.user.userType === "survivor") {
+          canAccess = property.survivorId === req.user.id;
+        }
 
         if (!canAccess) {
           return res.status(403).json({ message: "Access denied to new property" });
@@ -710,10 +754,32 @@ export async function registerRoutes(app: Express) {
       if (group.propertyId) {
         const property = await storage.getProperty(group.propertyId);
         if (property) {
-          // Check access to this property
-          const canAccess = 
-            req.user.role === "super_admin" ||
-            (req.user.role === "admin" && req.user.organizationId && property.organizationId === req.user.organizationId);
+          // Access control checks
+          let canAccess = false;
+          
+          // Super admins can access all properties
+          if (req.user.role === "super_admin") {
+            canAccess = true;
+          }
+          // Admin practitioners can access properties of survivors in their organization
+          else if ((req.user.role === "admin") && req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+            // Check if the practitioner's organization has access to this survivor
+            const [relationship] = await db
+              .select()
+              .from(organizationSurvivors)
+              .where(
+                and(
+                  eq(organizationSurvivors.survivorId, property.survivorId),
+                  eq(organizationSurvivors.organizationId, req.user.organizationId)
+                )
+              );
+              
+            canAccess = !!relationship && relationship.status === "active";
+          }
+          // Survivors can only access their own properties
+          else if (req.user.userType === "survivor") {
+            canAccess = property.survivorId === req.user.id;
+          }
 
           if (!canAccess) {
             return res.status(403).json({ message: "Access denied" });
@@ -737,9 +803,14 @@ export async function registerRoutes(app: Express) {
     
     try {
       const groupId = req.query.groupId ? parseInt(req.query.groupId as string) : undefined;
+      const survivorId = req.query.survivorId ? parseInt(req.query.survivorId as string) : null;
       
       if (groupId && isNaN(groupId)) {
         return res.status(400).json({ message: "Invalid group ID" });
+      }
+      
+      if (survivorId && isNaN(survivorId)) {
+        return res.status(400).json({ message: "Invalid survivor ID" });
       }
 
       let members = [];
@@ -755,10 +826,32 @@ export async function registerRoutes(app: Express) {
         if (group.propertyId) {
           const property = await storage.getProperty(group.propertyId);
           if (property) {
-            // Check access to this property
-            const canAccess = 
-              req.user.role === "super_admin" ||
-              (req.user.organizationId && property.organizationId === req.user.organizationId);
+            // Access control checks
+            let canAccess = false;
+            
+            // Super admins can access all properties
+            if (req.user.role === "super_admin") {
+              canAccess = true;
+            }
+            // Practitioners can access properties of survivors in their organization
+            else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+              // Check if the practitioner's organization has access to this survivor
+              const [relationship] = await db
+                .select()
+                .from(organizationSurvivors)
+                .where(
+                  and(
+                    eq(organizationSurvivors.survivorId, property.survivorId),
+                    eq(organizationSurvivors.organizationId, req.user.organizationId)
+                  )
+                );
+                
+              canAccess = !!relationship && relationship.status === "active";
+            }
+            // Survivors can only access their own properties
+            else if (req.user.userType === "survivor") {
+              canAccess = property.survivorId === req.user.id;
+            }
 
             if (!canAccess) {
               return res.status(403).json({ message: "Access denied" });
@@ -770,30 +863,77 @@ export async function registerRoutes(app: Express) {
       } 
       // If no group specified, apply user-based filtering
       else {
-        // Super admins can access all members
+        // Super admins can access all members, optionally filtered by survivorId
         if (req.user.role === "super_admin") {
-          members = await storage.getHouseholdMembers();
+          if (survivorId) {
+            // Get properties for this survivor
+            const survivorProperties = await storage.getProperties(survivorId);
+            const propertyIds = survivorProperties.map(p => p.id);
+            
+            // Get groups for these properties
+            const allGroups = await storage.getHouseholdGroups();
+            const survivorGroups = allGroups.filter(g => g.propertyId && propertyIds.includes(g.propertyId));
+            const groupIds = survivorGroups.map(g => g.id);
+            
+            // Get members for these groups
+            const allMembers = await storage.getHouseholdMembers();
+            members = allMembers.filter(m => m.groupId && groupIds.includes(m.groupId));
+          } else {
+            members = await storage.getHouseholdMembers();
+          }
         } 
-        // Practitioners can only access members of groups in their organization's properties
+        // Practitioners can only access members of groups in properties of survivors in their organization
         else if (req.user.userType === "practitioner" && req.user.organizationId) {
-          // Get all properties for this organization
-          const allProperties = await storage.getProperties();
-          const orgProperties = allProperties.filter(p => p.organizationId === req.user.organizationId);
-          const orgPropertyIds = orgProperties.map(p => p.id);
+          // Get survivors associated with practitioner's organization
+          const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+          let filteredSurvivorIds = relationships.map(r => r.survivorId);
+          
+          // If survivorId is provided and practitioner has access to that survivor
+          if (survivorId) {
+            if (filteredSurvivorIds.includes(survivorId)) {
+              filteredSurvivorIds = [survivorId];
+            } else {
+              return res.status(403).json({ message: "Access denied to this survivor" });
+            }
+          }
+          
+          // Get properties for these survivors
+          let accessibleProperties = [];
+          for (const id of filteredSurvivorIds) {
+            const props = await storage.getProperties(id);
+            accessibleProperties = [...accessibleProperties, ...props];
+          }
+          
+          const propertyIds = accessibleProperties.map(p => p.id);
           
           // Get groups for these properties
           const allGroups = await storage.getHouseholdGroups();
-          const orgGroups = allGroups.filter(g => g.propertyId && orgPropertyIds.includes(g.propertyId));
-          const orgGroupIds = orgGroups.map(g => g.id);
+          const accessibleGroups = allGroups.filter(g => g.propertyId && propertyIds.includes(g.propertyId));
+          const groupIds = accessibleGroups.map(g => g.id);
           
           // Get members for these groups
           const allMembers = await storage.getHouseholdMembers();
-          members = allMembers.filter(m => m.groupId && orgGroupIds.includes(m.groupId));
+          members = allMembers.filter(m => m.groupId && groupIds.includes(m.groupId));
         }
         // Survivors can only access their own household members
         else if (req.user.userType === "survivor") {
-          // TODO: Implement survivor-specific filtering
-          members = await storage.getHouseholdMembers();
+          // Either use the provided survivorId (if it matches the user) or the user's ID
+          const effectiveSurvivorId = survivorId && survivorId === req.user.id 
+            ? survivorId 
+            : req.user.id;
+            
+          // Get properties for this survivor
+          const survivorProperties = await storage.getProperties(effectiveSurvivorId);
+          const propertyIds = survivorProperties.map(p => p.id);
+          
+          // Get groups for these properties
+          const allGroups = await storage.getHouseholdGroups();
+          const survivorGroups = allGroups.filter(g => g.propertyId && propertyIds.includes(g.propertyId));
+          const groupIds = survivorGroups.map(g => g.id);
+          
+          // Get members for these groups
+          const allMembers = await storage.getHouseholdMembers();
+          members = allMembers.filter(m => m.groupId && groupIds.includes(m.groupId));
         }
       }
       
@@ -823,10 +963,32 @@ export async function registerRoutes(app: Express) {
         if (group.propertyId) {
           const property = await storage.getProperty(group.propertyId);
           if (property) {
-            // Check access to this property
-            const canAccess = 
-              req.user.role === "super_admin" ||
-              (req.user.organizationId && property.organizationId === req.user.organizationId);
+            // Access control checks
+            let canAccess = false;
+            
+            // Super admins can access all properties
+            if (req.user.role === "super_admin") {
+              canAccess = true;
+            }
+            // Practitioners can access properties of survivors in their organization
+            else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+              // Check if the practitioner's organization has access to this survivor
+              const [relationship] = await db
+                .select()
+                .from(organizationSurvivors)
+                .where(
+                  and(
+                    eq(organizationSurvivors.survivorId, property.survivorId),
+                    eq(organizationSurvivors.organizationId, req.user.organizationId)
+                  )
+                );
+                
+              canAccess = !!relationship && relationship.status === "active";
+            }
+            // Survivors can only access their own properties
+            else if (req.user.userType === "survivor") {
+              canAccess = property.survivorId === req.user.id;
+            }
 
             if (!canAccess) {
               return res.status(403).json({ message: "Access denied" });
@@ -871,10 +1033,32 @@ export async function registerRoutes(app: Express) {
         if (group && group.propertyId) {
           const property = await storage.getProperty(group.propertyId);
           if (property) {
-            // Check access to this property
-            const canAccess = 
-              req.user.role === "super_admin" ||
-              (req.user.organizationId && property.organizationId === req.user.organizationId);
+            // Access control checks
+            let canAccess = false;
+            
+            // Super admins can access all properties
+            if (req.user.role === "super_admin") {
+              canAccess = true;
+            }
+            // Practitioners can access properties of survivors in their organization
+            else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+              // Check if the practitioner's organization has access to this survivor
+              const [relationship] = await db
+                .select()
+                .from(organizationSurvivors)
+                .where(
+                  and(
+                    eq(organizationSurvivors.survivorId, property.survivorId),
+                    eq(organizationSurvivors.organizationId, req.user.organizationId)
+                  )
+                );
+                
+              canAccess = !!relationship && relationship.status === "active";
+            }
+            // Survivors can only access their own properties
+            else if (req.user.userType === "survivor") {
+              canAccess = property.survivorId === req.user.id;
+            }
 
             if (!canAccess) {
               return res.status(403).json({ message: "Access denied" });
@@ -895,10 +1079,32 @@ export async function registerRoutes(app: Express) {
         if (group.propertyId) {
           const property = await storage.getProperty(group.propertyId);
           if (property) {
-            // Check access to this property
-            const canAccess = 
-              req.user.role === "super_admin" ||
-              (req.user.organizationId && property.organizationId === req.user.organizationId);
+            // Access control checks
+            let canAccess = false;
+            
+            // Super admins can access all properties
+            if (req.user.role === "super_admin") {
+              canAccess = true;
+            }
+            // Practitioners can access properties of survivors in their organization
+            else if (req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+              // Check if the practitioner's organization has access to this survivor
+              const [relationship] = await db
+                .select()
+                .from(organizationSurvivors)
+                .where(
+                  and(
+                    eq(organizationSurvivors.survivorId, property.survivorId),
+                    eq(organizationSurvivors.organizationId, req.user.organizationId)
+                  )
+                );
+                
+              canAccess = !!relationship && relationship.status === "active";
+            }
+            // Survivors can only access their own properties
+            else if (req.user.userType === "survivor") {
+              canAccess = property.survivorId === req.user.id;
+            }
 
             if (!canAccess) {
               return res.status(403).json({ message: "Access denied to new group" });
@@ -943,10 +1149,32 @@ export async function registerRoutes(app: Express) {
         if (group && group.propertyId) {
           const property = await storage.getProperty(group.propertyId);
           if (property) {
-            // Check access to this property
-            const canAccess = 
-              req.user.role === "super_admin" ||
-              (req.user.role === "admin" && req.user.organizationId && property.organizationId === req.user.organizationId);
+            // Access control checks
+            let canAccess = false;
+            
+            // Super admins can access all properties
+            if (req.user.role === "super_admin") {
+              canAccess = true;
+            }
+            // Admin practitioners can access properties of survivors in their organization
+            else if ((req.user.role === "admin") && req.user.userType === "practitioner" && req.user.organizationId && property.survivorId) {
+              // Check if the practitioner's organization has access to this survivor
+              const [relationship] = await db
+                .select()
+                .from(organizationSurvivors)
+                .where(
+                  and(
+                    eq(organizationSurvivors.survivorId, property.survivorId),
+                    eq(organizationSurvivors.organizationId, req.user.organizationId)
+                  )
+                );
+                
+              canAccess = !!relationship && relationship.status === "active";
+            }
+            // Survivors can only access their own properties
+            else if (req.user.userType === "survivor") {
+              canAccess = property.survivorId === req.user.id;
+            }
 
             if (!canAccess) {
               return res.status(403).json({ message: "Access denied" });
