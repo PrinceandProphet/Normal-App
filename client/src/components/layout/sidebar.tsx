@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
-  LogOut
+  LogOut,
+  ServerCog
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const navigation = [
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
   { name: "Profile Settings", href: "/profile", icon: Settings },
+  { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"] },
 ];
 
 export default function Sidebar() {
@@ -66,26 +68,28 @@ export default function Sidebar() {
       </div>
 
       <nav className="px-4 py-6 flex-grow">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
-                "hover:bg-primary/10 hover:text-primary",
-                location === item.href
-                  ? "bg-primary/10 text-primary"
-                  : "text-gray-600"
-              )}
-              title={collapsed ? item.name : undefined}
-            >
-              <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
-              {!collapsed && item.name}
-            </Link>
-          );
-        })}
+        {navigation
+          .filter(item => !item.roles || (user && item.roles.includes(user.role)))
+          .map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href}
+                className={cn(
+                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
+                  "hover:bg-primary/10 hover:text-primary",
+                  location === item.href
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600"
+                )}
+                title={collapsed ? item.name : undefined}
+              >
+                <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
+                {!collapsed && item.name}
+              </Link>
+            );
+          })}
       </nav>
       
       {/* Logout button */}
