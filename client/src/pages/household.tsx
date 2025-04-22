@@ -171,7 +171,12 @@ export default function Household() {
 
   const addProperty = async (values: any) => {
     try {
-      await apiRequest("POST", "/api/properties", values);
+      // If a client is selected, associate the property with them
+      const propertyData = selectedClient 
+        ? { ...values, survivorId: selectedClient.id }
+        : values;
+      
+      await apiRequest("POST", "/api/properties", propertyData);
       await queryClient.invalidateQueries({ queryKey: ["/api/properties", selectedClient?.id] });
       setAddPropertyOpen(false);
       propertyForm.reset();
@@ -192,10 +197,11 @@ export default function Household() {
   const addGroup = async (values: any) => {
     try {
       // Ensure the propertyId is set when creating a group
-      const response = await apiRequest("POST", "/api/household-groups", {
-        ...values,
-        propertyId: selectedPropertyId,
-      });
+      const groupData = selectedClient
+        ? { ...values, propertyId: selectedPropertyId, survivorId: selectedClient.id }
+        : { ...values, propertyId: selectedPropertyId };
+
+      const response = await apiRequest("POST", "/api/household-groups", groupData);
       await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedClient?.id] });
       setAddGroupOpen(false);
       groupForm.reset();
@@ -215,12 +221,20 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
-      const formattedValues = {
-        ...values,
-        name: values.name.trim(),
-        type: values.type || "adult",
-        groupId: selectedGroupId,
-      };
+      const formattedValues = selectedClient
+        ? {
+            ...values,
+            name: values.name.trim(),
+            type: values.type || "adult",
+            groupId: selectedGroupId,
+            survivorId: selectedClient.id
+          }
+        : {
+            ...values,
+            name: values.name.trim(),
+            type: values.type || "adult",
+            groupId: selectedGroupId
+          };
 
       let response;
       if (editingMemberId) {
