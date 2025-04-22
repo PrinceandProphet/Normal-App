@@ -31,7 +31,8 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SurvivorData[], Error>({
     queryKey: ['/api/survivors'],
-    enabled: !!user && user.role === 'admin',
+    // Enable for any logged-in user, not just admins
+    enabled: !!user,
     onError: (error) => {
       toast({
         title: "Failed to load clients",
