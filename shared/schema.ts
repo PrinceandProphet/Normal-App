@@ -15,7 +15,7 @@ export const organizations = pgTable("organizations", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Users table with organization reference
+// Users table with organization reference and user type
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -24,13 +24,21 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
-  role: text("role").default("user"), // Options: user, admin, org_admin
+  // userType: survivor (client) or practitioner (business user)
+  userType: text("user_type").notNull().default("practitioner"),
+  // role: user (basic access), admin (org admin), super_admin (cross-org access)
+  role: text("role").default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
   organizationId: integer("organization_id").references(() => organizations.id),
+  // Additional fields for practitioners
+  jobTitle: text("job_title"),
+  department: text("department"),
+  // Additional fields for survivors/clients
+  isVerified: boolean("is_verified").default(false),
 });
 
-// Organization members junction table (for many-to-many relationship)
+// Organization members junction table (for practitioners/staff)
 export const organizationMembers = pgTable("organization_members", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
@@ -38,6 +46,20 @@ export const organizationMembers = pgTable("organization_members", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.organizationId] }),
+}));
+
+// Organization-Survivor relationship table
+export const organizationSurvivors = pgTable("organization_survivors", {
+  survivorId: integer("survivor_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  isPrimary: boolean("is_primary").default(false),
+  status: text("status").default("active"), // Options: active, pending, inactive, archived
+  notes: text("notes"),
+  addedById: integer("added_by_id").references(() => users.id),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.survivorId, t.organizationId] }),
 }));
 
 export const systemConfig = pgTable("system_config", {
@@ -266,7 +288,11 @@ export const insertUserSchema = createInsertSchema(users)
     password: z.string().min(8, "Password must be at least 8 characters"),
     email: z.string().email("Please enter a valid email"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    role: z.enum(["user", "admin", "org_admin"]).optional(),
+    userType: z.enum(["survivor", "practitioner"]).default("practitioner"),
+    role: z.enum(["user", "admin", "super_admin"]).default("user"),
+    jobTitle: z.string().optional(),
+    department: z.string().optional(),
+    isVerified: z.boolean().optional()
   })
   .omit({ id: true, createdAt: true, updatedAt: true, name: true });
 
@@ -284,6 +310,14 @@ export const insertOrganizationMemberSchema = createInsertSchema(organizationMem
   })
   .omit({ joinedAt: true });
 
+export const insertOrganizationSurvivorSchema = createInsertSchema(organizationSurvivors)
+  .extend({
+    status: z.enum(["active", "pending", "inactive", "archived"]).default("active"),
+    isPrimary: z.boolean().default(false),
+    notes: z.string().optional(),
+  })
+  .omit({ addedAt: true, updatedAt: true });
+
 // Export types
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -299,6 +333,7 @@ export type HouseholdGroup = typeof householdGroups.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
+export type OrganizationSurvivor = typeof organizationSurvivors.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -314,3 +349,4 @@ export type InsertHouseholdMember = z.infer<typeof insertHouseholdMemberSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
+export type InsertOrganizationSurvivor = z.infer<typeof insertOrganizationSurvivorSchema>;

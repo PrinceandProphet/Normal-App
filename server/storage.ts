@@ -13,6 +13,7 @@ import {
   type User, type InsertUser, users,
   type Organization, type InsertOrganization, organizations,
   type OrganizationMember, type InsertOrganizationMember, organizationMembers,
+  type OrganizationSurvivor, type InsertOrganizationSurvivor, organizationSurvivors,
   type Task, type InsertTask, tasks,
 } from "@shared/schema";
 import connectPg from "connect-pg-simple";
@@ -39,11 +40,20 @@ export interface IStorage {
   updateOrganization(id: number, org: Partial<InsertOrganization>): Promise<Organization>;
   deleteOrganization(id: number): Promise<void>;
 
-  // Organization Members
+  // Organization Members (practitioners/staff)
   getOrganizationMembers(orgId: number): Promise<OrganizationMember[]>;
   addOrganizationMember(member: InsertOrganizationMember): Promise<OrganizationMember>;
   removeOrganizationMember(userId: number, orgId: number): Promise<void>;
   updateOrganizationMember(userId: number, orgId: number, role: string): Promise<OrganizationMember>;
+  
+  // Organization-Survivor Relationships
+  getOrganizationSurvivors(orgId: number): Promise<OrganizationSurvivor[]>;
+  getSurvivorOrganizations(survivorId: number): Promise<OrganizationSurvivor[]>;
+  getPrimarySurvivorOrganization(survivorId: number): Promise<OrganizationSurvivor | undefined>;
+  addSurvivorToOrganization(relationship: InsertOrganizationSurvivor): Promise<OrganizationSurvivor>;
+  removeSurvivorFromOrganization(survivorId: number, orgId: number): Promise<void>;
+  updateSurvivorOrganizationStatus(survivorId: number, orgId: number, status: string, notes?: string): Promise<OrganizationSurvivor>;
+  setPrimarySurvivorOrganization(survivorId: number, orgId: number): Promise<OrganizationSurvivor>;
 
   // Documents
   getDocuments(): Promise<Document[]>;
