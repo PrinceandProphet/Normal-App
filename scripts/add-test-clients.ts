@@ -22,6 +22,7 @@ async function main() {
     // Create test survivors (clients)
     const clients = [
       {
+        name: "John Smith",
         username: "john.smith@example.com",
         password: await hashPassword("password123"),
         email: "john.smith@example.com",
@@ -34,6 +35,7 @@ async function main() {
         isVerified: true,
       },
       {
+        name: "Maria Garcia",
         username: "maria.garcia@example.com",
         password: await hashPassword("password123"),
         email: "maria.garcia@example.com",
@@ -46,6 +48,7 @@ async function main() {
         isVerified: true,
       },
       {
+        name: "David Johnson",
         username: "david.johnson@example.com",
         password: await hashPassword("password123"),
         email: "david.johnson@example.com",
@@ -58,6 +61,7 @@ async function main() {
         isVerified: true,
       },
       {
+        name: "Sarah Williams",
         username: "sarah.williams@example.com",
         password: await hashPassword("password123"),
         email: "sarah.williams@example.com",
@@ -70,6 +74,7 @@ async function main() {
         isVerified: true,
       },
       {
+        name: "James Brown",
         username: "james.brown@example.com",
         password: await hashPassword("password123"),
         email: "james.brown@example.com",
