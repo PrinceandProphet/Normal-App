@@ -69,20 +69,20 @@ export default function Sidebar() {
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.name} href={item.href}>
-              <a
-                className={cn(
-                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
-                  "hover:bg-primary/10 hover:text-primary",
-                  location === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-600"
-                )}
-                title={collapsed ? item.name : undefined}
-              >
-                <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
-                {!collapsed && item.name}
-              </a>
+            <Link 
+              key={item.name} 
+              href={item.href}
+              className={cn(
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
+                "hover:bg-primary/10 hover:text-primary",
+                location === item.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600"
+              )}
+              title={collapsed ? item.name : undefined}
+            >
+              <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
+              {!collapsed && item.name}
             </Link>
           );
         })}
