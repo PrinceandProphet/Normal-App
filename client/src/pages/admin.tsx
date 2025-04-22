@@ -31,13 +31,34 @@ const createOrgSchema = z.object({
   organization: z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters" }),
     type: z.string().min(1, { message: "Type is required" }),
-    address: z.string().optional(),
+    address1: z.string().optional(),
+    address2: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
+    country: z.string().default("United States"),
+    countryCode: z.string().default("+1"),
     phone: z.string().optional(),
     email: z.string().email().optional(),
-    website: z.string().optional().refine(
-      (val) => !val || val === "" || val.startsWith("http"), 
-      { message: "Website must start with http:// or https:// if provided" }
-    ),
+    website: z.string().optional(),
+  }).transform(data => {
+    // Auto-prepend http:// to website URLs if missing
+    if (data.website && data.website.trim() !== "" && !data.website.startsWith("http")) {
+      data.website = `http://${data.website}`;
+    }
+    
+    // Compile address for backend
+    const addressParts = [
+      data.address1,
+      data.address2,
+      data.city && data.state ? `${data.city}, ${data.state} ${data.zipCode || ''}` : (data.city || data.state || ''),
+      data.country !== "United States" ? data.country : ''
+    ].filter(Boolean);
+    
+    return {
+      ...data,
+      address: addressParts.join('\n').trim()
+    };
   }),
   adminEmail: z.string().email({ message: "Valid email required" }),
   adminName: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -64,7 +85,13 @@ export default function AdminPage() {
       organization: {
         name: "",
         type: "non-profit",
-        address: "",
+        address1: "",
+        address2: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "United States",
+        countryCode: "+1",
         phone: "",
         email: "",
         website: "",
@@ -183,34 +210,157 @@ export default function AdminPage() {
                     />
                   </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="organization.address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Address Information</h4>
+                    
                     <FormField
                       control={form.control}
-                      name="organization.phone"
+                      name="organization.address1"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>Address Line 1</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} placeholder="Street address" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    
+                    <FormField
+                      control={form.control}
+                      name="organization.address2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address Line 2</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Apt, Suite, Building (optional)" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="organization.city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                          control={form.control}
+                          name="organization.state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State/Province</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="organization.zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Zip/Postal Code</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="organization.country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select country" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="United States">United States</SelectItem>
+                              <SelectItem value="Canada">Canada</SelectItem>
+                              <SelectItem value="Mexico">Mexico</SelectItem>
+                              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                              <SelectItem value="Australia">Australia</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="organization.countryCode"
+                        render={({ field }) => (
+                          <FormItem className="w-24">
+                            <FormLabel>Country Code</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="+1" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="+1">+1</SelectItem>
+                                <SelectItem value="+44">+44</SelectItem>
+                                <SelectItem value="+61">+61</SelectItem>
+                                <SelectItem value="+52">+52</SelectItem>
+                                <SelectItem value="+91">+91</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="organization.phone"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="(555) 555-5555" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     <FormField
                       control={form.control}
