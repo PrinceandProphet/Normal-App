@@ -14,6 +14,7 @@ import ActionPlan from "@/pages/action-plan";
 import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
+import OrgAdminPage from "@/pages/org-admin";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
@@ -36,6 +37,7 @@ function Router() {
               <ProtectedRoute path="/capital-sources" component={CapitalSources} />
               <ProtectedRoute path="/profile" component={Profile} />
               <ProtectedRoute path="/admin" component={AdminPage} />
+              <ProtectedRoute path="/org-admin" component={OrgAdminPage} />
               <Route component={NotFound} />
             </Switch>
           </main>

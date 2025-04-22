@@ -29,6 +29,7 @@ const navigation = [
   { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
   { name: "Profile Settings", href: "/profile", icon: Settings },
   { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"] },
+  { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"] },
 ];
 
 export default function Sidebar() {
