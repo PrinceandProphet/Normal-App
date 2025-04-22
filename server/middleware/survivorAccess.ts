@@ -16,10 +16,21 @@ export async function canAccessSurvivor(req: Request, res: Response, next: NextF
   }
 
   const currentUser = req.user;
-  const survivorId = parseInt(req.params.survivorId);
+  // Check for survivorId in either route params or query params
+  console.log("Request parameters:", JSON.stringify(req.params));
+  console.log("Request path:", req.path);
+  
+  let survivorIdParam = req.params.survivorId || req.params.id;
+  
+  if (!survivorIdParam) {
+    console.log("survivorId not found in parameters:", req.params);
+    return res.status(400).json({ message: "Missing survivor ID" });
+  }
+  
+  const survivorId = parseInt(survivorIdParam);
 
   if (isNaN(survivorId)) {
-    return res.status(400).json({ message: "Invalid survivor ID" });
+    return res.status(400).json({ message: "Invalid survivor ID format" });
   }
 
   try {
