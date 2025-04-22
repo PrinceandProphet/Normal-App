@@ -143,6 +143,96 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Add a member to an organization
+router.post("/:id/members", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const orgId = parseInt(req.params.id);
+  if (isNaN(orgId)) {
+    return res.status(400).json({ message: "Invalid organization ID" });
+  }
+  
+  const { userId, role } = req.body;
+  
+  // Only super admins can add members to any organization 
+  // Org admins can add members to their own organization
+  const canManage = 
+    req.user.role === "super_admin" ||
+    (req.user.role === "admin" && req.user.organizationId === orgId);
+  
+  if (!canManage) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    // Verify that the user exists and is a practitioner
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.userType !== "practitioner") {
+      return res.status(400).json({ message: "Only practitioners can be added to organizations" });
+    }
+
+    // Create the relationship
+    const member = await storage.addOrganizationMember({
+      userId,
+      organizationId: orgId,
+      role: role || "user"
+    });
+
+    // Update the user's organizationId field
+    const updatedUser = await storage.updateUser(userId, { organizationId: orgId });
+    
+    return res.status(201).json({ member, user: updatedUser });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
+    }
+    console.error("Error adding member to organization:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Remove a member from an organization
+router.delete("/:id/members/:userId", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const orgId = parseInt(req.params.id);
+  const userId = parseInt(req.params.userId);
+  
+  if (isNaN(orgId) || isNaN(userId)) {
+    return res.status(400).json({ message: "Invalid ID" });
+  }
+
+  // Only super admins can remove members from any organization
+  // Org admins can only remove members from their own organization
+  const canManage = 
+    req.user.role === "super_admin" ||
+    (req.user.role === "admin" && req.user.organizationId === orgId);
+  
+  if (!canManage) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    // Remove the member from the organization
+    await storage.removeOrganizationMember(userId, orgId);
+    
+    // Update the user's organizationId field to null
+    await storage.updateUser(userId, { organizationId: null });
+    
+    return res.status(204).end();
+  } catch (error) {
+    console.error("Error removing member from organization:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Get organization members
 router.get("/:id/members", async (req, res) => {
   if (!req.isAuthenticated()) {
@@ -154,10 +244,11 @@ router.get("/:id/members", async (req, res) => {
     return res.status(400).json({ message: "Invalid organization ID" });
   }
 
-  // Users can only see members from their own organization, unless they're admins
+  // Users can only see members from their own organization, 
+  // unless they're admins or super_admins who can access any organization
   const canAccess = 
-    req.user.role === "admin" || 
-    req.user.role === "super_admin" ||
+    req.user.role === "super_admin" || 
+    req.user.role === "admin" ||
     req.user.organizationId === orgId;
   
   if (!canAccess) {
