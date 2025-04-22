@@ -36,6 +36,7 @@ import { insertPropertySchema, insertHouseholdGroupSchema, insertHouseholdMember
 
 export default function Household() {
   const { toast } = useToast();
+  const { selectedClient } = useClientContext();
   const [addPropertyOpen, setAddPropertyOpen] = useState(false);
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -43,16 +44,43 @@ export default function Household() {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
 
-  const { data: properties = [] } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
+  // Properties query - filter by survivorId if client selected
+  const { data: properties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
+    queryKey: ["/api/properties", selectedClient?.id],
+    queryFn: async () => {
+      const url = selectedClient 
+        ? `/api/properties?survivorId=${selectedClient.id}` 
+        : '/api/properties';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch properties');
+      return res.json();
+    },
   });
 
-  const { data: householdGroups = [] } = useQuery<HouseholdGroup[]>({
-    queryKey: ["/api/household-groups"],
+  // Household groups query - filter by survivorId if client selected
+  const { data: householdGroups = [], isLoading: isLoadingGroups } = useQuery<HouseholdGroup[]>({
+    queryKey: ["/api/household-groups", selectedClient?.id],
+    queryFn: async () => {
+      const url = selectedClient 
+        ? `/api/household-groups?survivorId=${selectedClient.id}` 
+        : '/api/household-groups';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch household groups');
+      return res.json();
+    },
   });
 
-  const { data: householdMembers = [] } = useQuery<HouseholdMember[]>({
-    queryKey: ["/api/household-members"],
+  // Household members query - filter by survivorId if client selected
+  const { data: householdMembers = [], isLoading: isLoadingMembers } = useQuery<HouseholdMember[]>({
+    queryKey: ["/api/household-members", selectedClient?.id],
+    queryFn: async () => {
+      const url = selectedClient 
+        ? `/api/household-members?survivorId=${selectedClient.id}` 
+        : '/api/household-members';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch household members');
+      return res.json();
+    },
   });
 
   // Move deleteProperty inside the component
@@ -67,10 +95,10 @@ export default function Household() {
       // Delete the property itself
       await apiRequest("DELETE", `/api/properties/${propertyId}`);
 
-      // Invalidate queries to refresh the UI
-      await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      // Invalidate queries to refresh the UI - include client ID in the query key if a client is selected
+      await queryClient.invalidateQueries({ queryKey: ["/api/properties", selectedClient?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedClient?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members", selectedClient?.id] });
 
       // Reset selections if the deleted property was selected
       if (selectedPropertyId === propertyId) {
@@ -144,7 +172,7 @@ export default function Household() {
   const addProperty = async (values: any) => {
     try {
       await apiRequest("POST", "/api/properties", values);
-      await queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/properties", selectedClient?.id] });
       setAddPropertyOpen(false);
       propertyForm.reset();
       toast({
@@ -168,7 +196,7 @@ export default function Household() {
         ...values,
         propertyId: selectedPropertyId,
       });
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedClient?.id] });
       setAddGroupOpen(false);
       groupForm.reset();
       toast({
@@ -201,7 +229,7 @@ export default function Household() {
         response = await apiRequest("POST", "/api/household-members", formattedValues);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members", selectedClient?.id] });
       setAddMemberOpen(false);
       setEditingMemberId(null);
       memberForm.reset();
@@ -223,7 +251,7 @@ export default function Household() {
   const deleteMember = async (memberId: number) => {
     try {
       await apiRequest("DELETE", `/api/household-members/${memberId}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members", selectedClient?.id] });
       toast({
         title: "Success",
         description: "Member removed successfully",
@@ -241,7 +269,8 @@ export default function Household() {
   const handleGroupDelete = async (groupId: number) => {
     try {
       await apiRequest("DELETE", `/api/household-groups/${groupId}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-groups", selectedClient?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/household-members", selectedClient?.id] });
       toast({
         title: "Success",
         description: "Household group deleted successfully",
@@ -275,6 +304,20 @@ export default function Household() {
 
   return (
     <div className="space-y-6">
+      {selectedClient && (
+        <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 flex items-center">
+          <UserCircle className="h-6 w-6 mr-2 text-primary" />
+          <div>
+            <p className="font-medium">
+              Viewing household data for: <span className="text-primary">{selectedClient.firstName} {selectedClient.lastName}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              This view shows only properties and household data for the selected client.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Household & Properties</h1>
