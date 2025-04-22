@@ -16,6 +16,8 @@ import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ClientProvider } from "@/hooks/use-client-context";
+import { ClientSelector } from "@/components/client-selector";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -27,6 +29,11 @@ function Router() {
         <div className="flex h-screen bg-background">
           <Sidebar />
           <main className="flex-1 overflow-y-auto p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-semibold text-foreground">
+                <ClientSelector />
+              </h1>
+            </div>
             <Switch>
               <ProtectedRoute path="/" component={Home} />
               <ProtectedRoute path="/action-plan" component={ActionPlan} />
@@ -51,8 +58,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <ClientProvider>
+          <Router />
+          <Toaster />
+        </ClientProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
