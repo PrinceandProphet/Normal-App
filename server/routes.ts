@@ -22,6 +22,7 @@ import { mailslurpService } from "./services/mailslurp";
 import { setupAuth } from "./auth";
 import organizationRoutes from "./routes/organizations";
 import survivorRoutes from "./routes/survivors";
+import userRoutes from "./routes/users";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -55,6 +56,7 @@ export async function registerRoutes(app: Express) {
   // Register modular routes
   app.use("/api/organizations", organizationRoutes);
   app.use("/api/survivors", survivorRoutes);
+  app.use("/api/users", userRoutes);
 
   // Documents
   app.get("/api/documents", async (req, res) => {

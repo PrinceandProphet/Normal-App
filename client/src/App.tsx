@@ -13,6 +13,7 @@ import CapitalSources from "@/pages/capital-sources";
 import ActionPlan from "@/pages/action-plan";
 import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
+import AdminPage from "@/pages/admin";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
@@ -34,6 +35,7 @@ function Router() {
               <ProtectedRoute path="/contacts" component={Contacts} />
               <ProtectedRoute path="/capital-sources" component={CapitalSources} />
               <ProtectedRoute path="/profile" component={Profile} />
+              <ProtectedRoute path="/admin" component={AdminPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
