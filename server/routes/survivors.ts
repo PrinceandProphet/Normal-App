@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertOrganizationSurvivorSchema } from "@shared/schema";
 import { canAccessSurvivor, filterAccessibleSurvivors } from "../middleware/survivorAccess";
 import { accessControlService } from "../services/accessControl";
 import { eq } from "drizzle-orm";
@@ -82,13 +82,14 @@ router.post("/", async (req, res) => {
       req.user.organizationId && 
       req.user.userType === "practitioner"
     ) {
-      await storage.addSurvivorToOrganization({
+      const relationship = insertOrganizationSurvivorSchema.parse({
         survivorId: survivor.id,
         organizationId: req.user.organizationId,
         status: "active",
         isPrimary: true,
         addedById: req.user.id
       });
+      await storage.addSurvivorToOrganization(relationship);
     }
     
     return res.status(201).json(survivor);
@@ -120,7 +121,7 @@ router.patch("/:id", canAccessSurvivor, async (req, res) => {
     
     const filteredData = Object.keys(req.body)
       .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
+      .reduce<Record<string, any>>((obj, key) => {
         obj[key] = req.body[key];
         return obj;
       }, {});
