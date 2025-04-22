@@ -259,6 +259,118 @@ export class DatabaseStorage implements IStorage {
     if (!updated) throw new Error("Organization member not found");
     return updated;
   }
+
+  // Organization-Survivor Relationships
+  async getOrganizationSurvivors(orgId: number): Promise<OrganizationSurvivor[]> {
+    return await db
+      .select()
+      .from(organizationSurvivors)
+      .where(eq(organizationSurvivors.organizationId, orgId));
+  }
+
+  async getSurvivorOrganizations(survivorId: number): Promise<OrganizationSurvivor[]> {
+    return await db
+      .select()
+      .from(organizationSurvivors)
+      .where(eq(organizationSurvivors.survivorId, survivorId));
+  }
+
+  async getPrimarySurvivorOrganization(survivorId: number): Promise<OrganizationSurvivor | undefined> {
+    const [primary] = await db
+      .select()
+      .from(organizationSurvivors)
+      .where(
+        eq(organizationSurvivors.survivorId, survivorId) &&
+        eq(organizationSurvivors.isPrimary, true)
+      );
+    return primary;
+  }
+
+  async addSurvivorToOrganization(relationship: InsertOrganizationSurvivor): Promise<OrganizationSurvivor> {
+    // Check if this will be marked as primary
+    if (relationship.isPrimary) {
+      // If setting as primary, clear any existing primary flags for this survivor
+      await db
+        .update(organizationSurvivors)
+        .set({ isPrimary: false })
+        .where(eq(organizationSurvivors.survivorId, relationship.survivorId));
+    }
+
+    const [created] = await db
+      .insert(organizationSurvivors)
+      .values({
+        ...relationship,
+        addedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+
+  async removeSurvivorFromOrganization(survivorId: number, orgId: number): Promise<void> {
+    await db
+      .delete(organizationSurvivors)
+      .where(
+        eq(organizationSurvivors.survivorId, survivorId) && 
+        eq(organizationSurvivors.organizationId, orgId)
+      );
+  }
+
+  async updateSurvivorOrganizationStatus(
+    survivorId: number, 
+    orgId: number, 
+    status: string, 
+    notes?: string
+  ): Promise<OrganizationSurvivor> {
+    const updateData: any = { 
+      status,
+      updatedAt: new Date() 
+    };
+    
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    const [updated] = await db
+      .update(organizationSurvivors)
+      .set(updateData)
+      .where(
+        eq(organizationSurvivors.survivorId, survivorId) && 
+        eq(organizationSurvivors.organizationId, orgId)
+      )
+      .returning();
+    
+    if (!updated) throw new Error("Organization-survivor relationship not found");
+    return updated;
+  }
+
+  async setPrimarySurvivorOrganization(survivorId: number, orgId: number): Promise<OrganizationSurvivor> {
+    // First, clear any existing primary flags for this survivor
+    await db
+      .update(organizationSurvivors)
+      .set({ 
+        isPrimary: false,
+        updatedAt: new Date()
+      })
+      .where(eq(organizationSurvivors.survivorId, survivorId));
+    
+    // Then set the new primary organization
+    const [updated] = await db
+      .update(organizationSurvivors)
+      .set({ 
+        isPrimary: true,
+        updatedAt: new Date()
+      })
+      .where(
+        eq(organizationSurvivors.survivorId, survivorId) && 
+        eq(organizationSurvivors.organizationId, orgId)
+      )
+      .returning();
+    
+    if (!updated) throw new Error("Organization-survivor relationship not found");
+    return updated;
+  }
+
   // Documents
   async getDocuments(): Promise<Document[]> {
     return await db.select().from(documents);
