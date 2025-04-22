@@ -536,7 +536,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Properties
-  async getProperties(): Promise<Property[]> {
+  async getProperties(survivorId?: number): Promise<Property[]> {
+    if (survivorId) {
+      return await db.select().from(properties).where(eq(properties.survivorId, survivorId));
+    }
     return await db.select().from(properties);
   }
 
