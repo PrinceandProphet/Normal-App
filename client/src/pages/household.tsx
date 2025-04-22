@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Building2, Home, Users, Trash2, Pencil, X } from "lucide-react";
+import { Plus, Building2, Home, Users, Trash2, Pencil, X, UserCircle } from "lucide-react";
+import { useClientContext } from "@/hooks/use-client-context";
 import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
 import {
   Dialog,

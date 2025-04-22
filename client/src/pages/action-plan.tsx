@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, AlertCircle, ChevronRight, ChevronDown, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useClientContext } from "@/hooks/use-client-context";
+import { useQuery } from "@tanstack/react-query";
 
 interface SubTask {
   text: string;
@@ -86,7 +88,23 @@ const recoveryStages: Stage[] = [
   }
 ];
 
+// Interface for API-returned tasks
+interface ApiTask {
+  id: number;
+  text: string;
+  completed: boolean;
+  urgent: boolean;
+  stage: string; // S, T, A, R, T
+  survivorId: number;
+  subtasks?: {
+    id: number;
+    text: string;
+    completed: boolean;
+  }[];
+}
+
 export default function ActionPlan() {
+  const { selectedClient } = useClientContext();
   const [editingStage, setEditingStage] = useState<number | null>(null);
   const [editingTask, setEditingTask] = useState<{ stageIndex: number; taskIndex: number } | null>(null);
   const [editingSubtask, setEditingSubtask] = useState<{ stageIndex: number; taskIndex: number; subtaskIndex: number } | null>(null);
@@ -94,6 +112,77 @@ export default function ActionPlan() {
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [stages, setStages] = useState(recoveryStages);
   const toast = useToast();
+  
+  // Query for tasks specific to the selected client
+  const { data: clientTasks, isLoading } = useQuery<ApiTask[]>({
+    queryKey: ["/api/action-plan/tasks", selectedClient?.id],
+    enabled: !!selectedClient,
+  });
+  
+  // Merge client tasks with the template stages when data changes
+  useEffect(() => {
+    if (clientTasks && selectedClient) {
+      // Clone the recovery stages template
+      const newStages = JSON.parse(JSON.stringify(recoveryStages)) as Stage[];
+      
+      // Map stages to their corresponding letter
+      const stageMap: Record<string, number> = {
+        'S': 0,
+        'T1': 1,
+        'A': 2,
+        'R': 3,
+        'T2': 4
+      };
+      
+      // Replace template tasks with client-specific tasks
+      clientTasks.forEach(apiTask => {
+        // Map API stage values to our index values
+        let mappedStage = apiTask.stage;
+        if (apiTask.stage === 'T') {
+          // Check the task theme to determine if it's first or second T stage
+          const isTaskRelatedToTransition = apiTask.text.toLowerCase().includes('transition') || 
+                                         apiTask.text.toLowerCase().includes('prepare for future') || 
+                                         apiTask.text.toLowerCase().includes('emergency plan');
+          mappedStage = isTaskRelatedToTransition ? 'T2' : 'T1';
+        }
+        const stageIndex = stageMap[mappedStage] || 0;
+        
+        // Find existing task or add new one
+        const existingTaskIndex = newStages[stageIndex].tasks.findIndex(
+          task => task.text === apiTask.text
+        );
+        
+        if (existingTaskIndex >= 0) {
+          // Update existing task
+          newStages[stageIndex].tasks[existingTaskIndex] = {
+            text: apiTask.text,
+            completed: apiTask.completed,
+            urgent: apiTask.urgent,
+            subtasks: apiTask.subtasks?.map(s => ({
+              text: s.text,
+              completed: s.completed
+            })) || []
+          };
+        } else {
+          // Add new task
+          newStages[stageIndex].tasks.push({
+            text: apiTask.text,
+            completed: apiTask.completed,
+            urgent: apiTask.urgent,
+            subtasks: apiTask.subtasks?.map(s => ({
+              text: s.text,
+              completed: s.completed
+            })) || []
+          });
+        }
+      });
+      
+      setStages(newStages);
+    } else if (!selectedClient) {
+      // Reset to default template if no client selected
+      setStages(recoveryStages);
+    }
+  }, [clientTasks, selectedClient]);
 
   const handleAddTask = (stageIndex: number) => {
     if (!newTaskText.trim()) return;
@@ -275,8 +364,24 @@ export default function ActionPlan() {
           <p className="text-muted-foreground">
             Track your progress through the S.T.A.R.T.™ framework for disaster recovery.
           </p>
+          
+          {!selectedClient && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-dashed flex items-center gap-3 text-muted-foreground">
+              <UserCircle className="h-5 w-5" />
+              <p>Select a client from the dropdown above to view their specific action plan.</p>
+            </div>
+          )}
+          
+          {selectedClient && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-primary">
+              <UserCircle className="h-4 w-4" />
+              <p>Viewing plan for: <span className="font-medium">
+                {selectedClient.firstName || ''} {selectedClient.lastName || selectedClient.name || 'Client'}
+              </span></p>
+            </div>
+          )}
         </div>
-        {!isPublicView && (
+        {!isPublicView && selectedClient && (
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleSharePlan}>
               <Share2 className="h-4 w-4 mr-2" />
