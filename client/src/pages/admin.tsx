@@ -34,7 +34,10 @@ const createOrgSchema = z.object({
     address: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().email().optional(),
-    website: z.string().url().optional().or(z.literal("")),
+    website: z.string().optional().refine(
+      (val) => !val || val === "" || val.startsWith("http"), 
+      { message: "Website must start with http:// or https:// if provided" }
+    ),
   }),
   adminEmail: z.string().email({ message: "Valid email required" }),
   adminName: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -124,7 +127,7 @@ export default function AdminPage() {
               Create Organization
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Organization</DialogTitle>
               <DialogDescription>
