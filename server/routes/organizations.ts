@@ -228,9 +228,10 @@ router.post("/:id/survivors/:survivorId", async (req, res) => {
     return res.status(400).json({ message: "Invalid ID" });
   }
 
-  // Only org admins or super admins can add survivors to an organization
+  // Super admins can manage any organization
+  // Organization admins can only manage their own organization
   const canManage = 
-    req.user.role === "super_admin" ||
+    req.user.role === "super_admin" || 
     (req.user.role === "admin" && req.user.organizationId === orgId);
   
   if (!canManage) {
