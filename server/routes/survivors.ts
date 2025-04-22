@@ -140,10 +140,11 @@ router.patch("/:id", canAccessSurvivor, async (req, res) => {
 });
 
 // Get organizations associated with a survivor
-router.get("/:survivorId/organizations", canAccessSurvivor, async (req, res) => {
+router.get("/:survivorId/organizations", async (req, res) => {
+  console.log("Getting organizations for survivor:", req.params);
   const survivorId = parseInt(req.params.survivorId);
   if (isNaN(survivorId)) {
-    return res.status(400).json({ message: "Invalid survivor ID" });
+    return res.status(400).json({ message: "Invalid survivor ID format" });
   }
 
   try {
