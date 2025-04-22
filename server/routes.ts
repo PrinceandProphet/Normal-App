@@ -809,27 +809,228 @@ export async function registerRoutes(app: Express) {
 
   // Action Plan Tasks
   app.get("/api/action-plan/tasks", async (req, res) => {
-    const tasks = await storage.getTasks();
-    res.json(tasks);
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      let tasks = [];
+      
+      // Super admins can access all tasks
+      if (req.user.role === "super_admin") {
+        tasks = await storage.getTasks();
+      } 
+      // Practitioners can only access tasks related to survivors in their organization
+      else if (req.user.userType === "practitioner" && req.user.organizationId) {
+        // Get survivors associated with practitioner's organization
+        const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+        const survivorIds = relationships.map(r => r.survivorId);
+        
+        // Get tasks for these survivors
+        const allTasks = await storage.getTasks();
+        tasks = allTasks.filter(task => 
+          task.assignedToId && 
+          survivorIds.includes(task.assignedToId) && 
+          task.assignedToType === "survivor"
+        );
+      } 
+      // Survivors can only access their own tasks
+      else if (req.user.userType === "survivor") {
+        const allTasks = await storage.getTasks();
+        tasks = allTasks.filter(task => 
+          (task.assignedToId === req.user.id && task.assignedToType === "survivor") ||
+          (task.createdById === req.user.id && task.createdByType === "survivor")
+        );
+      }
+      
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error getting tasks:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.post("/api/action-plan/tasks", async (req, res) => {
-    const task = insertTaskSchema.parse(req.body);
-    const created = await storage.createTask(task);
-    res.status(201).json(created);
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const taskData = insertTaskSchema.parse(req.body);
+      
+      // Add creator information
+      taskData.createdById = req.user.id;
+      taskData.createdByType = req.user.userType;
+      
+      // Check assignment permissions if task is being assigned
+      if (taskData.assignedToId && taskData.assignedToType) {
+        // If assigning to a survivor, check that the practitioner has access to this survivor
+        if (taskData.assignedToType === "survivor" && req.user.userType === "practitioner") {
+          const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+          const hasSurvivorAccess = relationships.some(r => r.survivorId === taskData.assignedToId);
+          
+          if (!hasSurvivorAccess && req.user.role !== "super_admin") {
+            return res.status(403).json({ message: "You don't have permission to assign tasks to this survivor" });
+          }
+        }
+        
+        // If assigning to a practitioner, check that they are in the same organization
+        if (taskData.assignedToType === "practitioner" && req.user.userType === "practitioner") {
+          const assignedUser = await storage.getUser(taskData.assignedToId);
+          
+          if (!assignedUser || assignedUser.organizationId !== req.user.organizationId && req.user.role !== "super_admin") {
+            return res.status(403).json({ message: "You don't have permission to assign tasks to this practitioner" });
+          }
+        }
+      }
+
+      const created = await storage.createTask(taskData);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error creating task:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.patch("/api/action-plan/tasks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     const id = parseInt(req.params.id);
-    const task = insertTaskSchema.partial().parse(req.body);
-    const updated = await storage.updateTask(id, task);
-    res.json(updated);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid task ID" });
+    }
+
+    try {
+      // Get the task to check access
+      const task = await storage.getTask(id);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check access permissions
+      let hasAccess = false;
+      
+      // Super admin has access to all tasks
+      if (req.user.role === "super_admin") {
+        hasAccess = true;
+      }
+      // Task creator has access
+      else if (task.createdById === req.user.id && task.createdByType === req.user.userType) {
+        hasAccess = true;
+      }
+      // Task assignee has access
+      else if (task.assignedToId === req.user.id && task.assignedToType === req.user.userType) {
+        hasAccess = true;
+      }
+      // Practitioners have access to tasks assigned to survivors in their organization
+      else if (req.user.userType === "practitioner" && req.user.organizationId && 
+               task.assignedToType === "survivor") {
+        const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+        hasAccess = relationships.some(r => r.survivorId === task.assignedToId);
+      }
+
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const taskUpdate = insertTaskSchema.partial().parse(req.body);
+      
+      // Check assignment permissions if task assignee is being changed
+      if (taskUpdate.assignedToId && taskUpdate.assignedToType && 
+         (taskUpdate.assignedToId !== task.assignedToId || taskUpdate.assignedToType !== task.assignedToType)) {
+        
+        // If assigning to a survivor, check that the practitioner has access to this survivor
+        if (taskUpdate.assignedToType === "survivor" && req.user.userType === "practitioner") {
+          const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+          const hasSurvivorAccess = relationships.some(r => r.survivorId === taskUpdate.assignedToId);
+          
+          if (!hasSurvivorAccess && req.user.role !== "super_admin") {
+            return res.status(403).json({ message: "You don't have permission to assign tasks to this survivor" });
+          }
+        }
+        
+        // If assigning to a practitioner, check that they are in the same organization
+        if (taskUpdate.assignedToType === "practitioner" && req.user.userType === "practitioner") {
+          const assignedUser = await storage.getUser(taskUpdate.assignedToId);
+          
+          if (!assignedUser || assignedUser.organizationId !== req.user.organizationId && req.user.role !== "super_admin") {
+            return res.status(403).json({ message: "You don't have permission to assign tasks to this practitioner" });
+          }
+        }
+      }
+
+      const updated = await storage.updateTask(id, taskUpdate);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error updating task:", error);
+        if (error.name === "ZodError") {
+          return res.status(400).json({ message: "Validation error", errors: error.message });
+        }
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.delete("/api/action-plan/tasks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     const id = parseInt(req.params.id);
-    await storage.deleteTask(id);
-    res.status(204).send();
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid task ID" });
+    }
+
+    try {
+      // Get the task to check access
+      const task = await storage.getTask(id);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check delete permissions
+      let canDelete = false;
+      
+      // Super admin can delete any task
+      if (req.user.role === "super_admin") {
+        canDelete = true;
+      }
+      // Organization admin can delete tasks related to their organization
+      else if (req.user.role === "admin" && req.user.userType === "practitioner" && req.user.organizationId) {
+        if (task.createdByType === "practitioner") {
+          const creator = await storage.getUser(task.createdById);
+          if (creator && creator.organizationId === req.user.organizationId) {
+            canDelete = true;
+          }
+        } 
+        else if (task.assignedToType === "survivor") {
+          const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+          canDelete = relationships.some(r => r.survivorId === task.assignedToId);
+        }
+      }
+      // Task creator can delete their own tasks
+      else if (task.createdById === req.user.id && task.createdByType === req.user.userType) {
+        canDelete = true;
+      }
+
+      if (!canDelete) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteTask(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   return server;

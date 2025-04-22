@@ -186,6 +186,15 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").default(false),
   urgent: boolean("urgent").default(false),
   stage: text("stage").notNull(),
+  
+  // Task creator information
+  createdById: integer("created_by_id").notNull(),
+  createdByType: text("created_by_type").notNull(), // "survivor" or "practitioner"
+  
+  // Task assignment information
+  assignedToId: integer("assigned_to_id"),
+  assignedToType: text("assigned_to_type"), // "survivor" or "practitioner"
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -204,7 +213,13 @@ export const insertContactSchema = createInsertSchema(contacts).omit({ id: true 
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
-export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
+export const insertTaskSchema = createInsertSchema(tasks)
+  .extend({
+    stage: z.enum(["secure_stabilize", "take_stock", "align_recovery", "rebuild_restore", "transition_normal"]),
+    createdByType: z.enum(["survivor", "practitioner"]),
+    assignedToType: z.enum(["survivor", "practitioner"]).optional(),
+  })
+  .omit({ id: true, createdAt: true });
 
 export const insertPropertySchema = createInsertSchema(properties)
   .extend({
