@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
+  { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"], isSpecial: true },
   { name: "Home", href: "/", icon: Home },
   { name: "Action Plan", href: "/action-plan", icon: Shield },
   { name: "Household & Properties", href: "/household", icon: Building2 },
@@ -29,7 +30,6 @@ const navigation = [
   { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
   { name: "Profile Settings", href: "/profile", icon: Settings },
   { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"] },
-  { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"] },
 ];
 
 export default function Sidebar() {
@@ -71,24 +71,33 @@ export default function Sidebar() {
       <nav className="px-4 py-6 flex-grow">
         {navigation
           .filter(item => !item.roles || (user && item.roles.includes(user.role)))
-          .map((item) => {
+          .map((item, index, filteredItems) => {
             const Icon = item.icon;
+            const showDivider = item.isSpecial && 
+              index < filteredItems.length - 1 && 
+              filteredItems[index + 1] && 
+              !filteredItems[index + 1].isSpecial;
+              
             return (
-              <Link 
-                key={item.name} 
-                href={item.href}
-                className={cn(
-                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
-                  "hover:bg-primary/10 hover:text-primary",
-                  location === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-600"
+              <div key={item.name}>
+                <Link 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
+                    "hover:bg-primary/10 hover:text-primary",
+                    location === item.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-600"
+                  )}
+                  title={collapsed ? item.name : undefined}
+                >
+                  <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
+                  {!collapsed && item.name}
+                </Link>
+                {showDivider && (
+                  <div className="h-px bg-border/60 my-2 mx-1" />
                 )}
-                title={collapsed ? item.name : undefined}
-              >
-                <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
-                {!collapsed && item.name}
-              </Link>
+              </div>
             );
           })}
       </nav>
