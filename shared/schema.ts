@@ -77,7 +77,7 @@ export const properties = pgTable("properties", {
   type: text("type").notNull(),
   ownershipStatus: text("ownership_status").notNull(),
   primaryResidence: boolean("primary_residence").default(false),
-  organizationId: integer("organization_id").references(() => organizations.id),
+  survivorId: integer("survivor_id").references(() => users.id, { onDelete: 'cascade' }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
