@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertHouseholdMemberSchema } from "@shared/schema";
-import type { HouseholdMember } from "@shared/schema";
+import type { HouseholdMember, InsertHouseholdMember } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,7 @@ export default function Profile() {
     queryKey: ["/api/household-members"],
   });
 
-  const form = useForm({
+  const form = useForm<InsertHouseholdMember>({
     resolver: zodResolver(insertHouseholdMemberSchema),
     defaultValues: {
       name: "",
@@ -52,7 +52,7 @@ export default function Profile() {
     },
   });
 
-  const addHouseholdMember = async (values: any) => {
+  const addHouseholdMember = async (values: InsertHouseholdMember) => {
     try {
       await apiRequest("POST", "/api/household-members", values);
       await queryClient.invalidateQueries({ queryKey: ["/api/household-members"] });

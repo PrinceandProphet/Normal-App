@@ -13,16 +13,17 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Search, Phone, Mail, Plus, Trash2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContactSchema } from "@shared/schema";
+import type { InsertContact, Contact } from "@shared/schema";
 
 export default function Contacts() {
   const [search, setSearch] = useState("");
   const { toast } = useToast();
   
-  const { data: contacts, isLoading } = useQuery({
+  const { data: contacts = [], isLoading } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
   });
 
-  const form = useForm({
+  const form = useForm<InsertContact>({
     resolver: zodResolver(insertContactSchema),
     defaultValues: {
       name: "",
@@ -38,7 +39,7 @@ export default function Contacts() {
     contact.phone?.includes(search)
   );
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: InsertContact) {
     try {
       await apiRequest("POST", "/api/contacts", values);
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
