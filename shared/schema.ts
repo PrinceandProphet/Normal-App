@@ -68,6 +68,7 @@ export const systemConfig = pgTable("system_config", {
   inboxId: text("inbox_id").notNull(),
   phoneNumber: text("phone_number"),
   phoneId: text("phone_id"),
+  stage: text("stage").default("S"), // New field for the START framework stage (S,T,A,R,T)
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
