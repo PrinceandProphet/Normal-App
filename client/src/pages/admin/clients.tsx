@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -49,7 +51,8 @@ import {
   User, UserCircle, MoreHorizontal, ChevronDown, Search, 
   ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
   Eye, Edit, Trash2, Plus, Building2, Phone, MapPin,
-  FileText, Lock, Building, Mail 
+  FileText, Lock, Building, Mail, BookOpen, HeartPulse, 
+  AlertTriangle, Briefcase as BriefcaseIcon
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -111,14 +114,83 @@ interface SurvivorData {
 // Create a custom schema for client creation with validation
 const clientFormSchema = insertUserSchema
   .extend({
+    // Basic Personal Information
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
     email: z.string().email("Invalid email address"),
-    username: z.string().min(3, "Username must be at least 3 characters").optional(),
-    password: z.string().min(8, "Password must be at least 8 characters").optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
+    
+    // Account Information
+    username: z.string().min(3, "Username must be at least 3 characters").optional(),
+    password: z.string().min(8, "Password must be at least 8 characters").optional(),
     organizationId: z.number().optional(),
+
+    // Extended Personal Information
+    dateOfBirth: z.string().optional(),
+    gender: z.string().optional(),
+    pronouns: z.string().optional(),
+    ssn: z.string().optional(),
+    maritalStatus: z.string().optional(),
+    primaryLanguage: z.string().optional(),
+    race: z.string().optional(),
+    ethnicity: z.string().optional(),
+    citizenshipStatus: z.string().optional(),
+    veteranStatus: z.boolean().optional(),
+    disabilityStatus: z.boolean().optional(),
+    
+    // Contact Information
+    alternateContactName: z.string().optional(),
+    alternateContactRelationship: z.string().optional(),
+    alternateContactPhone: z.string().optional(),
+    preferredContactMethod: z.string().optional(),
+    
+    // Residency Information
+    currentAddress: z.string().optional(),
+    moveInDate: z.string().optional(),
+    residenceType: z.string().optional(),
+    previousAddress: z.string().optional(),
+    lengthOfResidency: z.string().optional(),
+    housingStatus: z.string().optional(),
+    femaCaseNumber: z.string().optional(),
+    
+    // Education & Employment
+    educationLevel: z.string().optional(),
+    currentlyEnrolled: z.boolean().optional(),
+    schoolName: z.string().optional(),
+    employmentStatus: z.string().optional(),
+    employerName: z.string().optional(),
+    jobTitle: z.string().optional(),
+    monthlyIncome: z.string().optional(),
+    incomeSource: z.string().optional(),
+    
+    // Health & Wellness
+    medicalConditions: z.string().optional(),
+    medications: z.string().optional(),
+    mentalHealthConditions: z.string().optional(),
+    mobilityDevices: z.string().optional(),
+    healthInsurance: z.string().optional(),
+    primaryCareProvider: z.string().optional(),
+    
+    // Government Involvement
+    publicAssistance: z.string().optional(),
+    caseworkerName: z.string().optional(),
+    caseworkerAgency: z.string().optional(),
+    justiceSystemInvolvement: z.boolean().optional(),
+    childWelfareInvolvement: z.boolean().optional(),
+    immigrationProceedings: z.boolean().optional(),
+    
+    // Disaster Impact
+    disasterInjuries: z.boolean().optional(),
+    lostMedications: z.boolean().optional(),
+    accessNeeds: z.string().optional(),
+    transportAccess: z.boolean().optional(),
+    lostDocuments: z.string().optional(),
+    
+    // Additional Information
+    notes: z.string().optional(),
+    metaTags: z.string().optional(),
+    isPregnant: z.boolean().optional(),
   })
   .omit({ id: true });
 
@@ -697,7 +769,7 @@ export default function AllClientsPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Tabbed Navigation */}
               <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-4">
+                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
                   <TabsTrigger value="personal" className="flex items-center gap-1">
                     <User className="h-4 w-4" />
                     <span className="hidden md:inline">Personal</span>
@@ -706,19 +778,35 @@ export default function AllClientsPage() {
                     <Phone className="h-4 w-4" />
                     <span className="hidden md:inline">Contact</span>
                   </TabsTrigger>
+                  <TabsTrigger value="residency" className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span className="hidden md:inline">Residency</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="employment" className="flex items-center gap-1">
+                    <BriefcaseIcon className="h-4 w-4" />
+                    <span className="hidden md:inline">Employment</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="health" className="flex items-center gap-1">
+                    <HeartPulse className="h-4 w-4" />
+                    <span className="hidden md:inline">Health</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="government" className="flex items-center gap-1">
+                    <Building2 className="h-4 w-4" />
+                    <span className="hidden md:inline">Government</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="disaster" className="flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden md:inline">Disaster</span>
+                  </TabsTrigger>
                   <TabsTrigger value="account" className="flex items-center gap-1">
                     <Lock className="h-4 w-4" />
                     <span className="hidden md:inline">Account</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="organization" className="flex items-center gap-1">
-                    <Building className="h-4 w-4" />
-                    <span className="hidden md:inline">Organization</span>
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Personal Information Tab */}
                 <TabsContent value="personal" className="mt-0">
-                  <h3 className="font-semibold text-lg text-primary mb-4">Personal Information</h3>
+                  <h3 className="font-semibold text-lg text-primary mb-4">Personal Identification</h3>
                   <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     <FormField
                       control={form.control}
@@ -742,6 +830,213 @@ export default function AllClientsPage() {
                           <FormControl>
                             <Input {...field} placeholder="Last Name" />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date of Birth</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gender</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="non-binary">Non-binary</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pronouns"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preferred Pronouns</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., he/him, she/her, they/them" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ssn"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>SSN/ITIN (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="XXX-XX-XXXX" />
+                          </FormControl>
+                          <FormDescription>
+                            This information is securely stored and masked.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marital Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married">Married</SelectItem>
+                              <SelectItem value="divorced">Divorced</SelectItem>
+                              <SelectItem value="widowed">Widowed</SelectItem>
+                              <SelectItem value="separated">Separated</SelectItem>
+                              <SelectItem value="domestic-partnership">Domestic Partnership</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="primaryLanguage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Language</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., English, Spanish" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="race"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Race</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Race" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ethnicity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ethnicity</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Ethnicity" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="citizenshipStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Citizenship/Immigration Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="us-citizen">US Citizen</SelectItem>
+                              <SelectItem value="permanent-resident">Permanent Resident</SelectItem>
+                              <SelectItem value="visa-holder">Visa Holder</SelectItem>
+                              <SelectItem value="refugee">Refugee</SelectItem>
+                              <SelectItem value="asylum-seeker">Asylum Seeker</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="veteranStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Veteran Status</FormLabel>
+                            <FormDescription>
+                              Check if the person is a veteran.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="disabilityStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Disability Status</FormLabel>
+                            <FormDescription>
+                              Check if the person has a disability.
+                            </FormDescription>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -781,10 +1076,36 @@ export default function AllClientsPage() {
                     />
                     <FormField
                       control={form.control}
+                      name="preferredContactMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preferred Contact Method</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select method" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="email">Email</SelectItem>
+                              <SelectItem value="phone">Phone</SelectItem>
+                              <SelectItem value="text">Text Message</SelectItem>
+                              <SelectItem value="mail">Mail</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
                       name="address"
                       render={({ field }) => (
                         <FormItem className="col-span-2">
-                          <FormLabel>Address</FormLabel>
+                          <FormLabel>Current Address</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="Enter client's address" />
                           </FormControl>
@@ -792,40 +1113,662 @@ export default function AllClientsPage() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="alternateContactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alternate Contact Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Alternate contact name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="alternateContactRelationship"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alternate Contact Relationship</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Relative, Friend" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="alternateContactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alternate Contact Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Alternate contact phone" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </TabsContent>
 
-                {/* Account Information Tab */}
-                <TabsContent value="account" className="mt-0">
-                  <h3 className="font-semibold text-lg text-primary mb-4">Account Information</h3>
+                {/* Residency Information Tab */}
+                <TabsContent value="residency" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Residency Information</h3>
                   <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name="username"
+                      name="currentAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username (Optional)</FormLabel>
+                          <FormLabel>Current Address</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Username" />
+                            <Input {...field} placeholder="Current address" />
                           </FormControl>
-                          <FormDescription>
-                            If provided, the client can log in to their account.
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <FormField
                       control={form.control}
-                      name="password"
+                      name="moveInDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password (Optional)</FormLabel>
+                          <FormLabel>Date of Move-in</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Password" type="password" />
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="residenceType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Type of Residence</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="owner">Owner</SelectItem>
+                              <SelectItem value="renter">Renter</SelectItem>
+                              <SelectItem value="transitional">Transitional</SelectItem>
+                              <SelectItem value="unhoused">Unhoused</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="previousAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Previous Address (pre-disaster)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Previous address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lengthOfResidency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Length of Residency</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., 3 years, 6 months" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="housingStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Housing Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="permanent">Permanent</SelectItem>
+                              <SelectItem value="temporary">Temporary</SelectItem>
+                              <SelectItem value="shelter">Shelter</SelectItem>
+                              <SelectItem value="hotel">Hotel</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="femaCaseNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>FEMA Case Number (if applicable)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="FEMA case number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Education & Employment Tab */}
+                <TabsContent value="employment" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Education & Employment</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="educationLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Highest Education Level</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="less-than-high-school">Less than High School</SelectItem>
+                              <SelectItem value="high-school">High School/GED</SelectItem>
+                              <SelectItem value="some-college">Some College</SelectItem>
+                              <SelectItem value="associates">Associate's Degree</SelectItem>
+                              <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                              <SelectItem value="masters">Master's Degree</SelectItem>
+                              <SelectItem value="doctorate">Doctorate</SelectItem>
+                              <SelectItem value="trade-school">Trade School</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="currentlyEnrolled"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Currently Enrolled in School</FormLabel>
+                            <FormDescription>
+                              Check if currently attending.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="schoolName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>School Name and Location</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="School name and location" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="employmentStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Employment Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="full-time">Full-time</SelectItem>
+                              <SelectItem value="part-time">Part-time</SelectItem>
+                              <SelectItem value="unemployed">Unemployed</SelectItem>
+                              <SelectItem value="self-employed">Self-employed</SelectItem>
+                              <SelectItem value="retired">Retired</SelectItem>
+                              <SelectItem value="student">Student</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="employerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Employer Name & Location</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Employer name and location" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jobTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Job Title or Role</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Job title or role" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="monthlyIncome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Monthly Household Income</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., $3000" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="incomeSource"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Income Source</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Wages, Benefits, Disability" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Health & Wellness Tab */}
+                <TabsContent value="health" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Health & Wellness</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="medicalConditions"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Medical Conditions / Chronic Illnesses</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Medical conditions" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="medications"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Medications (critical only)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Critical medications" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mentalHealthConditions"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Mental Health Conditions</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Mental health conditions" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mobilityDevices"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobility/Assistive Devices Used</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Wheelchair, Walker" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="healthInsurance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Health Insurance Provider</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Health insurance provider" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="primaryCareProvider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Care Provider Info</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Primary care provider info" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="isPregnant"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Is Pregnant</FormLabel>
+                            <FormDescription>
+                              Check if the person is currently pregnant.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Government Involvement Tab */}
+                <TabsContent value="government" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Government or Institutional Involvement</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="publicAssistance"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Participation in Public Assistance Programs</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., TANF, SNAP, Medicaid" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="caseworkerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Caseworker Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Caseworker name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="caseworkerAgency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Caseworker Agency</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Caseworker agency" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="justiceSystemInvolvement"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Justice System Involvement</FormLabel>
+                            <FormDescription>
+                              Check if there is past or present involvement.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="childWelfareInvolvement"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Child Welfare System Involvement</FormLabel>
+                            <FormDescription>
+                              Check if there is involvement with child welfare system.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="immigrationProceedings"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Immigration Proceedings/Asylum</FormLabel>
+                            <FormDescription>
+                              Check if there are ongoing immigration proceedings or asylum application.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Disaster Impact Tab */}
+                <TabsContent value="disaster" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Disaster-Specific Impacts</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="disasterInjuries"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Injuries during disaster?</FormLabel>
+                            <FormDescription>
+                              Check if the person sustained injuries during the disaster.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lostMedications"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Lost medication/devices?</FormLabel>
+                            <FormDescription>
+                              Check if the person lost medications or medical devices.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="accessNeeds"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Access needs post-disaster?</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Describe any access needs" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="transportAccess"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Transport access post-disaster?</FormLabel>
+                            <FormDescription>
+                              Check if the person has access to transportation.
+                            </FormDescription>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lostDocuments"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Lost documents?</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., ID, SS card, title, etc." />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Additional Notes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Additional notes about disaster impact" 
+                              className="resize-none" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="metaTags"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Meta Tags</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., single_parent, evacuated_by_boat, tribal_member" />
                           </FormControl>
                           <FormDescription>
-                            Leave blank to auto-generate a secure password.
+                            Add comma-separated tags for grant eligibility.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -834,29 +1777,71 @@ export default function AllClientsPage() {
                   </div>
                 </TabsContent>
 
-                {/* Organization Tab */}
-                <TabsContent value="organization" className="mt-0">
-                  <h3 className="font-semibold text-lg text-primary mb-4">Organization Assignment</h3>
-                  <div className="flex flex-col space-y-1.5">
-                    <Label htmlFor="organizationId">Assign to Organization</Label>
-                    <Select
-                      onValueChange={(value) => setSelectedOrgId(Number(value))}
-                      value={selectedOrgId?.toString() || ""}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an organization (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {organizations?.map((org) => (
-                          <SelectItem key={org.id} value={org.id.toString()}>
-                            {org.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      The client will be associated with this organization upon creation. You can change this later if needed.
-                    </p>
+                {/* Account Tab */}
+                <TabsContent value="account" className="mt-0">
+                  <div className="grid gap-6">
+                    <div>
+                      <h3 className="font-semibold text-lg text-primary mb-4">Account Information</h3>
+                      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username (Optional)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Username" />
+                              </FormControl>
+                              <FormDescription>
+                                If provided, the client can log in to their account.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password (Optional)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Password" type="password" />
+                              </FormControl>
+                              <FormDescription>
+                                Leave blank to auto-generate a secure password.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg text-primary mb-4">Organization Assignment</h3>
+                      <div className="flex flex-col space-y-1.5">
+                        <Label htmlFor="organizationId">Assign to Organization</Label>
+                        <Select
+                          onValueChange={(value) => setSelectedOrgId(Number(value))}
+                          value={selectedOrgId?.toString() || ""}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an organization (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {organizations?.map((org) => (
+                              <SelectItem key={org.id} value={org.id.toString()}>
+                                {org.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          The client will be associated with this organization upon creation. You can change this later if needed.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
