@@ -685,133 +685,158 @@ export default function AllClientsPage() {
 
       {/* Client Creation Dialog */}
       <Dialog open={showClientForm} onOpenChange={setShowClientForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Client</DialogTitle>
             <DialogDescription>
-              Create a new client account. Clients can be added to organizations after creation.
+              Create a new client account with detailed information using the tabs below.
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="First Name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Last Name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Email" type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Phone Number" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              {/* Tabbed Navigation */}
+              <Tabs defaultValue="personal" className="w-full">
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-4">
+                  <TabsTrigger value="personal" className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    <span className="hidden md:inline">Personal</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="contact" className="flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    <span className="hidden md:inline">Contact</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="account" className="flex items-center gap-1">
+                    <Lock className="h-4 w-4" />
+                    <span className="hidden md:inline">Account</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="organization" className="flex items-center gap-1">
+                    <Building className="h-4 w-4" />
+                    <span className="hidden md:inline">Organization</span>
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Account Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Account Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username (Optional)</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Username" />
-                        </FormControl>
-                        <FormDescription>
-                          If provided, the client can log in to their account.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password (Optional)</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Password" type="password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+                {/* Personal Information Tab */}
+                <TabsContent value="personal" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Personal Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="First Name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Last Name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
 
-              {/* Address */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Address</h3>
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter client's address" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                {/* Contact Information Tab */}
+                <TabsContent value="contact" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Contact Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Email" type="email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Phone Number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter client's address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
 
-              {/* Organization Assignment */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Organization</h3>
-                <div className="grid grid-cols-1 gap-4">
+                {/* Account Information Tab */}
+                <TabsContent value="account" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Account Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Username" />
+                          </FormControl>
+                          <FormDescription>
+                            If provided, the client can log in to their account.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Password" type="password" />
+                          </FormControl>
+                          <FormDescription>
+                            Leave blank to auto-generate a secure password.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Organization Tab */}
+                <TabsContent value="organization" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Organization Assignment</h3>
                   <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="organizationId">Assign to Organization</Label>
                     <Select
@@ -829,12 +854,12 @@ export default function AllClientsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      The client will be associated with this organization upon creation.
+                    <p className="text-sm text-muted-foreground mt-2">
+                      The client will be associated with this organization upon creation. You can change this later if needed.
                     </p>
                   </div>
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => {
