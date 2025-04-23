@@ -1272,6 +1272,97 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  // Create initial tasks for a user if they don't exist
+  app.post("/api/action-plan/initialize-tasks", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      // Check if the user already has tasks
+      const allTasks = await storage.getTasks();
+      let userTasks = [];
+      
+      // Filter tasks based on user type
+      if (req.user.userType === "practitioner") {
+        const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
+        const survivorIds = relationships.map(r => r.survivorId);
+        
+        userTasks = allTasks.filter(task => 
+          task.assignedToId && 
+          survivorIds.includes(task.assignedToId) && 
+          task.assignedToType === "survivor"
+        );
+      } else if (req.user.userType === "survivor") {
+        userTasks = allTasks.filter(task => 
+          (task.assignedToId === req.user.id && task.assignedToType === "survivor") ||
+          (task.createdById === req.user.id && task.createdByType === "survivor")
+        );
+      }
+      
+      // If tasks already exist, return them
+      if (userTasks.length > 0) {
+        return res.json({ message: "Tasks already exist", tasks: userTasks });
+      }
+      
+      // Stage S initial tasks
+      const initialTasks = [
+        { 
+          text: "Locate safe temporary shelter", 
+          completed: false, 
+          urgent: true, 
+          stage: "secure_stabilize", // Using the enum value from schema
+          createdById: req.user.id,
+          createdByType: req.user.userType,
+          assignedToId: req.user.id,
+          assignedToType: req.user.userType
+        },
+        { 
+          text: "Register with FEMA", 
+          completed: false, 
+          urgent: true, 
+          stage: "secure_stabilize", // Using the enum value from schema
+          createdById: req.user.id,
+          createdByType: req.user.userType,
+          assignedToId: req.user.id,
+          assignedToType: req.user.userType
+        },
+        { 
+          text: "Address immediate medical needs", 
+          completed: false, 
+          urgent: true, 
+          stage: "secure_stabilize", // Using the enum value from schema
+          createdById: req.user.id,
+          createdByType: req.user.userType,
+          assignedToId: req.user.id,
+          assignedToType: req.user.userType
+        },
+        { 
+          text: "Secure food and water supply", 
+          completed: false, 
+          urgent: true, 
+          stage: "secure_stabilize", // Using the enum value from schema
+          createdById: req.user.id,
+          createdByType: req.user.userType,
+          assignedToId: req.user.id,
+          assignedToType: req.user.userType
+        }
+      ];
+      
+      // Create tasks in database
+      const createdTasks = [];
+      for (const task of initialTasks) {
+        const created = await storage.createTask(task);
+        createdTasks.push(created);
+      }
+      
+      res.status(201).json({ message: "Initial tasks created", tasks: createdTasks });
+    } catch (error) {
+      console.error("Error initializing tasks:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   app.post("/api/action-plan/tasks", async (req, res) => {
     if (!req.isAuthenticated()) {

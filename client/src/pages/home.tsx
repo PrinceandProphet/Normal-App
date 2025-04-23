@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Task } from "@shared/schema";
+import type { Task, Document, CapitalSource, SystemConfig } from "@shared/schema";
 
 // Sample encouraging messages
 const encouragingMessages = [
@@ -58,29 +58,68 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks from the API, fallback to initial tasks if none exist
-  // Using timestamp in the query key forces a refetch when it changes
-  const { data: tasks = initialTasks, refetch: refetchTasks } = useQuery<Task[]>({
+  // Get tasks from the API
+  const { data: tasks = [], refetch: refetchTasks } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks", timestamp],
     staleTime: 0, // Always check for fresh data
     refetchOnWindowFocus: true, // Refetch when the window regains focus
     refetchOnMount: true, // Always refetch when the component mounts
   });
+  
+  // Initialize tasks mutation - creates default tasks if none exist
+  const initializeTasksMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/action-plan/initialize-tasks");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Tasks initialized",
+        description: "Default recovery tasks have been created for you",
+      });
+      refetchTasks(); // Refetch tasks after initialization
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to initialize tasks",
+      });
+    }
+  });
+  
+  // If no tasks exist in the database, initialize them
+  useEffect(() => {
+    if (tasks.length === 0) {
+      initializeTasksMutation.mutate();
+    }
+  }, [tasks.length]);
 
+  // Map the system config stage value to the task stage value
+  const stageMappings = {
+    "S": "secure_stabilize",
+    "T": "take_stock",
+    "A": "align_recovery",
+    "R": "rebuild_restore",
+    "T2": "transition_normal"
+  };
+  
+  const mappedStage = stageMappings[currentStage as keyof typeof stageMappings] || "secure_stabilize";
+  
   // Calculate task counts for the current stage
-  const stageTasks = tasks.filter(task => task.stage === currentStage);
+  const stageTasks = tasks.filter(task => task.stage === mappedStage);
   const completedTaskCount = stageTasks.filter(task => task.completed).length;
-  const totalTaskCount = currentStage === "S" ? 4 : stageTasks.length;
+  const totalTaskCount = currentStage === "S" ? 4 : stageTasks.length || 0;
   const remainingTaskCount = totalTaskCount - completedTaskCount;
   const progressPercentage = totalTaskCount > 0 
     ? Math.round((completedTaskCount / totalTaskCount) * 100) 
     : 0;
 
-  const { data: documents = [] } = useQuery({
+  const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
-  const { data: fundingOpportunities = [] } = useQuery({
+  const { data: fundingOpportunities = [] } = useQuery<CapitalSource[]>({
     queryKey: ["/api/capital-sources"],
   });
 
