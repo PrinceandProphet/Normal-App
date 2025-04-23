@@ -650,9 +650,11 @@ export class DatabaseStorage implements IStorage {
     return taskList.map(task => {
       if (task.subtasks) {
         try {
-          // Parse the subtasks JSON string to an array
-          const parsedSubtasks = JSON.parse(task.subtasks as string);
-          task.subtasks = parsedSubtasks;
+          // If it's already an array, keep it; otherwise parse the JSON string
+          if (typeof task.subtasks === 'string') {
+            const parsedSubtasks = JSON.parse(task.subtasks);
+            task.subtasks = parsedSubtasks;
+          }
         } catch (error) {
           console.error(`Error parsing subtasks JSON for task ${task.id}:`, error);
           task.subtasks = [];
@@ -674,9 +676,11 @@ export class DatabaseStorage implements IStorage {
       // Process the subtasks field
       if (task.subtasks) {
         try {
-          // Parse the subtasks JSON string to an array
-          const parsedSubtasks = JSON.parse(task.subtasks as string);
-          task.subtasks = parsedSubtasks;
+          // If it's already an array, keep it; otherwise parse the JSON string
+          if (typeof task.subtasks === 'string') {
+            const parsedSubtasks = JSON.parse(task.subtasks);
+            task.subtasks = parsedSubtasks;
+          }
         } catch (error) {
           console.error(`Error parsing subtasks JSON for task ${task.id}:`, error);
           task.subtasks = [];
@@ -693,10 +697,21 @@ export class DatabaseStorage implements IStorage {
     // Handle subtasks
     let taskToInsert = { ...task };
     
-    if (task.subtasks) {
-      // Convert subtasks to JSON string
-      taskToInsert.subtasks = JSON.stringify(task.subtasks);
+    if (taskToInsert.subtasks !== undefined) {
+      // If subtasks is already a string, keep it as is
+      // Otherwise, stringify the array of objects
+      if (typeof taskToInsert.subtasks !== 'string') {
+        const subtasksJson = JSON.stringify(taskToInsert.subtasks);
+        taskToInsert = { ...taskToInsert, subtasks: subtasksJson };
+      }
     }
+    
+    console.log(`Creating task with data:`, { 
+      ...taskToInsert,
+      subtasks: typeof taskToInsert.subtasks === 'string' 
+        ? `String of length ${taskToInsert.subtasks.length}` 
+        : taskToInsert.subtasks 
+    });
     
     const [created] = await db.insert(tasks).values({
       ...taskToInsert,
@@ -706,9 +721,11 @@ export class DatabaseStorage implements IStorage {
     // Process the subtasks in the returned task
     if (created.subtasks) {
       try {
-        // Parse the subtasks JSON string to an array
-        const parsedSubtasks = JSON.parse(created.subtasks as string);
-        created.subtasks = parsedSubtasks;
+        // If it's already an array, keep it; otherwise parse the JSON string
+        if (typeof created.subtasks === 'string') {
+          const parsedSubtasks = JSON.parse(created.subtasks);
+          created.subtasks = parsedSubtasks;
+        }
       } catch (error) {
         console.error(`Error parsing subtasks JSON for new task ${created.id}:`, error);
         created.subtasks = [];
@@ -721,16 +738,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTask(id: number, task: Partial<InsertTask>): Promise<Task> {
+    // Create a copy of the task data to avoid modifying the original
+    let taskToUpdate = { ...task };
+    
     // Handle subtasks specially - convert to JSON if provided
-    if (task.subtasks) {
-      // Store subtasks as a JSON string
-      const subtasksJson = JSON.stringify(task.subtasks);
-      task = { ...task, subtasks: subtasksJson };
+    if (taskToUpdate.subtasks !== undefined) {
+      // If subtasks is already a string, keep it as is
+      // Otherwise, stringify the array of objects
+      if (typeof taskToUpdate.subtasks !== 'string') {
+        const subtasksJson = JSON.stringify(taskToUpdate.subtasks);
+        taskToUpdate = { ...taskToUpdate, subtasks: subtasksJson };
+      }
     }
+
+    // Print debug info to help diagnose issues
+    console.log(`Updating task ${id} with data:`, { 
+      ...taskToUpdate,
+      subtasks: typeof taskToUpdate.subtasks === 'string' 
+        ? `String of length ${taskToUpdate.subtasks.length}` 
+        : taskToUpdate.subtasks 
+    });
 
     const [updated] = await db
       .update(tasks)
-      .set(task)
+      .set(taskToUpdate)
       .where(eq(tasks.id, id))
       .returning();
     
@@ -739,11 +770,13 @@ export class DatabaseStorage implements IStorage {
     // Process the subtasks field in the returned task
     if (updated.subtasks) {
       try {
-        // Parse the subtasks JSON string back to an array
-        const parsedSubtasks = JSON.parse(updated.subtasks as string);
-        updated.subtasks = parsedSubtasks;
+        // If it's already an array, keep it; otherwise parse the JSON string
+        if (typeof updated.subtasks === 'string') {
+          const parsedSubtasks = JSON.parse(updated.subtasks);
+          updated.subtasks = parsedSubtasks;
+        }
       } catch (error) {
-        console.error("Error parsing subtasks JSON:", error);
+        console.error(`Error parsing subtasks JSON for task ${id}:`, error);
         updated.subtasks = [];
       }
     } else {
