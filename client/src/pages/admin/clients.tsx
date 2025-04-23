@@ -1879,52 +1879,967 @@ export default function AllClientsPage() {
         </DialogContent>
       </Dialog>
             
-      {/* Client Details Dialog - Can be implemented later */}
+      {/* Client Edit Dialog - Uses the same form as Add New Client */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Client Details</DialogTitle>
+            <DialogTitle>Edit Client</DialogTitle>
             <DialogDescription>
-              View and edit client information
+              Update client details using the tabs below.
             </DialogDescription>
           </DialogHeader>
 
-          {selectedClient && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <User className="h-16 w-16 mx-auto text-primary/20" />
-                <h3 className="mt-2 text-lg font-medium">
-                  {selectedClient.firstName && selectedClient.lastName
-                    ? `${selectedClient.firstName} ${selectedClient.lastName}`
-                    : selectedClient.name}
-                </h3>
-                {selectedClient.username && (
-                  <p className="text-sm text-muted-foreground">@{selectedClient.username}</p>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm">{selectedClient.email || "Not provided"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Phone</p>
-                  <p className="text-sm">{selectedClient.phone || "Not provided"}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm font-medium">Address</p>
-                  <p className="text-sm">{selectedClient.address || "Not provided"}</p>
-                </div>
-              </div>
-              
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Tabbed Navigation */}
+              <Tabs defaultValue="personal" className="w-full">
+                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
+                  <TabsTrigger value="personal" className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    <span className="hidden md:inline">Personal</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="contact" className="flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    <span className="hidden md:inline">Contact</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="residency" className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span className="hidden md:inline">Residency</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="employment" className="flex items-center gap-1">
+                    <BookOpen className="h-4 w-4" />
+                    <span className="hidden md:inline">Employment</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="health" className="flex items-center gap-1">
+                    <HeartPulse className="h-4 w-4" />
+                    <span className="hidden md:inline">Health</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="government" className="flex items-center gap-1">
+                    <Building2 className="h-4 w-4" />
+                    <span className="hidden md:inline">Government</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="disaster" className="flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden md:inline">Disaster</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="account" className="flex items-center gap-1">
+                    <Lock className="h-4 w-4" />
+                    <span className="hidden md:inline">Account</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Personal Information Tab */}
+                <TabsContent value="personal" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Personal Identification</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="First Name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Last Name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date of Birth</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gender</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="non-binary">Non-binary</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pronouns"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preferred Pronouns</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., he/him, she/her, they/them" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ssn"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>SSN/ITIN (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="XXX-XX-XXXX" />
+                          </FormControl>
+                          <FormDescription>
+                            This information is securely stored and masked.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marital Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married">Married</SelectItem>
+                              <SelectItem value="divorced">Divorced</SelectItem>
+                              <SelectItem value="widowed">Widowed</SelectItem>
+                              <SelectItem value="separated">Separated</SelectItem>
+                              <SelectItem value="domestic-partnership">Domestic Partnership</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="primaryLanguage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Language</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., English, Spanish" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="race"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Race</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Race" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ethnicity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ethnicity</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Ethnicity" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="citizenshipStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Citizenship Status</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., US Citizen, Permanent Resident" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Contact Tab */}
+                <TabsContent value="contact" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Contact Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder="email@example.com" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="(555) 123-4567" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Street Address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="City" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="State" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ZIP Code</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="ZIP Code" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Country" defaultValue="United States" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Residency Tab */}
+                <TabsContent value="residency" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Residency Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="residencyStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Residency Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="homeowner">Homeowner</SelectItem>
+                              <SelectItem value="renter">Renter</SelectItem>
+                              <SelectItem value="temporary-housing">Temporary Housing</SelectItem>
+                              <SelectItem value="displaced">Displaced</SelectItem>
+                              <SelectItem value="homeless">Homeless</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="yearAtAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Years at Current Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" min="0" step="0.1" placeholder="Years" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="propertyType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Property Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="single-family">Single Family Home</SelectItem>
+                              <SelectItem value="multi-family">Multi-Family Home</SelectItem>
+                              <SelectItem value="apartment">Apartment</SelectItem>
+                              <SelectItem value="condo">Condominium</SelectItem>
+                              <SelectItem value="mobile-home">Mobile Home</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Employment Tab */}
+                <TabsContent value="employment" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Employment & Education</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="employmentStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Employment Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="full-time">Full-time</SelectItem>
+                              <SelectItem value="part-time">Part-time</SelectItem>
+                              <SelectItem value="self-employed">Self-employed</SelectItem>
+                              <SelectItem value="unemployed">Unemployed</SelectItem>
+                              <SelectItem value="retired">Retired</SelectItem>
+                              <SelectItem value="student">Student</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="occupation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Occupation</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Occupation" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="employer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Employer Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Employer" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="yearsEmployed"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Years in Current Job</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" min="0" step="0.1" placeholder="Years" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="educationLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Education Level</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select education level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="less-than-high-school">Less than High School</SelectItem>
+                              <SelectItem value="high-school">High School or GED</SelectItem>
+                              <SelectItem value="some-college">Some College</SelectItem>
+                              <SelectItem value="associate">Associate's Degree</SelectItem>
+                              <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                              <SelectItem value="graduate">Graduate Degree</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="monthlyIncome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Monthly Income</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Income amount" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Health Tab */}
+                <TabsContent value="health" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Health Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="disabilityStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Person with disability
+                            </FormLabel>
+                            <FormDescription>
+                              Has a disability as defined by the ADA
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="veteranStatus"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Veteran Status
+                            </FormLabel>
+                            <FormDescription>
+                              Has served in the armed forces
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="medicalConditions"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Medical Conditions</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="List any relevant medical conditions (optional)"
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            This information helps ensure appropriate accommodations during recovery.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="insuranceProvider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Health Insurance Provider</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Insurance provider" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="insuranceType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Insurance Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select insurance type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="private">Private Insurance</SelectItem>
+                              <SelectItem value="medicare">Medicare</SelectItem>
+                              <SelectItem value="medicaid">Medicaid</SelectItem>
+                              <SelectItem value="va">VA Healthcare</SelectItem>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Government Tab */}
+                <TabsContent value="government" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Government Assistance</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="receivesFederalBenefits"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Receives Federal Benefits
+                            </FormLabel>
+                            <FormDescription>
+                              Currently receives any form of federal assistance
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="benefitPrograms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Benefit Programs</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., SNAP, TANF, WIC, SSI, etc." />
+                          </FormControl>
+                          <FormDescription>
+                            List any government assistance programs currently enrolled in.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="taxFilingStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tax Filing Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select filing status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married-joint">Married Filing Jointly</SelectItem>
+                              <SelectItem value="married-separate">Married Filing Separately</SelectItem>
+                              <SelectItem value="head-of-household">Head of Household</SelectItem>
+                              <SelectItem value="qualifying-widow">Qualifying Widow(er)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="numberOfDependents"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Dependents</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" min="0" placeholder="Number of dependents" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+                
+                {/* Disaster Tab */}
+                <TabsContent value="disaster" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Disaster Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="disasterType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Disaster Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select disaster type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="hurricane">Hurricane</SelectItem>
+                              <SelectItem value="flood">Flood</SelectItem>
+                              <SelectItem value="tornado">Tornado</SelectItem>
+                              <SelectItem value="wildfire">Wildfire</SelectItem>
+                              <SelectItem value="earthquake">Earthquake</SelectItem>
+                              <SelectItem value="winter-storm">Winter Storm</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="femaRegistered"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Registered with FEMA
+                            </FormLabel>
+                            <FormDescription>
+                              Has registered with FEMA for disaster assistance
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="femaApplicationNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>FEMA Application Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="FEMA Application #" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="disasterStartDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Disaster Incident Date</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="propertyDamageLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Property Damage Level</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select damage level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="affected">Affected</SelectItem>
+                              <SelectItem value="minor">Minor</SelectItem>
+                              <SelectItem value="major">Major</SelectItem>
+                              <SelectItem value="destroyed">Destroyed</SelectItem>
+                              <SelectItem value="inaccessible">Inaccessible</SelectItem>
+                              <SelectItem value="unknown">Unknown</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="disasterAssistanceNotes"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Disaster Assistance Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Additional notes regarding disaster assistance needs"
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+
+                {/* Account Tab */}
+                <TabsContent value="account" className="mt-0">
+                  <h3 className="font-semibold text-lg text-primary mb-4">Account Information</h3>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Username" />
+                          </FormControl>
+                          <FormDescription>
+                            Used for login. Leave unchanged to keep current username.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="password" 
+                              placeholder="New password (leave blank to keep current)" 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Leave blank to keep current password.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="userType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>User Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select user type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="survivor">Survivor</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Determines user permissions in the system.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="organizationId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Organization</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value?.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select organization" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {organizations && organizations.map(org => (
+                                <SelectItem key={org.id} value={org.id.toString()}>
+                                  {org.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Primary organization for this client.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>
-                  Close
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Save Changes
                 </Button>
               </DialogFooter>
-            </div>
-          )}
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
