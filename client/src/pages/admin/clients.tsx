@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   ColumnDef,
@@ -31,9 +48,13 @@ import {
 import { 
   User, UserCircle, MoreHorizontal, ChevronDown, Search, 
   ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
-  Eye, Edit, Trash2
+  Eye, Edit, Trash2, Plus, Building2
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertUserSchema } from "@shared/schema";
+import * as z from "zod";
 import {
   Table,
   TableBody,
@@ -80,14 +101,94 @@ interface SurvivorData {
   organizations?: { id: number; name: string; status: string }[];
 }
 
+// Create a custom schema for client creation with validation
+const clientFormSchema = insertUserSchema
+  .extend({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    username: z.string().min(3, "Username must be at least 3 characters").optional(),
+    password: z.string().min(8, "Password must be at least 8 characters").optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    organizationId: z.number().optional(),
+  })
+  .omit({ id: true });
+
+type ClientFormValues = z.infer<typeof clientFormSchema>;
+
 export default function AllClientsPage() {
   const { toast } = useToast();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
+  const [showClientForm, setShowClientForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [, navigate] = useLocation();
+  
+  // Form setup for client creation
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      userType: "survivor",
+      role: "user",
+    },
+  });
+
+  // Create client mutation
+  const createClientMutation = useMutation({
+    mutationFn: async (data: ClientFormValues) => {
+      // Combine firstName and lastName for the name field
+      const fullData = {
+        ...data,
+        name: `${data.firstName} ${data.lastName}`,
+      };
+      
+      const response = await apiRequest('POST', '/api/register', fullData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create client");
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Clear form and close dialog
+      form.reset();
+      setShowClientForm(false);
+      setSelectedOrgId(null);
+      
+      // Show success message
+      toast({
+        title: "Client created",
+        description: "The client was successfully created",
+      });
+      
+      // Refresh the clients list
+      queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating client",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle form submission
+  const onSubmit = (data: ClientFormValues) => {
+    // Add organization ID if selected
+    if (selectedOrgId) {
+      data.organizationId = selectedOrgId;
+    }
+    
+    createClientMutation.mutate(data);
+  };
 
   // Fetch all clients/survivors
   const {
@@ -507,6 +608,181 @@ export default function AllClientsPage() {
         </Button>
       </div>
 
+      {/* Client Creation Dialog */}
+      <Dialog open={showClientForm} onOpenChange={setShowClientForm}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+            <DialogDescription>
+              Create a new client account. Clients can be added to organizations after creation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="First Name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Last Name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Email" type="email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Phone Number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Account Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Username" />
+                        </FormControl>
+                        <FormDescription>
+                          If provided, the client can log in to their account.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Password" type="password" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Address</h3>
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Enter client's address" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Organization Assignment */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Organization</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="organizationId">Assign to Organization</Label>
+                    <Select
+                      onValueChange={(value) => setSelectedOrgId(Number(value))}
+                      value={selectedOrgId?.toString() || ""}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an organization (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizations?.map((org) => (
+                          <SelectItem key={org.id} value={org.id.toString()}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      The client will be associated with this organization upon creation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  form.reset();
+                  setShowClientForm(false);
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createClientMutation.isPending}
+                >
+                  {createClientMutation.isPending && (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Create Client
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+            
       {/* Client Details Dialog - Can be implemented later */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
