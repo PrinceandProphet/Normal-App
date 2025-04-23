@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Organization, User } from "@shared/schema";
 import { Loader2, Plus, Save, Building2, Users, ArrowRight } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Redirect, useLocation, useNavigate } from "wouter";
+import { Redirect, useLocation } from "wouter";
 
 // Define the form validation schema
 const createOrgSchema = z.object({
@@ -74,13 +75,13 @@ export default function AdminDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch organizations for the table listing
-  const { data: organizations, isLoading: orgsLoading } = useQuery({
+  const { data: organizations = [], isLoading: orgsLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
     enabled: user?.role === "super_admin",
   });
   
   // Fetch clients for the dashboard stats
-  const { data: survivors, isLoading: survivorsLoading } = useQuery({
+  const { data: survivors = [], isLoading: survivorsLoading } = useQuery<User[]>({
     queryKey: ["/api/survivors"],
     enabled: user?.role === "super_admin",
   });
@@ -612,13 +613,13 @@ export default function AdminDashboard() {
             <div className="flex justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : !organizations || organizations.length === 0 ? (
+          ) : organizations.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
               No organizations found
             </div>
           ) : (
             <div className="space-y-4">
-              {organizations.slice(0, 3).map((org: any) => (
+              {organizations.slice(0, 3).map((org) => (
                 <div key={org.id} className="flex items-center justify-between border-b pb-3">
                   <div className="flex items-start">
                     <Building2 className="h-5 w-5 mt-0.5 mr-2 text-muted-foreground" />
