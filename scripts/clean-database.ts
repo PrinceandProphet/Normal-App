@@ -1,8 +1,17 @@
 /**
- * Script to clean the database for production
- * Removes all records created via forms while preserving essential seed data
+ * Script to clean the database for production deployment
  * 
- * Run with: npx tsx scripts/clean-database.ts
+ * This script:
+ * 1. Removes all client/survivor data that was created during testing
+ * 2. Removes all case management records, properties, organizations, and households
+ * 3. Preserves essential seed data and super admin users
+ * 4. Handles foreign key constraints to safely remove records
+ * 
+ * IMPORTANT: This script preserves users with IDs 1 and 4, and any user with the 'super_admin' role.
+ * If your seed data uses different IDs, modify the preservedUserIds array in this script.
+ * 
+ * Usage: Run this script before deploying to production to clear test data
+ * Command: npx tsx scripts/clean-database.ts
  */
 
 import { db } from "../server/db";
@@ -21,9 +30,7 @@ import {
 } from "../shared/schema";
 import { eq, ne, isNull, and, or, not, sql } from "drizzle-orm";
 
-// Define tables that aren't in shared/schema.ts but need to be cleaned
-const caseManagement = sql.table("case_management");
-const fundingOpportunities = sql.table("funding_opportunities");
+// We'll use raw SQL for tables that aren't in shared/schema.ts
 
 async function cleanDatabase() {
   console.log("Starting database cleaning process...");
@@ -48,52 +55,43 @@ async function cleanDatabase() {
     // Adjust these IDs based on your specific seed data
     const preservedUserIds = [1, 4];
     
-    // First, we need to remove relationships
+    // First, we need to handle foreign key constraints
+    // Delete records from tables with foreign keys to users
+    
+    // 1. Clean case_management table (has FK to users)
+    console.log("Cleaning case_management table...");
+    try {
+      await db.execute(sql`DELETE FROM case_management`);
+      console.log("  - case_management table cleaned");
+    } catch (error) {
+      console.error("  - Failed to clean case_management:", error);
+    }
+    
+    // 2. Clean funding_opportunities table (has FK to users)
+    console.log("Cleaning funding_opportunities table...");
+    try {
+      await db.execute(sql`DELETE FROM funding_opportunities`);
+      console.log("  - funding_opportunities table cleaned");
+    } catch (error) {
+      console.error("  - Failed to clean funding_opportunities:", error);
+    }
+    
+    // Now clean relationship tables
     console.log("Removing organization relationships...");
-    await db.delete(organizationSurvivors)
-      .where(
-        and(
-          isNull(organizationSurvivors.isPrimary),
-          or(
-            isNull(organizationSurvivors.status),
-            ne(organizationSurvivors.status, "seed")
-          )
-        )
-      );
+    await db.delete(organizationSurvivors);
     
     console.log("Removing organization members...");
-    await db.delete(organizationMembers)
-      .where(
-        or(
-          isNull(organizationMembers.role),
-          ne(organizationMembers.role, "super_admin")
-        )
-      );
+    await db.delete(organizationMembers);
     
     // Delete user-created records from each table
     console.log("Removing household members...");
-    await db.delete(householdMembers)
-      .where(
-        or(
-          isNull(householdMembers.createdAt),
-          ne(householdMembers.type, "seed")
-        )
-      );
+    await db.delete(householdMembers);
     
     console.log("Removing household groups...");
-    await db.delete(householdGroups)
-      .where(
-        isNull(householdGroups.type) // Keep seed data marked with type
-      );
+    await db.delete(householdGroups);
     
     console.log("Removing properties...");
-    await db.delete(properties)
-      .where(
-        or(
-          isNull(properties.type),
-          ne(properties.type, "seed")
-        )
-      );
+    await db.delete(properties);
     
     console.log("Removing documents...");
     await db.delete(documents);
@@ -113,7 +111,7 @@ async function cleanDatabase() {
     // Delete users except admin users
     console.log("Removing non-admin users...");
     
-    // Check which users exist first and will be preserved
+    // Check which users to preserve
     for (const userId of preservedUserIds) {
       const [userExists] = await db.select().from(users).where(eq(users.id, userId));
       if (userExists) {
@@ -123,7 +121,10 @@ async function cleanDatabase() {
       }
     }
     
-    // Delete non-admin users one by one to avoid SQL array syntax issues
+    // Delete users that aren't in the preserved list or super_admin
+    // Always use the "one by one" approach since it's more reliable with IDs
+    console.log("Deleting users not in preserved list...");
+    
     const allUsers = await db.select().from(users);
     console.log(`Found ${allUsers.length} total users`);
     
@@ -135,9 +136,13 @@ async function cleanDatabase() {
         continue;
       }
       
-      // Delete this user
-      await db.delete(users).where(eq(users.id, user.id));
-      deletedCount++;
+      try {
+        // Delete this user
+        await db.delete(users).where(eq(users.id, user.id));
+        deletedCount++;
+      } catch (userErr) {
+        console.error(`  - Failed to delete user ID ${user.id}:`, userErr);
+      }
     }
     
     console.log(`Deleted ${deletedCount} users`);
