@@ -668,7 +668,7 @@ export default function Household() {
                                         <div className="bg-muted/30 px-4 py-3 mb-6 rounded-md">
                                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                             <div className="flex items-center space-x-2 text-sm">
-                                              <span className="font-semibold text-primary">Current Property:</span>
+                                              <span className="font-semibold text-primary">Impacted Property:</span>
                                               <span>{properties.find(p => p.id === selectedPropertyId)?.address || "None selected"}</span>
                                             </div>
                                             {editingMemberId && (
@@ -1128,10 +1128,10 @@ export default function Household() {
                                                   />
                                                 </div>
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 3. Residency Information */}
-                                            <div className={activeTab === "residency" ? "" : "hidden"}>
+                                            <TabsContent value="residency" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Residency Information</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
@@ -1230,10 +1230,10 @@ export default function Household() {
                                                   )}
                                                 />
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 4. Education & Employment */}
-                                            <div className={activeTab === "education" ? "" : "hidden"}>
+                                            <TabsContent value="employment" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Education & Employment</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
@@ -1382,10 +1382,10 @@ export default function Household() {
                                                   )}
                                                 />
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 5. Health & Wellness */}
-                                            <div className={activeTab === "health" ? "" : "hidden"}>
+                                            <TabsContent value="health" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Health & Wellness</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
@@ -1500,10 +1500,10 @@ export default function Household() {
                                                   />
                                                 </div>
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 6. Government or Institutional Involvement */}
-                                            <div className={activeTab === "govt" ? "" : "hidden"}>
+                                            <TabsContent value="government" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Government/Institutional Involvement</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
@@ -1589,10 +1589,10 @@ export default function Household() {
                                                   />
                                                 </div>
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 7. Disaster-Specific Impacts */}
-                                            <div className={activeTab === "disaster" ? "" : "hidden"}>
+                                            <TabsContent value="disaster" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Disaster-Specific Impacts</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1665,10 +1665,10 @@ export default function Household() {
                                                   )}
                                                 />
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
                                             {/* 8. Notes and Additional Info */}
-                                            <div className={activeTab === "notes" ? "" : "hidden"}>
+                                            <TabsContent value="notes" className="mt-0">
                                               <h3 className="font-semibold text-lg text-primary mb-4">Notes and Additional Information</h3>
                                               <div className="grid gap-4 grid-cols-1">
                                                 <div>
@@ -1726,9 +1726,11 @@ export default function Household() {
                                                   </div>
                                                 </div>
                                               </div>
-                                            </div>
+                                            </TabsContent>
 
-                                            <div className="flex justify-end gap-2">
+                                            </Tabs>
+                                            
+                                            <div className="flex justify-end gap-2 mt-4">
                                               <Button 
                                                 type="button" 
                                                 variant="outline" 
