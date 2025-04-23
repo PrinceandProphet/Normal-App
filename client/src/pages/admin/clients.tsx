@@ -1922,9 +1922,6 @@ export default function AllClientsPage() {
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   Close
                 </Button>
-                <Button onClick={() => handleViewAsClient(selectedClient)}>
-                  View as Client
-                </Button>
               </DialogFooter>
             </div>
           )}
