@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -7,6 +7,7 @@ import {
 import { User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -22,6 +23,9 @@ type LoginData = Pick<InsertUser, "username" | "password">;
 export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [isRouteChanging, setIsRouteChanging] = useState(false);
+  
   const {
     data: user,
     error,
@@ -39,16 +43,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       
-      // Redirect super admins to admin dashboard
-      if (user.role === 'super_admin') {
-        window.location.href = '/admin';
-      } else if (user.role === 'admin') {
-        // Redirect organization admins to org admin dashboard
-        window.location.href = '/org-admin';
-      } else {
-        // Regular users go to home
-        window.location.href = '/';
-      }
+      // Set route changing flag to true to prevent flicker
+      setIsRouteChanging(true);
+      
+      // Use wouter's setLocation for smooth client-side navigation
+      setTimeout(() => {
+        if (user.role === 'super_admin') {
+          setLocation('/admin');
+        } else if (user.role === 'admin') {
+          setLocation('/org-admin');
+        } else {
+          setLocation('/');
+        }
+        
+        // Reset route changing flag once navigation is complete
+        setIsRouteChanging(false);
+      }, 50);
       
       toast({
         title: "Login successful",
@@ -72,14 +82,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       
-      // Redirect based on role, same as login
-      if (user.role === 'super_admin') {
-        window.location.href = '/admin';
-      } else if (user.role === 'admin') {
-        window.location.href = '/org-admin';
-      } else {
-        window.location.href = '/';
-      }
+      // Set route changing flag to true to prevent flicker
+      setIsRouteChanging(true);
+      
+      // Use wouter's setLocation for smooth client-side navigation
+      setTimeout(() => {
+        if (user.role === 'super_admin') {
+          setLocation('/admin');
+        } else if (user.role === 'admin') {
+          setLocation('/org-admin');
+        } else {
+          setLocation('/');
+        }
+        
+        // Reset route changing flag once navigation is complete
+        setIsRouteChanging(false);
+      }, 50);
       
       toast({
         title: "Registration successful",
