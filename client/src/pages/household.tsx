@@ -46,6 +46,7 @@ export default function Household() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("basic"); // For tabbed interface in member form
 
   // Properties query - filter by survivorId if client selected
   const { data: properties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
@@ -374,6 +375,18 @@ export default function Household() {
   const handleGroupDeselect = () => {
     setSelectedGroupId(null);
   };
+  
+  // Helper function to insert meta tags in text fields
+  const insertMetaTag = (fieldName: string, tag: string) => {
+    const currentValue = memberForm.getValues(fieldName) as string || '';
+    const newValue = currentValue + ` #${tag}`;
+    memberForm.setValue(fieldName, newValue.trim());
+    
+    toast({
+      title: "Meta Tag Added",
+      description: `Added #${tag} to ${fieldName}`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -636,17 +649,97 @@ export default function Household() {
                                           Add Member
                                         </Button>
                                       </DialogTrigger>
-                                      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                                      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                                         <DialogHeader>
-                                          <DialogTitle>
+                                          <DialogTitle className="text-2xl font-bold text-primary">
                                             {editingMemberId ? "Edit Household Member" : "Add Household Member"}
                                           </DialogTitle>
+                                          <p className="text-muted-foreground mt-2">
+                                            Fill out the member details below. Fields are organized into sections for easier navigation.
+                                          </p>
                                         </DialogHeader>
+                                        <div className="bg-muted/30 px-4 py-3 mb-6 rounded-md">
+                                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                            <div className="flex items-center space-x-2 text-sm">
+                                              <span className="font-semibold text-primary">Current Property:</span>
+                                              <span>{properties.find(p => p.id === selectedPropertyId)?.address || "None selected"}</span>
+                                            </div>
+                                            {editingMemberId && (
+                                              <div className="flex flex-col space-y-2">
+                                                <div className="text-sm font-medium mb-1">Move to different property:</div>
+                                                <Select 
+                                                  onValueChange={(value) => {
+                                                    const propertyId = parseInt(value);
+                                                    if (propertyId !== selectedPropertyId) {
+                                                      // Find the first household group in the target property
+                                                      const targetGroups = getGroupsForProperty(propertyId);
+                                                      const targetGroupId = targetGroups.length > 0 ? targetGroups[0].id : null;
+                                                      
+                                                      if (targetGroupId) {
+                                                        // Set this group as the new target for the member
+                                                        memberForm.setValue("groupId", targetGroupId);
+                                                        toast({
+                                                          title: "Property Changed",
+                                                          description: `Member will be moved to ${properties.find(p => p.id === propertyId)?.address}`,
+                                                        });
+                                                      } else {
+                                                        toast({
+                                                          variant: "destructive",
+                                                          title: "Error",
+                                                          description: "Selected property has no household groups. Please create a group first.",
+                                                        });
+                                                      }
+                                                    }
+                                                  }}
+                                                  defaultValue={selectedPropertyId?.toString()}
+                                                >
+                                                  <SelectTrigger className="w-[280px]">
+                                                    <SelectValue placeholder="Select property" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {properties.map((property) => (
+                                                      <SelectItem 
+                                                        key={property.id} 
+                                                        value={property.id.toString()}
+                                                      >
+                                                        {property.address}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-2 mb-6 overflow-x-auto">
+                                          {[
+                                            { id: "basic", name: "Basic Info" },
+                                            { id: "personal", name: "Personal ID" },
+                                            { id: "contact", name: "Contact Info" },
+                                            { id: "residency", name: "Residency" },
+                                            { id: "education", name: "Education & Employment" },
+                                            { id: "health", name: "Health & Wellness" },
+                                            { id: "govt", name: "Government Assistance" },
+                                            { id: "disaster", name: "Disaster Impacts" }
+                                          ].map((tab) => (
+                                            <Button 
+                                              key={tab.id}
+                                              type="button"
+                                              variant={activeTab === tab.id ? "default" : "outline"}
+                                              size="sm"
+                                              onClick={() => setActiveTab(tab.id)}
+                                              className="rounded-lg whitespace-nowrap"
+                                            >
+                                              {tab.name}
+                                            </Button>
+                                          ))}
+                                        </div>
+                                        
                                         <Form {...memberForm}>
-                                          <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-6">
+                                          <form onSubmit={memberForm.handleSubmit(addOrUpdateMember)} className="space-y-8">
                                             {/* Basic Information Section */}
-                                            <div className="space-y-4">
-                                              <h3 className="font-semibold text-lg">Basic Information</h3>
+                                            <div className={activeTab === "basic" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Basic Information</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -713,8 +806,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 1. Personal Identification Section */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Personal Identification</h3>
+                                            <div className={activeTab === "personal" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Personal Identification</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1540,23 +1633,60 @@ export default function Household() {
                                             <div className="space-y-4 border-t pt-4">
                                               <h3 className="font-semibold text-lg">Notes and Additional Information</h3>
                                               <div className="grid gap-4 grid-cols-1">
-                                                <FormField
-                                                  control={memberForm.control}
-                                                  name="notes"
-                                                  render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Additional Notes</FormLabel>
-                                                      <FormControl>
-                                                        <Textarea 
-                                                          {...field} 
-                                                          placeholder="Enter any additional notes or information" 
-                                                          className="min-h-[100px]"
-                                                        />
-                                                      </FormControl>
-                                                      <FormMessage />
-                                                    </FormItem>
-                                                  )}
-                                                />
+                                                <div>
+                                                  <FormField
+                                                    control={memberForm.control}
+                                                    name="notes"
+                                                    render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Additional Notes</FormLabel>
+                                                        <FormControl>
+                                                          <Textarea 
+                                                            {...field} 
+                                                            placeholder="Enter any additional notes or information" 
+                                                            className="min-h-[120px]"
+                                                          />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                          Add descriptive notes and include meta tags (e.g., #under18 #needsTranslator) for better searching and categorization.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                      </FormItem>
+                                                    )}
+                                                  />
+                                                  
+                                                  <div className="mt-4 mb-4">
+                                                    <div className="text-sm font-medium mb-2">Add Meta Tags:</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                      {["priority", "verified", "incomplete", "followup", "grantEligible", "senior", "disabled", "veteran", "medicalNeeds", "translator"].map(tag => (
+                                                        <Button 
+                                                          key={tag} 
+                                                          type="button" 
+                                                          variant="outline" 
+                                                          size="sm"
+                                                          onClick={() => insertMetaTag('notes', tag)}
+                                                          className="text-xs"
+                                                        >
+                                                          #{tag}
+                                                        </Button>
+                                                      ))}
+                                                      <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                          const customTag = prompt("Enter custom tag (without # symbol):");
+                                                          if (customTag && customTag.trim()) {
+                                                            insertMetaTag('notes', customTag.trim());
+                                                          }
+                                                        }}
+                                                        className="text-xs"
+                                                      >
+                                                        + Custom Tag
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                </div>
                                               </div>
                                             </div>
 
