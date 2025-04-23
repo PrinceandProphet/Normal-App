@@ -158,20 +158,27 @@ export default function AllClientsPage() {
       }
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newClient) => {
       // Clear form and close dialog
       form.reset();
       setShowClientForm(false);
       setSelectedOrgId(null);
+      
+      // Add the new client to the existing list rather than invalidating the query
+      // This prevents the server from returning only the new client
+      queryClient.setQueryData<SurvivorData[]>(['/api/survivors'], (oldData) => {
+        // If there's no existing data, create a new array with just the new client
+        if (!oldData) return [newClient];
+        
+        // Otherwise add the new client to the existing array
+        return [...oldData, newClient];
+      });
       
       // Show success message
       toast({
         title: "Client created",
         description: "The client was successfully created",
       });
-      
-      // Refresh the clients list
-      queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
     },
     onError: (error: Error) => {
       toast({
