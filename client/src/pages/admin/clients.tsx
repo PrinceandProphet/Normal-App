@@ -52,7 +52,7 @@ import {
   ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
   Eye, Edit, Trash2, Plus, Building2, Phone, MapPin,
   FileText, Lock, Building, Mail, BookOpen, HeartPulse, 
-  AlertTriangle, Briefcase as BriefcaseIcon
+  AlertTriangle, Briefcase as BriefcaseIcon, Loader2
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
