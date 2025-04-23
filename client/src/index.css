@@ -11,3 +11,10 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Fix for TabsList to ensure it has enough height for multiple rows of icons */
+  .tabs-list-multirow {
+    @apply h-auto min-h-[100px] pb-2;
+  }
+}

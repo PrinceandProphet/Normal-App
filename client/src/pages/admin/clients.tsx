@@ -780,7 +780,7 @@ export default function AllClientsPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Tabbed Navigation */}
               <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
+                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4 tabs-list-multirow">
                   <TabsTrigger value="personal" className="flex items-center gap-1">
                     <User className="h-4 w-4" />
                     <span className="hidden md:inline">Personal</span>
@@ -1893,7 +1893,7 @@ export default function AllClientsPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Tabbed Navigation */}
               <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
+                <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4 tabs-list-multirow">
                   <TabsTrigger value="personal" className="flex items-center gap-1">
                     <User className="h-4 w-4" />
                     <span className="hidden md:inline">Personal</span>
