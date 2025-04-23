@@ -143,10 +143,12 @@ export default function AllClientsPage() {
   // Create client mutation
   const createClientMutation = useMutation({
     mutationFn: async (data: ClientFormValues) => {
-      // Combine firstName and lastName for the name field
+      // Combine firstName and lastName for the name field and ensure password is provided
       const fullData = {
         ...data,
         name: `${data.firstName} ${data.lastName}`,
+        // Generate a random password if not provided
+        password: data.password || Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
       };
       
       const response = await apiRequest('POST', '/api/register', fullData);
