@@ -48,7 +48,8 @@ import {
 import { 
   User, UserCircle, MoreHorizontal, ChevronDown, Search, 
   ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
-  Eye, Edit, Trash2, Plus, Building2
+  Eye, Edit, Trash2, Plus, Building2, Phone, MapPin,
+  FileText, Lock, Building, Mail 
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -82,6 +83,12 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // Type definitions for the client data
 interface SurvivorData {
