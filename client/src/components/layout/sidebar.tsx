@@ -20,8 +20,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
+  // Super Admin Section
   { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"], isSpecial: true },
+  { name: "Organizations", href: "/admin/organizations", icon: Building2, roles: ["super_admin"] },
+  { name: "All Clients", href: "/admin/clients", icon: Users, roles: ["super_admin"] },
+  
+  // Org Admin Section
   { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"], isSpecial: true },
+  
+  // Regular user navigation
   { name: "Home", href: "/", icon: Home },
   { name: "Action Plan", href: "/action-plan", icon: Shield },
   { name: "Household & Properties", href: "/household", icon: Building2 },

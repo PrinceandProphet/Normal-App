@@ -1,18 +1,37 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Save, Building2, Users, ArrowRight } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Users } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -22,9 +41,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Redirect, useLocation } from "wouter";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Redirect } from "wouter";
 
 // Define the form validation schema
 const createOrgSchema = z.object({
@@ -67,21 +99,14 @@ const createOrgSchema = z.object({
 
 type CreateOrgFormValues = z.infer<typeof createOrgSchema>;
 
-export default function AdminPage() {
+export default function OrganizationsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch organizations for the table listing
   const { data: organizations, isLoading: orgsLoading } = useQuery({
     queryKey: ["/api/organizations"],
-    enabled: user?.role === "super_admin",
-  });
-  
-  // Fetch clients for the dashboard stats
-  const { data: survivors, isLoading: survivorsLoading } = useQuery({
-    queryKey: ["/api/survivors"],
     enabled: user?.role === "super_admin",
   });
 
@@ -151,8 +176,20 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/admin">Admin Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/admin/organizations">Organizations</BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -402,14 +439,6 @@ export default function AdminPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Administrator Details</h3>
                   
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Important</AlertTitle>
-                    <AlertDescription>
-                      An admin account will be created or assigned to manage this organization.
-                    </AlertDescription>
-                  </Alert>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -420,9 +449,6 @@ export default function AdminPage() {
                           <FormControl>
                             <Input type="email" {...field} />
                           </FormControl>
-                          <FormDescription>
-                            The account with this email will be the admin.
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -437,9 +463,6 @@ export default function AdminPage() {
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
-                          <FormDescription>
-                            Optional if creating a new admin.
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -456,14 +479,14 @@ export default function AdminPage() {
                             type="checkbox"
                             checked={field.value}
                             onChange={field.onChange}
-                            className="h-4 w-4 mt-1"
+                            className="rounded border-gray-300 text-primary focus:ring-primary"
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Send notification email</FormLabel>
-                          <FormDescription>
-                            Send an email notification to the administrator.
-                          </FormDescription>
+                          <FormLabel>Send welcome email</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Send an email to the administrator with login instructions
+                          </p>
                         </div>
                       </FormItem>
                     )}
@@ -471,14 +494,18 @@ export default function AdminPage() {
                 </div>
                 
                 <DialogFooter>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={createOrgMutation.isPending}
                   >
-                    {createOrgMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {createOrgMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Organization"
                     )}
-                    Create Organization
                   </Button>
                 </DialogFooter>
               </form>
@@ -486,59 +513,80 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
       </div>
-      
-      {authLoading || orgsLoading ? (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
+
+      <div className="grid grid-cols-1 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Organizations</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle>All Organizations</CardTitle>
             <CardDescription>
-              Manage organizations and administrators.
+              Manage all organizations in the system
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {organizations?.length === 0 ? (
-              <div className="text-center p-6 border rounded-md">
-                <p className="text-muted-foreground">No organizations found. Create your first organization.</p>
+            {orgsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : organizations?.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No organizations found</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-4 text-left font-medium">Name</th>
-                      <th className="py-3 px-4 text-left font-medium">Type</th>
-                      <th className="py-3 px-4 text-left font-medium">Contact</th>
-                      <th className="py-3 px-4 text-left font-medium">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {organizations?.map((org: any) => (
-                      <tr key={org.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-4">{org.name}</td>
-                        <td className="py-3 px-4">{org.type}</td>
-                        <td className="py-3 px-4">
-                          {org.email ? (
-                            <a href={`mailto:${org.email}`} className="text-primary hover:underline">
-                              {org.email}
-                            </a>
-                          ) : org.phone ? org.phone : "-"}
-                        </td>
-                        <td className="py-3 px-4">
-                          {new Date(org.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
+                      <TableRow key={org.id}>
+                        <TableCell className="font-medium">{org.name}</TableCell>
+                        <TableCell className="capitalize">{org.type}</TableCell>
+                        <TableCell>
+                          {org.email || org.phone || "No contact info"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Manage Members"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Edit Organization"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive"
+                              title="Delete Organization"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

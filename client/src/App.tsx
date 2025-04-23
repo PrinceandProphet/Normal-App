@@ -15,10 +15,15 @@ import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
+import { lazy } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/hooks/use-client-context";
 import { ClientSelector } from "@/components/client-selector";
 import { ProtectedRoute } from "@/lib/protected-route";
+
+// Lazy load admin subpages
+const OrganizationsPage = lazy(() => import("@/pages/admin/organizations"));
+const AllClientsPage = lazy(() => import("@/pages/admin/clients"));
 
 function Router() {
   return (
@@ -44,6 +49,8 @@ function Router() {
               <ProtectedRoute path="/capital-sources" component={CapitalSources} />
               <ProtectedRoute path="/profile" component={Profile} />
               <ProtectedRoute path="/admin" component={AdminPage} />
+              <ProtectedRoute path="/admin/organizations" component={OrganizationsPage} />
+              <ProtectedRoute path="/admin/clients" component={AllClientsPage} />
               <ProtectedRoute path="/org-admin" component={OrgAdminPage} />
               <Route component={NotFound} />
             </Switch>
