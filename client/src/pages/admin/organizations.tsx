@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Organization, User } from "@shared/schema";
 import { Loader2, Plus, Pencil, Trash2, Users } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -105,7 +106,7 @@ export default function OrganizationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch organizations for the table listing
-  const { data: organizations, isLoading: orgsLoading } = useQuery({
+  const { data: organizations = [], isLoading: orgsLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
     enabled: user?.role === "super_admin",
   });
@@ -543,7 +544,7 @@ export default function OrganizationsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {organizations?.map((org: any) => (
+                    {organizations.map((org) => (
                       <TableRow key={org.id}>
                         <TableCell className="font-medium">{org.name}</TableCell>
                         <TableCell className="capitalize">{org.type}</TableCell>
