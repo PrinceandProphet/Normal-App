@@ -1,36 +1,12 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Pencil, Trash2, Building2, FolderOpen } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +14,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  SortingState,
+  getSortedRowModel,
+  ColumnFiltersState,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
+import { 
+  User, UserCircle, MoreHorizontal, ChevronDown, Search, 
+  ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
+  Eye, Edit, Trash2
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -48,389 +42,515 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Redirect, useLocation } from "wouter";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
-// Define the form validation schema for creating a survivor
-const createSurvivorSchema = z.object({
-  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  phone: z.string().optional(),
-  organizationId: z.coerce.number().optional(),
-  sendEmail: z.boolean().default(true),
-});
-
-type CreateSurvivorFormValues = z.infer<typeof createSurvivorSchema>;
+// Type definitions for the client data
+interface SurvivorData {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  status?: string;
+  username?: string;
+  role?: string;
+  organizationId?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  firstName?: string;
+  lastName?: string;
+  organizations?: { id: number; name: string; status: string }[];
+}
 
 export default function AllClientsPage() {
-  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [open, setOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
   const [, navigate] = useLocation();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Fetch all clients (survivors)
-  const { data: survivors, isLoading: survivorsLoading } = useQuery({
+  // Fetch all clients/survivors
+  const {
+    data: clients,
+    isLoading,
+    isError,
+  } = useQuery<SurvivorData[]>({
     queryKey: ["/api/survivors"],
-    enabled: user?.role === "super_admin",
   });
 
-  // Fetch organizations for the dropdown
-  const { data: organizations } = useQuery({
+  // Fetch organizations for the select dropdown
+  const { data: organizations } = useQuery<any[]>({
     queryKey: ["/api/organizations"],
-    enabled: user?.role === "super_admin",
   });
 
-  // Form for creating a new survivor/client
-  const form = useForm<CreateSurvivorFormValues>({
-    resolver: zodResolver(createSurvivorSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      email: "",
-      firstName: "",
-      lastName: "",
-      phone: "",
-      sendEmail: true,
+  // Define table columns
+  const columns: ColumnDef<SurvivorData>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const client = row.original;
+        const fullName = client.firstName && client.lastName
+          ? `${client.firstName} ${client.lastName}`
+          : client.name;
+        
+        return (
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-6 w-6 text-muted-foreground" />
+            <div>
+              <div className="font-medium">{fullName}</div>
+              {client.username && (
+                <div className="text-xs text-muted-foreground">{client.username}</div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "email",
+      header: "Contact",
+      cell: ({ row }) => {
+        const client = row.original;
+        return (
+          <div className="space-y-1">
+            {client.email && (
+              <div className="text-sm">{client.email}</div>
+            )}
+            {client.phone && (
+              <div className="text-sm text-muted-foreground">{client.phone}</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "address",
+      header: "Address",
+      cell: ({ row }) => {
+        const address = row.original.address;
+        if (!address) return <span className="text-muted-foreground text-sm">No address</span>;
+        
+        // Truncate long addresses
+        const truncated = address.length > 30 
+          ? `${address.substring(0, 30)}...` 
+          : address;
+        
+        return <span title={address}>{truncated}</span>;
+      },
+    },
+    {
+      accessorKey: "organizations",
+      header: "Organizations",
+      cell: ({ row }) => {
+        const orgs = row.original.organizations;
+        
+        if (!orgs || orgs.length === 0) {
+          return <span className="text-muted-foreground text-sm">None</span>;
+        }
+        
+        return (
+          <div className="flex flex-wrap gap-1">
+            {orgs.slice(0, 2).map((org) => (
+              <Badge key={org.id} variant="outline" className="text-xs">
+                {org.name}
+              </Badge>
+            ))}
+            {orgs.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{orgs.length - 2} more
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string | undefined;
+        
+        if (!status) return <span className="text-muted-foreground text-sm">-</span>;
+        
+        return (
+          <Badge 
+            variant={
+              status === "active" ? "default" : 
+              status === "inactive" ? "secondary" : 
+              status === "pending" ? "outline" : 
+              "destructive"
+            }
+            className="text-xs"
+          >
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const client = row.original;
+        
+        return (
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewAsClient(client);
+              }}
+              title="View as this client"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem 
+                  onClick={() => handleViewAsClient(client)}
+                  className="cursor-pointer"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View as
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleClientDetails(client)}
+                  className="cursor-pointer"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit details
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteClient(client)}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Create the table instance
+  const table = useReactTable({
+    data: clients || [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+      columnFilters,
     },
   });
 
-  const createSurvivorMutation = useMutation({
-    mutationFn: async (data: CreateSurvivorFormValues) => {
-      const response = await apiRequest(
-        "POST",
-        "/api/survivors",
-        data
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create client");
-      }
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Client created successfully",
-        description: "The new client account has been created",
+  // Apply global filter for search
+  useEffect(() => {
+    if (searchTerm) {
+      // Filter the data based on search term
+      const filteredData = clients?.filter(client => {
+        const fullName = client.firstName && client.lastName
+          ? `${client.firstName} ${client.lastName}`
+          : client.name;
+          
+        return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/survivors"] });
-      form.reset();
-      setIsDialogOpen(false);
-    },
-    onError: (error) => {
+      
+      // Update the table data with filtered results
+      table.setOptions(prev => ({
+        ...prev,
+        data: filteredData || [],
+      }));
+    } else {
+      // Reset to original data when search is cleared
+      table.setOptions(prev => ({
+        ...prev,
+        data: clients || [],
+      }));
+    }
+  }, [searchTerm, clients, table]);
+
+  // Handle viewing as a specific client
+  const handleViewAsClient = (client: SurvivorData) => {
+    // Store selected client in localStorage or context
+    sessionStorage.setItem('selectedClient', JSON.stringify(client));
+    
+    // Navigate to the action plan page with this client context
+    navigate('/action-plan');
+  };
+
+  // Handle showing client details dialog
+  const handleClientDetails = (client: SurvivorData) => {
+    setSelectedClient(client);
+    setOpen(true);
+  };
+
+  // Handle client deletion (this would need backend implementation)
+  const handleDeleteClient = (client: SurvivorData) => {
+    if (confirm(`Are you sure you want to delete ${client.name}?`)) {
+      // Implement deletion logic here
       toast({
-        title: "Failed to create client",
-        description: error.message,
+        title: "Not implemented",
+        description: "Client deletion is not implemented in this version.",
         variant: "destructive",
       });
-    },
-  });
-
-  // Only super admins can access this page
-  if (!authLoading && (!user || user.role !== "super_admin")) {
-    return <Redirect to="/" />;
-  }
-
-  async function onSubmit(data: CreateSurvivorFormValues) {
-    createSurvivorMutation.mutate(data);
-  }
-
-  const viewClient = (survivorId: number) => {
-    // Set the context to this client and navigate to the household page
-    localStorage.setItem('selectedClientId', survivorId.toString());
-    navigate('/household');
+    }
   };
 
   return (
     <div className="space-y-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin">Admin Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin/clients">All Clients</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">All Clients</h1>
+          <p className="text-muted-foreground">
+            View and manage all clients in the system
+          </p>
+        </div>
+      </div>
 
+      {/* Search and filter section */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">All Clients</h1>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="default" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Client
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Create New Client</DialogTitle>
-              <DialogDescription>
-                Create a new client account
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name*</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name*</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email*</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username*</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password*</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="organizationId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assign to Organization</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                          value={field.value?.toString()}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select organization (optional)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {organizations?.map((org: any) => (
-                              <SelectItem key={org.id} value={org.id.toString()}>
-                                {org.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="sendEmail"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Send welcome email</FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Send an email to the client with login instructions
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={createSurvivorMutation.isPending}
-                  >
-                    {createSurvivorMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Client"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex flex-1 items-center space-x-2">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search clients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 w-full"
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setSearchTerm("")}
+              >
+                <XCircle className="h-4 w-4" />
+                <span className="sr-only">Clear</span>
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          {/* Optional: Add filter buttons here */}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>All Clients</CardTitle>
-            <CardDescription>
-              View and manage all clients in the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {survivorsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : survivors?.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No clients found</p>
-              </div>
+      {/* Clients table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-8 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                </TableRow>
+              ))
+            ) : isError ? (
+              // Error state
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="h-6 w-6 text-muted-foreground" />
+                    <p>Failed to load clients</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/survivors'] })}
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length ? (
+              // Data rows
+              table.getRowModel().rows.map((row) => (
+                <TableRow 
+                  key={row.id}
+                  onClick={() => handleViewAsClient(row.original)}
+                  className="cursor-pointer hover:bg-accent"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : searchTerm ? (
+              // No results for search
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No clients found matching "{searchTerm}"
+                </TableCell>
+              </TableRow>
             ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Organizations</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {survivors?.map((survivor: any) => (
-                      <TableRow key={survivor.id}>
-                        <TableCell className="font-medium">
-                          {survivor.name}
-                        </TableCell>
-                        <TableCell>
-                          {survivor.email || survivor.phone || "No contact info"}
-                        </TableCell>
-                        <TableCell>
-                          {survivor.organizations?.length ? (
-                            <div className="flex items-center">
-                              <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <span>
-                                {survivor.organizations.length} organization{survivor.organizations.length !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          ) : (
-                            "Not associated"
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-2 py-0"
-                              onClick={() => viewClient(survivor.id)}
-                              title="View Client Details"
-                            >
-                              <FolderOpen className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title="Edit Client"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive"
-                              title="Delete Client"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              // No data
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No clients found
+                </TableCell>
+              </TableRow>
             )}
-          </CardContent>
-        </Card>
+          </TableBody>
+        </Table>
       </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-end space-x-2">
+        <div className="text-sm text-muted-foreground">
+          Page{" "}
+          <span className="font-medium">
+            {table.getState().pagination.pageIndex + 1}
+          </span>{" "}
+          of{" "}
+          <span className="font-medium">{table.getPageCount()}</span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
+
+      {/* Client Details Dialog - Can be implemented later */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Client Details</DialogTitle>
+            <DialogDescription>
+              View and edit client information
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedClient && (
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <User className="h-16 w-16 mx-auto text-primary/20" />
+                <h3 className="mt-2 text-lg font-medium">
+                  {selectedClient.firstName && selectedClient.lastName
+                    ? `${selectedClient.firstName} ${selectedClient.lastName}`
+                    : selectedClient.name}
+                </h3>
+                {selectedClient.username && (
+                  <p className="text-sm text-muted-foreground">@{selectedClient.username}</p>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Email</p>
+                  <p className="text-sm">{selectedClient.email || "Not provided"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Phone</p>
+                  <p className="text-sm">{selectedClient.phone || "Not provided"}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm font-medium">Address</p>
+                  <p className="text-sm">{selectedClient.address || "Not provided"}</p>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => handleViewAsClient(selectedClient)}>
+                  View as Client
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,37 +1,11 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Pencil, Trash2, Users } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +16,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Plus, Building2, Users, Phone, Mail, Globe, MapPin, Trash2, Edit, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Organization } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,112 +51,159 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Redirect } from "wouter";
 
-// Define the form validation schema
-const createOrgSchema = z.object({
-  organization: z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    type: z.string().min(1, { message: "Type is required" }),
-    address1: z.string().optional(),
-    address2: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    zipCode: z.string().optional(),
-    country: z.string().default("United States"),
-    countryCode: z.string().default("+1"),
-    phone: z.string().optional(),
-    email: z.string().email().optional(),
-    website: z.string().optional(),
-  }).transform(data => {
-    // Auto-prepend http:// to website URLs if missing
-    if (data.website && data.website.trim() !== "" && !data.website.startsWith("http")) {
-      data.website = `http://${data.website}`;
-    }
-    
-    // Compile address for backend
-    const addressParts = [
-      data.address1,
-      data.address2,
-      data.city && data.state ? `${data.city}, ${data.state} ${data.zipCode || ''}` : (data.city || data.state || ''),
-      data.country !== "United States" ? data.country : ''
-    ].filter(Boolean);
-    
-    return {
-      ...data,
-      address: addressParts.join('\n').trim()
-    };
-  }),
-  adminEmail: z.string().email({ message: "Valid email required" }),
-  adminName: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
-  sendEmail: z.boolean().default(true),
+// Organization form schema with address fields
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  phone: z.string().min(10, { message: "Phone number must be at least 10 digits" }),
+  website: z.string().optional(),
+  address1: z.string().min(1, { message: "Address is required" }),
+  address2: z.string().optional(),
+  city: z.string().min(1, { message: "City is required" }),
+  state: z.string().min(1, { message: "State is required" }),
+  zipCode: z.string().min(1, { message: "Zip code is required" }),
+  country: z.string().min(1, { message: "Country is required" }),
+  description: z.string().optional(),
+  type: z.string(),
 });
 
-type CreateOrgFormValues = z.infer<typeof createOrgSchema>;
-
 export default function OrganizationsPage() {
-  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [editingOrganization, setEditingOrganization] = useState<Organization | null>(null);
 
-  // Fetch organizations for the table listing
-  const { data: organizations, isLoading: orgsLoading } = useQuery({
-    queryKey: ["/api/organizations"],
-    enabled: user?.role === "super_admin",
+  // Fetch organizations
+  const { data: organizations, isLoading, isError } = useQuery<Organization[]>({
+    queryKey: ['/api/organizations'],
   });
 
-  // Form for creating a new organization and admin
-  const form = useForm<CreateOrgFormValues>({
-    resolver: zodResolver(createOrgSchema),
+  // Form for adding/editing organizations
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      organization: {
+      name: "",
+      email: "",
+      phone: "",
+      website: "",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "United States",
+      description: "",
+      type: "nonprofit",
+    },
+  });
+
+  // Reset form to defaults or populated with org data for editing
+  const resetForm = (org?: Organization) => {
+    if (org) {
+      // Parse address from the organization's address field if it exists
+      const addressParts = org.address ? parseAddress(org.address) : { 
+        address1: "", 
+        address2: "", 
+        city: "", 
+        state: "", 
+        zipCode: "", 
+        country: "United States" 
+      };
+
+      form.reset({
+        name: org.name || "",
+        email: org.email || "",
+        phone: org.phone || "",
+        website: org.website || "",
+        address1: addressParts.address1,
+        address2: addressParts.address2,
+        city: addressParts.city,
+        state: addressParts.state,
+        zipCode: addressParts.zipCode,
+        country: addressParts.country,
+        description: org.description || "",
+        type: org.type || "nonprofit",
+      });
+      setEditingOrganization(org);
+    } else {
+      form.reset({
         name: "",
-        type: "non-profit",
+        email: "",
+        phone: "",
+        website: "",
         address1: "",
         address2: "",
         city: "",
         state: "",
         zipCode: "",
         country: "United States",
-        countryCode: "+1",
-        phone: "",
-        email: "",
-        website: "",
-      },
-      adminEmail: "",
-      adminName: "",
-      sendEmail: true,
-    },
-  });
+        description: "",
+        type: "nonprofit",
+      });
+      setEditingOrganization(null);
+    }
+  };
 
+  // Parse address string into components (simple implementation)
+  const parseAddress = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return {
+      address1: parts[0] || "",
+      address2: parts.length > 4 ? parts[1] : "",
+      city: parts.length > 4 ? parts[2] : parts[1] || "",
+      state: parts.length > 4 ? parts[3] : parts[2] || "",
+      zipCode: parts.length > 4 ? parts[4] : parts[3] || "",
+      country: parts.length > 5 ? parts[5] : parts[4] || "United States",
+    };
+  };
+
+  // Format address components into a single string
+  const formatAddress = (data: z.infer<typeof formSchema>) => {
+    let address = data.address1;
+    if (data.address2) address += ', ' + data.address2;
+    address += ', ' + data.city;
+    address += ', ' + data.state;
+    address += ', ' + data.zipCode;
+    address += ', ' + data.country;
+    return address;
+  };
+
+  // Prepare website URL by ensuring it has http:// prefix
+  const prepareWebsiteUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    return "http://" + url;
+  };
+
+  // Create organization mutation
   const createOrgMutation = useMutation({
-    mutationFn: async (data: CreateOrgFormValues) => {
-      const response = await apiRequest(
-        "POST",
-        "/api/users/create-organization-with-admin",
-        data
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      const formattedData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        website: prepareWebsiteUrl(data.website),
+        address: formatAddress(data),
+        description: data.description,
+        type: data.type,
+      };
+
+      const res = await apiRequest(
+        "POST", 
+        "/api/organizations", 
+        formattedData
       );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create organization");
-      }
-      return await response.json();
+      return await res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/organizations'] });
+      setOpen(false);
       toast({
-        title: "Organization created successfully",
-        description: "The organization and admin have been created",
+        title: "Organization created",
+        description: "The organization has been successfully created",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/organizations"] });
-      form.reset();
-      setIsDialogOpen(false);
     },
     onError: (error) => {
       toast({
@@ -165,428 +214,452 @@ export default function OrganizationsPage() {
     },
   });
 
-  // Only super admins can access this page
-  if (!authLoading && (!user || user.role !== "super_admin")) {
-    return <Redirect to="/" />;
-  }
+  // Update organization mutation
+  const updateOrgMutation = useMutation({
+    mutationFn: async (data: { id: number; updates: any }) => {
+      const res = await apiRequest(
+        "PATCH", 
+        `/api/organizations/${data.id}`, 
+        data.updates
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/organizations'] });
+      setOpen(false);
+      toast({
+        title: "Organization updated",
+        description: "The organization has been successfully updated",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update organization",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  async function onSubmit(data: CreateOrgFormValues) {
-    createOrgMutation.mutate(data);
-  }
+  // Delete organization mutation
+  const deleteOrgMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/organizations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/organizations'] });
+      toast({
+        title: "Organization deleted",
+        description: "The organization has been deleted",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete organization",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle form submission
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const formattedValues = {
+      name: values.name,
+      email: values.email,
+      phone: values.phone,
+      website: prepareWebsiteUrl(values.website),
+      address: formatAddress(values),
+      description: values.description,
+      type: values.type,
+    };
+
+    if (editingOrganization) {
+      updateOrgMutation.mutate({
+        id: editingOrganization.id,
+        updates: formattedValues,
+      });
+    } else {
+      createOrgMutation.mutate(values);
+    }
+  };
+
+  // For opening the dialog and setting up for create or edit
+  const handleOpenDialog = (org?: Organization) => {
+    resetForm(org);
+    setOpen(true);
+  };
 
   return (
     <div className="space-y-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin">Admin Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin/organizations">Organizations</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
+          <p className="text-muted-foreground">
+            Manage all organizations in the system
+          </p>
+        </div>
+        <Button onClick={() => handleOpenDialog()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Organization
+        </Button>
+      </div>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="default" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Organization
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Organization</DialogTitle>
-              <DialogDescription>
-                Create an organization and assign an administrator.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Organization Details</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="organization.name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization Name*</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="organization.type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization Type*</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="non-profit">Non-Profit</SelectItem>
-                              <SelectItem value="government">Government</SelectItem>
-                              <SelectItem value="private">Private</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+      {/* Organizations List */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-20" /></TableCell>
+                </TableRow>
+              ))
+            ) : isError ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <RefreshCw className="h-6 w-6" />
+                    <p>Failed to load organizations</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/organizations'] })}
+                    >
+                      Try again
+                    </Button>
                   </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium">Address Information</h4>
-                    
-                    <FormField
-                      control={form.control}
-                      name="organization.address1"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Address Line 1</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Street address" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="organization.address2"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Address Line 2</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Apt, Suite, Building (optional)" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="organization.city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <FormField
-                          control={form.control}
-                          name="organization.state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State/Province</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="organization.zipCode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Zip/Postal Code</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                </TableCell>
+              </TableRow>
+            ) : organizations && organizations.length > 0 ? (
+              organizations.map((org) => (
+                <TableRow key={org.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      {org.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="capitalize">
+                    {org.type || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center gap-1 text-sm">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        {org.email || "N/A"}
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        {org.phone || "N/A"}
                       </div>
                     </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="organization.country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select country" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="United States">United States</SelectItem>
-                              <SelectItem value="Canada">Canada</SelectItem>
-                              <SelectItem value="Mexico">Mexico</SelectItem>
-                              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                              <SelectItem value="Australia">Australia</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex space-x-2">
-                      <FormField
-                        control={form.control}
-                        name="organization.countryCode"
-                        render={({ field }) => (
-                          <FormItem className="w-24">
-                            <FormLabel>Country Code</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="+1" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="+1">+1</SelectItem>
-                                <SelectItem value="+44">+44</SelectItem>
-                                <SelectItem value="+61">+61</SelectItem>
-                                <SelectItem value="+52">+52</SelectItem>
-                                <SelectItem value="+91">+91</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="organization.phone"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="(555) 555-5555" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate max-w-[200px]">
+                        {org.address || "No address provided"}
+                      </span>
                     </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="organization.email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenDialog(org)}
+                        title="Edit organization"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this organization?")) {
+                            deleteOrgMutation.mutate(org.id);
+                          }
+                        }}
+                        title="Delete organization"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  No organizations found. Add one to get started.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Add/Edit Organization Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingOrganization ? "Edit Organization" : "Add New Organization"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingOrganization
+                ? "Update the organization's information below."
+                : "Fill out the form below to create a new organization."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
                   <FormField
                     control={form.control}
-                    name="organization.website"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website</FormLabel>
+                        <FormLabel>Organization Name*</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="Enter organization name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Administrator Details</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="adminEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Admin Email*</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="adminName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Admin Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (123) 456-7890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="www.example.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Website URL will be automatically formatted
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organization Type*</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                          <SelectItem value="government">Government</SelectItem>
+                          <SelectItem value="educational">Educational</SelectItem>
+                          <SelectItem value="healthcare">Healthcare</SelectItem>
+                          <SelectItem value="religious">Religious</SelectItem>
+                          <SelectItem value="community">Community</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium mb-2">Address Information</h3>
+                </div>
+
+                <div className="col-span-2">
                   <FormField
                     control={form.control}
-                    name="sendEmail"
+                    name="address1"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormItem>
+                        <FormLabel>Address Line 1*</FormLabel>
                         <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                          />
+                          <Input placeholder="123 Main St" {...field} />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Send welcome email</FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Send an email to the administrator with login instructions
-                          </p>
-                        </div>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={createOrgMutation.isPending}
-                  >
-                    {createOrgMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Organization"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>All Organizations</CardTitle>
-            <CardDescription>
-              Manage all organizations in the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {orgsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="address2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address Line 2</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Suite 100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State/Province*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="State" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal/Zip Code*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="12345" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Country" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Brief description of the organization"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
-            ) : organizations?.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No organizations found</p>
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {organizations?.map((org: any) => (
-                      <TableRow key={org.id}>
-                        <TableCell className="font-medium">{org.name}</TableCell>
-                        <TableCell className="capitalize">{org.type}</TableCell>
-                        <TableCell>
-                          {org.email || org.phone || "No contact info"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title="Manage Members"
-                            >
-                              <Users className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title="Edit Organization"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive"
-                              title="Delete Organization"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    createOrgMutation.isPending || updateOrgMutation.isPending
+                  }
+                >
+                  {(createOrgMutation.isPending || updateOrgMutation.isPending) && (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {editingOrganization ? "Update" : "Create"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
