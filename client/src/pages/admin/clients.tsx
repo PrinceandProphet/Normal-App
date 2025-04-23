@@ -130,9 +130,42 @@ export default function AllClientsPage() {
   
   // Function to handle search refresh
   const refreshSearch = () => {
-    const currentTerm = searchTerm;
-    setSearchTerm('');
-    setTimeout(() => setSearchTerm(currentTerm), 10);
+    // Force re-filtering by directly updating the table data
+    if (!clients) return;
+    
+    if (searchTerm) {
+      // Filter the data based on search term
+      const filteredData = clients.filter(client => {
+        if (!client) return false;
+        
+        // Construct a full name from name field and/or firstName+lastName fields
+        const nameFromFields = client.firstName && client.lastName 
+          ? `${client.firstName} ${client.lastName}`
+          : '';
+        const fullName = client.name || nameFromFields || '';
+        
+        // Search in all relevant fields
+        return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (client.firstName && client.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.lastName && client.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
+      });
+      
+      // Directly update the table data with filtered results
+      table.setOptions(prev => ({
+        ...prev,
+        data: filteredData,
+      }));
+      
+      console.log('Forced search refresh:', filteredData.length, 'matches for', searchTerm);
+    } else {
+      // Reset to original data when search is cleared
+      table.setOptions(prev => ({
+        ...prev,
+        data: clients,
+      }));
+    }
   };
   
   // Form setup for client creation
@@ -412,44 +445,16 @@ export default function AllClientsPage() {
     },
   });
 
-  // Apply global filter for search
+  // Apply global filter for search - now triggered manually through refreshSearch()
   useEffect(() => {
-    if (!clients) return;
-    
-    if (searchTerm) {
-      // Filter the data based on search term
-      const filteredData = clients.filter(client => {
-        if (!client) return false;
-        
-        // Construct a full name from name field and/or firstName+lastName fields
-        const nameFromFields = client.firstName && client.lastName 
-          ? `${client.firstName} ${client.lastName}`
-          : '';
-        const fullName = client.name || nameFromFields || '';
-        
-        // Search in name, firstName, lastName, email, and username fields
-        return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (client.firstName && client.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.lastName && client.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
-      });
-      
-      // Update the table data with filtered results
-      table.setOptions(prev => ({
-        ...prev,
-        data: filteredData,
-      }));
-      
-      console.log('Search results:', filteredData.length, 'matches for', searchTerm);
-    } else {
-      // Reset to original data when search is cleared
+    // Initial load of data
+    if (clients && table) {
       table.setOptions(prev => ({
         ...prev,
         data: clients,
       }));
     }
-  }, [searchTerm, clients, table]);
+  }, [clients, table]);
 
   // Handle viewing as a specific client
   const handleViewAsClient = (client: SurvivorData) => {
@@ -510,7 +515,41 @@ export default function AllClientsPage() {
                   <Input
                     placeholder="Search clients..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      // Refresh search on each keystroke
+                      if (clients) {
+                        const term = e.target.value;
+                        if (term) {
+                          const filteredData = clients.filter(client => {
+                            if (!client) return false;
+                            
+                            const nameFromFields = client.firstName && client.lastName 
+                              ? `${client.firstName} ${client.lastName}`
+                              : '';
+                            const fullName = client.name || nameFromFields || '';
+                            
+                            return fullName.toLowerCase().includes(term.toLowerCase()) ||
+                              (client.firstName && client.firstName.toLowerCase().includes(term.toLowerCase())) ||
+                              (client.lastName && client.lastName.toLowerCase().includes(term.toLowerCase())) ||
+                              (client.email && client.email.toLowerCase().includes(term.toLowerCase())) ||
+                              (client.username && client.username.toLowerCase().includes(term.toLowerCase()));
+                          });
+                          
+                          table.setOptions(prev => ({
+                            ...prev,
+                            data: filteredData,
+                          }));
+                          
+                          console.log('Live search:', filteredData.length, 'matches for', term);
+                        } else {
+                          table.setOptions(prev => ({
+                            ...prev,
+                            data: clients,
+                          }));
+                        }
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -525,7 +564,15 @@ export default function AllClientsPage() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setSearchTerm("")}
+                      onClick={() => {
+                        setSearchTerm("");
+                        if (clients) {
+                          table.setOptions(prev => ({
+                            ...prev,
+                            data: clients,
+                          }));
+                        }
+                      }}
                     >
                       <XCircle className="h-4 w-4" />
                       <span className="sr-only">Clear</span>
