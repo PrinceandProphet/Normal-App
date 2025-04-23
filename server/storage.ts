@@ -664,12 +664,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTask(id: number, task: Partial<InsertTask>): Promise<Task> {
+    // Handle subtasks specially - convert to JSON if provided
+    if (task.subtasks) {
+      // Store subtasks as a JSON string
+      const subtasksJson = JSON.stringify(task.subtasks);
+      task = { ...task, subtasks: subtasksJson };
+    }
+
     const [updated] = await db
       .update(tasks)
       .set(task)
       .where(eq(tasks.id, id))
       .returning();
+    
     if (!updated) throw new Error("Task not found");
+    
+    // Process the subtasks field in the returned task
+    if (updated.subtasks) {
+      try {
+        // Parse the subtasks JSON string back to an array
+        const parsedSubtasks = JSON.parse(updated.subtasks as string);
+        updated.subtasks = parsedSubtasks;
+      } catch (error) {
+        console.error("Error parsing subtasks JSON:", error);
+        updated.subtasks = [];
+      }
+    } else {
+      updated.subtasks = [];
+    }
+    
     return updated;
   }
 

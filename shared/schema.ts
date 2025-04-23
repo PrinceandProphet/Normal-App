@@ -239,6 +239,9 @@ export const tasks = pgTable("tasks", {
   assignedToId: integer("assigned_to_id"),
   assignedToType: text("assigned_to_type"), // "survivor" or "practitioner"
   
+  // Store subtasks as a JSON array
+  subtasks: text("subtasks").default("[]"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
