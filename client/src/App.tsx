@@ -15,11 +15,12 @@ import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/hooks/use-client-context";
 import { ClientSelector } from "@/components/client-selector";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { Loader2 } from "lucide-react";
 
 // Lazy load admin subpages
 const OrganizationsPage = lazy(() => import("@/pages/admin/organizations"));
