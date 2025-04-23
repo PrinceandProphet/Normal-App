@@ -355,6 +355,13 @@ export default function AllClientsPage() {
             View and manage all clients in the system
           </p>
         </div>
+        <Button onClick={() => {
+          setSelectedClient(null);
+          setShowClientForm(true);
+        }} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Client
+        </Button>
       </div>
 
       {/* Search and filter section */}
