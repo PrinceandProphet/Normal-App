@@ -11,22 +11,63 @@ import { users } from "@shared/schema";
 const router = Router();
 
 // Get all survivors (filtered by access control)
-router.get("/", filterAccessibleSurvivors, async (req, res) => {
+router.get("/", async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Not authenticated" });
   }
 
   try {
-    // If we have filtered survivor IDs from the middleware, use them
-    if (req.filteredSurvivorIds && req.filteredSurvivorIds.length > 0) {
-      const survivors = await Promise.all(
-        req.filteredSurvivorIds.map(id => storage.getUser(id))
+    // For admin, super_admin, and practitioner users, return all survivors
+    if (
+      req.user.role === "admin" || 
+      req.user.role === "super_admin" || 
+      req.user.userType === "practitioner"
+    ) {
+      // Get all users with userType "survivor"
+      const allSurvivors = await db.select().from(users).where(eq(users.userType, "survivor"));
+      
+      // For each survivor, get their organization relationships
+      const survivorsWithOrgs = await Promise.all(
+        allSurvivors.map(async (survivor) => {
+          const relationships = await storage.getSurvivorOrganizations(survivor.id);
+          const orgs = await Promise.all(
+            relationships.map(async r => {
+              const org = await storage.getOrganization(r.organizationId);
+              if (org) {
+                return {
+                  id: org.id,
+                  name: org.name,
+                  status: r.status
+                };
+              }
+              return null;
+            })
+          );
+          
+          return {
+            ...survivor,
+            organizations: orgs.filter(Boolean)
+          };
+        })
       );
-      return res.json(survivors.filter(Boolean));
+      
+      return res.json(survivorsWithOrgs);
+    } 
+    // For regular users, use access control filtering
+    else {
+      // Apply filtering middleware logic directly
+      await filterAccessibleSurvivors(req, res, async () => {
+        if (req.filteredSurvivorIds && req.filteredSurvivorIds.length > 0) {
+          const survivors = await Promise.all(
+            req.filteredSurvivorIds.map(id => storage.getUser(id))
+          );
+          return res.json(survivors.filter(Boolean));
+        }
+        
+        // Otherwise return an empty array
+        return res.json([]);
+      });
     }
-    
-    // Otherwise return an empty array
-    return res.json([]);
   } catch (error) {
     console.error("Error getting survivors:", error);
     return res.status(500).json({ message: "Internal server error" });
