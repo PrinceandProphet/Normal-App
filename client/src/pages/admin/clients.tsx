@@ -143,9 +143,9 @@ export default function AllClientsPage() {
     createSurvivorMutation.mutate(data);
   }
 
-  const viewClient = (survivorId: number) => {
-    // Set the context to this client and navigate to the household page
-    localStorage.setItem('selectedClientId', survivorId.toString());
+  const viewClient = (client: any) => {
+    // Use the selected client
+    queryClient.setQueryData(['selectedClient'], client);
     navigate('/household');
   };
 
@@ -398,7 +398,7 @@ export default function AllClientsPage() {
                               variant="outline"
                               size="sm"
                               className="h-8 px-2 py-0"
-                              onClick={() => viewClient(survivor.id)}
+                              onClick={() => viewClient(survivor)}
                               title="View Client Details"
                             >
                               <FolderOpen className="h-4 w-4 mr-1" />

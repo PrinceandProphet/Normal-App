@@ -3,6 +3,7 @@ import { User } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { queryClient } from "@/lib/queryClient";
 
 // Define the types
 export interface SurvivorData extends User {
@@ -22,7 +23,10 @@ export const ClientContext = createContext<ClientContextType | null>(null);
 export function ClientProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
+  
+  // Initialize with any client from query cache (set by admin pages)
+  const cachedClient = queryClient.getQueryData<SurvivorData>(['selectedClient']);
+  const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(cachedClient || null);
   
   // Fetch survivors/clients for the organization
   const {
@@ -40,7 +44,25 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     },
+    onSuccess: (data) => {
+      // If we have a cached client ID but not the full data, find it in the newly loaded data
+      if (cachedClient && !selectedClient && data.length > 0) {
+        const foundClient = data.find(client => client.id === cachedClient.id);
+        if (foundClient) {
+          setSelectedClient(foundClient);
+        }
+      }
+    }
   });
+
+  // Update query cache when selected client changes
+  useEffect(() => {
+    if (selectedClient) {
+      queryClient.setQueryData(['selectedClient'], selectedClient);
+    } else {
+      queryClient.removeQueries({ queryKey: ['selectedClient'] });
+    }
+  }, [selectedClient]);
 
   // Clear selected client when logging out
   useEffect(() => {
