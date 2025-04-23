@@ -568,8 +568,32 @@ export default function AllClientsPage() {
 
   // Handle showing client details dialog
   const handleClientDetails = (client: SurvivorData) => {
+    // Set the selected client for editing
     setSelectedClient(client);
     setOpen(true);
+    
+    // Load client data into form
+    form.reset({
+      firstName: client.firstName || '',
+      lastName: client.lastName || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      dateOfBirth: client.dateOfBirth || '',
+      gender: client.gender || '',
+      pronouns: client.pronouns || '',
+      userType: client.type || 'survivor',
+      role: 'user',
+      // Additional personal information
+      ssn: client.ssn || '',
+      maritalStatus: client.maritalStatus || '',
+      primaryLanguage: client.primaryLanguage || '',
+      race: client.race || '',
+      ethnicity: client.ethnicity || '',
+      citizenshipStatus: client.citizenshipStatus || '',
+      veteranStatus: client.veteranStatus || false,
+      disabilityStatus: client.disabilityStatus || false,
+      // Add more fields as needed
+    });
   };
 
   // Handle client deletion (this would need backend implementation)
