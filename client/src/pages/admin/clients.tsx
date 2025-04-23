@@ -128,6 +128,13 @@ export default function AllClientsPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [, navigate] = useLocation();
   
+  // Function to handle search refresh
+  const refreshSearch = () => {
+    const currentTerm = searchTerm;
+    setSearchTerm('');
+    setTimeout(() => setSearchTerm(currentTerm), 10);
+  };
+  
   // Form setup for client creation
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -494,23 +501,46 @@ export default function AllClientsPage() {
         <div className="flex flex-1 items-center space-x-2">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 w-full"
-            />
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setSearchTerm("")}
-              >
-                <XCircle className="h-4 w-4" />
-                <span className="sr-only">Clear</span>
-              </Button>
-            )}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              refreshSearch();
+            }}>
+              <div className="flex">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Search clients..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        refreshSearch();
+                      }
+                    }}
+                    className="pl-8 w-full pr-8"
+                  />
+                  {searchTerm && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setSearchTerm("")}
+                    >
+                      <XCircle className="h-4 w-4" />
+                      <span className="sr-only">Clear</span>
+                    </Button>
+                  )}
+                </div>
+                <Button 
+                  type="submit" 
+                  size="sm" 
+                  className="ml-2"
+                >
+                  Search
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
         <div className="flex items-center space-x-2">
