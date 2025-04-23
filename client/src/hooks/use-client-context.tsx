@@ -10,14 +10,15 @@ export interface SurvivorData extends User {
   status?: string;
 }
 
-type ClientContextType = {
+interface ClientContextType {
   selectedClient: SurvivorData | null;
   setSelectedClient: (client: SurvivorData | null) => void;
   clients: SurvivorData[];
   isLoading: boolean;
   error: Error | null;
-};
+}
 
+// Use null as default context - this is fine with the null check in the hook
 export const ClientContext = createContext<ClientContextType | null>(null);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
@@ -37,23 +38,17 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     queryKey: ['/api/survivors'],
     // Enable for any logged-in user, not just admins
     enabled: !!user,
-    onError: (error) => {
-      toast({
-        title: "Failed to load clients",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    onSuccess: (data) => {
-      // If we have a cached client ID but not the full data, find it in the newly loaded data
-      if (cachedClient && !selectedClient && data.length > 0) {
-        const foundClient = data.find(client => client.id === cachedClient.id);
-        if (foundClient) {
-          setSelectedClient(foundClient);
-        }
+  });
+
+  // Check if we need to find a client by ID in the loaded data
+  useEffect(() => {
+    if (cachedClient && !selectedClient && clients.length > 0) {
+      const foundClient = clients.find(client => client.id === cachedClient.id);
+      if (foundClient) {
+        setSelectedClient(foundClient);
       }
     }
-  });
+  }, [clients, cachedClient, selectedClient]);
 
   // Update query cache when selected client changes
   useEffect(() => {

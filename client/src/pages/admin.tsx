@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, useNavigate } from "wouter";
 
 // Define the form validation schema
 const createOrgSchema = z.object({
@@ -236,9 +236,29 @@ export default function AdminDashboard() {
             <CardDescription>Perform common tasks</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col space-y-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+              onClick={() => navigate('/admin/organizations')}
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              Manage Organizations
+            </Button>
+            
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+              onClick={() => navigate('/admin/clients')}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Manage Clients
+            </Button>
+            
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Organization
                 </Button>
