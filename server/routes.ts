@@ -15,7 +15,8 @@ import {
   insertUserSchema,
   insertOrganizationSchema,
   insertTaskSchema,
-  organizationSurvivors
+  organizationSurvivors,
+  tasks
 } from "@shared/schema";
 import { db } from "./db";
 import { and, eq } from "drizzle-orm";
@@ -1280,30 +1281,18 @@ export async function registerRoutes(app: Express) {
     }
     
     try {
-      // Check if the user already has tasks
-      const allTasks = await storage.getTasks();
-      let userTasks = [];
+      // Check if any secure_stabilize stage tasks already exist
+      const existingS_Tasks = await db.query.tasks.findMany({
+        where: eq(tasks.stage, "secure_stabilize")
+      });
       
-      // Filter tasks based on user type
-      if (req.user.userType === "practitioner") {
-        const relationships = await storage.getOrganizationSurvivors(req.user.organizationId);
-        const survivorIds = relationships.map(r => r.survivorId);
-        
-        userTasks = allTasks.filter(task => 
-          task.assignedToId && 
-          survivorIds.includes(task.assignedToId) && 
-          task.assignedToType === "survivor"
-        );
-      } else if (req.user.userType === "survivor") {
-        userTasks = allTasks.filter(task => 
-          (task.assignedToId === req.user.id && task.assignedToType === "survivor") ||
-          (task.createdById === req.user.id && task.createdByType === "survivor")
-        );
-      }
-      
-      // If tasks already exist, return them
-      if (userTasks.length > 0) {
-        return res.json({ message: "Tasks already exist", tasks: userTasks });
+      // If there are already 4 tasks for the stage, return them without creating more
+      if (existingS_Tasks.length >= 4) {
+        console.log('Tasks already exist for stage secure_stabilize:', existingS_Tasks.length);
+        return res.json({ 
+          message: "Tasks already exist", 
+          tasks: existingS_Tasks 
+        });
       }
       
       // Stage S initial tasks
