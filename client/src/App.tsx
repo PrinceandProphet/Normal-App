@@ -19,8 +19,9 @@ import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/hooks/use-client-context";
 import { ClientSelector } from "@/components/client-selector";
-import { ProtectedRoute } from "@/lib/protected-route";
 import { Loader2 } from "lucide-react";
+import { LoadingWrapper } from "@/components/loading-wrapper";
+import { AuthCheck } from "@/components/auth-check";
 
 // Lazy load admin subpages
 const OrganizationsPage = lazy(() => import("@/pages/admin/organizations"));
@@ -32,35 +33,122 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       
       <Route path="*">
-        <div className="flex h-screen bg-background">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-semibold text-foreground">
-                <ClientSelector />
-              </h1>
-            </div>
-            <Switch>
-              <ProtectedRoute path="/" component={Home} />
-              <ProtectedRoute path="/action-plan" component={ActionPlan} />
-              <ProtectedRoute path="/household" component={Household} />
-              <ProtectedRoute path="/documents" component={Documents} />
-              <ProtectedRoute path="/messages" component={Messages} />
-              <ProtectedRoute path="/contacts" component={Contacts} />
-              <ProtectedRoute path="/capital-sources" component={CapitalSources} />
-              <ProtectedRoute path="/profile" component={Profile} />
-              <ProtectedRoute path="/admin" component={AdminPage} />
-              <ProtectedRoute path="/admin/organizations" component={OrganizationsPage} />
-              <ProtectedRoute path="/admin/clients" component={AllClientsPage} />
-              <ProtectedRoute path="/org-admin" component={OrgAdminPage} />
-              <Route component={NotFound} />
-            </Switch>
-          </main>
-        </div>
+        <LoadingWrapper delay={150} fullHeight={true}>
+          <div className="flex h-screen bg-background">
+            <Sidebar />
+            <main className="flex-1 overflow-y-auto p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-semibold text-foreground">
+                  <ClientSelector />
+                </h1>
+              </div>
+              <Switch>
+                <Route path="/">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Home />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/action-plan">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <ActionPlan />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/household">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Household />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/documents">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Documents />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/messages">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Messages />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/contacts">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Contacts />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/capital-sources">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <CapitalSources />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/profile">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Profile />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/admin">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <AdminPage />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/admin/organizations">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <OrganizationsPage />
+                      </Suspense>
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/admin/clients">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <AllClientsPage />
+                      </Suspense>
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/org-admin">
+                  <AuthCheck>
+                    <LoadingWrapper>
+                      <OrgAdminPage />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route>
+                  <NotFound />
+                </Route>
+              </Switch>
+            </main>
+          </div>
+        </LoadingWrapper>
       </Route>
     </Switch>
   );
 }
+
+// Loading component to show while components are loading
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 function App() {
   return (

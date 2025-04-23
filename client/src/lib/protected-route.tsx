@@ -1,50 +1,41 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route, RouteComponentProps } from "wouter";
-import { Suspense } from "react";
+import { Suspense, ReactNode } from "react";
 
 interface ProtectedRouteProps {
   path: string;
-  component: React.ComponentType<any>;
+  component?: React.ComponentType<any>;
+  children?: ReactNode;
 }
 
-// Loading component to show while components are loading
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
-
-export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
+export function ProtectedRoute({ path, component: Component, children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <Route path={path}>
-        {() => (
-          <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-      </Route>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Route path={path}>
-        {() => <Redirect to="/auth" />}
-      </Route>
-    );
-  }
-
+  // Don't need to show loading indicator here since it's already handled at the App level
+  // This prevents double loading indicators and flickering
+  
   return (
     <Route path={path}>
-      {(params) => (
-        <Suspense fallback={<LoadingFallback />}>
-          <Component {...params} />
-        </Suspense>
-      )}
+      {(params) => {
+        // If still loading, render nothing to prevent flicker
+        if (isLoading) {
+          return null;
+        }
+        
+        // If no user is authenticated, redirect to auth page
+        if (!user) {
+          return <Redirect to="/auth" />;
+        }
+        
+        // If children are provided (for lazy loaded components with custom Suspense), render them
+        if (children) {
+          return <>{children}</>;
+        }
+        
+        // Otherwise, render the component with Suspense
+        return Component ? <Component {...params} /> : null;
+      }}
     </Route>
   );
 }
