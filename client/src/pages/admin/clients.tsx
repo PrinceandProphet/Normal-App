@@ -528,53 +528,33 @@ export default function AllClientsPage() {
         <div className="flex flex-1 items-center space-x-2">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              performSearch(searchTerm, clients);
-            }}>
-              <div className="flex">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="Search clients..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      const term = e.target.value; 
-                      setSearchTerm(term);
-                      // The useEffect will handle updating the filtered results
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        performSearch(searchTerm, clients);
-                      }
-                    }}
-                    className="pl-8 w-full pr-8"
-                  />
-                  {searchTerm && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => {
-                        setSearchTerm("");
-                        // The useEffect will handle clearing the filter
-                      }}
-                    >
-                      <XCircle className="h-4 w-4" />
-                      <span className="sr-only">Clear</span>
-                    </Button>
-                  )}
-                </div>
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  className="ml-2"
+            <div className="relative">
+              <Input
+                placeholder="Search clients..."
+                value={searchTerm}
+                onChange={(e) => {
+                  const term = e.target.value; 
+                  setSearchTerm(term);
+                  // The useEffect will handle updating the filtered results
+                }}
+                className="pl-8 w-full pr-8"
+              />
+              {searchTerm && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => {
+                    setSearchTerm("");
+                    // The useEffect will handle clearing the filter
+                  }}
                 >
-                  Search
+                  <XCircle className="h-4 w-4" />
+                  <span className="sr-only">Clear</span>
                 </Button>
-              </div>
-            </form>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
