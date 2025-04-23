@@ -58,13 +58,13 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks from the API with a stable response
+  // Get tasks from the API with a stable response but ensure it stays updated
   const { data: tasks = [], refetch: refetchTasks, isLoading: isTasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks"],
-    staleTime: 60000, // Cache data for 60 seconds to prevent unnecessary refetches
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: true, // Only fetch when the component first mounts
-    refetchInterval: false, // Disable periodic refetching
+    staleTime: 5000, // Shorter stale time to ensure updates are reflected
+    refetchOnWindowFocus: true, // Refetch when window regains focus to see latest changes
+    refetchOnMount: true, // Fetch when the component mounts
+    refetchInterval: 15000, // Periodically check for updates (every 15 seconds)
   });
   
   // Initialize tasks mutation - creates default tasks if none exist
