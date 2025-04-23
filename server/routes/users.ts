@@ -77,6 +77,59 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Update an existing user
+router.patch("/:id", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const userId = parseInt(req.params.id);
+  if (isNaN(userId)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
+  try {
+    // Get the user to check permissions
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Permission check:
+    // 1. Users can update their own information
+    // 2. Admins can update users in their organization
+    // 3. Super admins can update any user
+    const isSelfUpdate = req.user.id === userId;
+    const isOrgAdmin = req.user.role === "admin" && req.user.organizationId === user.organizationId;
+    const isSuperAdmin = req.user.role === "super_admin";
+
+    if (!isSelfUpdate && !isOrgAdmin && !isSuperAdmin) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Parse and validate the update data
+    const updateData = insertUserSchema.partial().parse(req.body);
+
+    // If not self or super_admin, prevent role elevation
+    if (!isSelfUpdate && !isSuperAdmin && updateData.role) {
+      if (updateData.role === "super_admin" || (req.user.role !== "super_admin" && updateData.role === "admin")) {
+        return res.status(403).json({ message: "Cannot elevate user role" });
+      }
+    }
+
+    // Update the user
+    const updatedUser = await storage.updateUser(userId, updateData);
+    
+    return res.json(updatedUser);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
+    }
+    console.error("Error updating user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Create a new organization and admin user in one step (super_admin only)
 router.post("/create-organization-with-admin", async (req, res) => {
   if (!req.isAuthenticated()) {
