@@ -77,7 +77,7 @@ export default function Sidebar() {
 
       <nav className="px-4 py-6 flex-grow">
         {navigation
-          .filter(item => !item.roles || (user && user.role && item.roles.includes(user.role)))
+          .filter(item => !item.roles || (user && item.roles.includes(user.role)))
           .map((item, index, filteredItems) => {
             const Icon = item.icon;
             const showDivider = item.isSpecial && 
@@ -126,7 +126,7 @@ export default function Sidebar() {
           
           {!collapsed && (
             <div className="mt-3 px-3 text-xs text-gray-500">
-              Logged in as: <span className="font-medium">{user.username || user.name || user.email || "User"}</span>
+              Logged in as: <span className="font-medium">{user.username || user.name}</span>
             </div>
           )}
         </div>

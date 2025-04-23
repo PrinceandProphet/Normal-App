@@ -3,13 +3,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Organization, User } from "@shared/schema";
-
-// Extended user type with organizations field
-interface SurvivorWithOrgs extends User {
-  phone?: string;
-  organizations?: { id: number; name: string }[];
-}
 import { Loader2, Plus, Pencil, Trash2, Building2, FolderOpen } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -85,13 +78,13 @@ export default function AllClientsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch all clients (survivors)
-  const { data: survivors = [], isLoading: survivorsLoading } = useQuery<SurvivorWithOrgs[]>({
+  const { data: survivors, isLoading: survivorsLoading } = useQuery({
     queryKey: ["/api/survivors"],
     enabled: user?.role === "super_admin",
   });
 
   // Fetch organizations for the dropdown
-  const { data: organizations = [] } = useQuery<Organization[]>({
+  const { data: organizations } = useQuery({
     queryKey: ["/api/organizations"],
     enabled: user?.role === "super_admin",
   });
@@ -150,9 +143,9 @@ export default function AllClientsPage() {
     createSurvivorMutation.mutate(data);
   }
 
-  const viewClient = (client: SurvivorWithOrgs) => {
-    // Use the selected client
-    queryClient.setQueryData(['selectedClient'], client);
+  const viewClient = (survivorId: number) => {
+    // Set the context to this client and navigate to the household page
+    localStorage.setItem('selectedClientId', survivorId.toString());
     navigate('/household');
   };
 
@@ -293,7 +286,7 @@ export default function AllClientsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {organizations.map((org) => (
+                            {organizations?.map((org: any) => (
                               <SelectItem key={org.id} value={org.id.toString()}>
                                 {org.name}
                               </SelectItem>
@@ -379,7 +372,7 @@ export default function AllClientsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {survivors.map((survivor) => (
+                    {survivors?.map((survivor: any) => (
                       <TableRow key={survivor.id}>
                         <TableCell className="font-medium">
                           {survivor.name}
@@ -405,7 +398,7 @@ export default function AllClientsPage() {
                               variant="outline"
                               size="sm"
                               className="h-8 px-2 py-0"
-                              onClick={() => viewClient(survivor)}
+                              onClick={() => viewClient(survivor.id)}
                               title="View Client Details"
                             >
                               <FolderOpen className="h-4 w-4 mr-1" />
