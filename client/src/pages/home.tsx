@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,12 @@ const initialTasks = [
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  
+  // Add an effect to refresh tasks data when component mounts
+  useEffect(() => {
+    // Force a refresh of the tasks data
+    queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+  }, []);
 
   // Get current stage from the API
   const { data: systemConfig } = useQuery({
@@ -115,8 +120,26 @@ export default function Home() {
         <Card className="backdrop-blur-sm bg-white/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">To Do's</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckSquare className="h-4 w-4 text-primary" />
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+                  toast({
+                    title: "Tasks refreshed",
+                    description: "The task data has been updated.",
+                    duration: 2000,
+                  });
+                }}
+                title="Refresh task data"
+              >
+                <RefreshCw className="h-4 w-4 text-primary" />
+              </Button>
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckSquare className="h-4 w-4 text-primary" />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
