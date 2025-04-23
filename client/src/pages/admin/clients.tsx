@@ -147,6 +147,9 @@ export default function AllClientsPage() {
       const fullData = {
         ...data,
         name: `${data.firstName} ${data.lastName}`,
+        // Include firstName and lastName explicitly
+        firstName: data.firstName,
+        lastName: data.lastName,
         // Generate a random password if not provided
         password: data.password || Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
       };
@@ -164,14 +167,15 @@ export default function AllClientsPage() {
       setShowClientForm(false);
       setSelectedOrgId(null);
       
-      // Add the new client to the existing list rather than invalidating the query
+      // Add the new client to the beginning of the existing list
       // This prevents the server from returning only the new client
+      // and ensures new entries appear at the top of the table
       queryClient.setQueryData<SurvivorData[]>(['/api/survivors'], (oldData) => {
         // If there's no existing data, create a new array with just the new client
         if (!oldData) return [newClient];
         
-        // Otherwise add the new client to the existing array
-        return [...oldData, newClient];
+        // Add the new client to the beginning of the array
+        return [newClient, ...oldData];
       });
       
       // Show success message
@@ -403,14 +407,23 @@ export default function AllClientsPage() {
 
   // Apply global filter for search
   useEffect(() => {
+    if (!clients) return;
+    
     if (searchTerm) {
       // Filter the data based on search term
-      const filteredData = clients?.filter(client => {
-        const fullName = client.firstName && client.lastName
+      const filteredData = clients.filter(client => {
+        if (!client) return false;
+        
+        // Construct a full name from name field and/or firstName+lastName fields
+        const nameFromFields = client.firstName && client.lastName 
           ? `${client.firstName} ${client.lastName}`
-          : client.name;
-          
+          : '';
+        const fullName = client.name || nameFromFields || '';
+        
+        // Search in name, firstName, lastName, email, and username fields
         return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (client.firstName && client.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.lastName && client.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
       });
@@ -418,13 +431,15 @@ export default function AllClientsPage() {
       // Update the table data with filtered results
       table.setOptions(prev => ({
         ...prev,
-        data: filteredData || [],
+        data: filteredData,
       }));
+      
+      console.log('Search results:', filteredData.length, 'matches for', searchTerm);
     } else {
       // Reset to original data when search is cleared
       table.setOptions(prev => ({
         ...prev,
-        data: clients || [],
+        data: clients,
       }));
     }
   }, [searchTerm, clients, table]);
