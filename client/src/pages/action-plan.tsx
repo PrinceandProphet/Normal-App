@@ -233,9 +233,52 @@ export default function ActionPlan() {
     }
   }, [clientTasks, selectedClient]);
 
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: async ({ text, stage }: { text: string, stage: string }) => {
+      const response = await apiRequest("POST", "/api/action-plan/tasks", {
+        text,
+        stage,
+        completed: false,
+        urgent: false,
+        // Add relevant client info if available
+        ...(selectedClient?.id ? { survivorId: selectedClient.id } : {})
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Force a fresh timestamp to trigger a refetch
+      setTimestamp(new Date().getTime());
+      
+      // Invalidate ALL task-related queries to ensure both this page and the dashboard update
+      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      
+      toast({
+        title: "Task added",
+        description: "A new task has been added to your recovery plan",
+        duration: 2000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add task",
+      });
+    }
+  });
+
   const handleAddTask = (stageIndex: number) => {
     if (!newTaskText.trim()) return;
+    
+    // Get the current stage letter
+    const stageLetter = stages[stageIndex].letter;
+    // Handle the special case for "T" stages
+    const stageKey = stageLetter === "T1" ? "T" : 
+                     stageLetter === "T2" ? "T" : 
+                     stageLetter;
 
+    // Add to the local state first for immediate feedback
     const newStages = [...stages];
     newStages[stageIndex].tasks.push({
       text: newTaskText.trim(),
@@ -244,6 +287,14 @@ export default function ActionPlan() {
       subtasks: []
     });
     setStages(newStages);
+    
+    // Then send to the server
+    createTaskMutation.mutate({
+      text: newTaskText.trim(),
+      stage: stageKey
+    });
+    
+    // Clear the input and editing state
     setNewTaskText("");
     setEditingStage(null);
   };
@@ -252,11 +303,42 @@ export default function ActionPlan() {
     if (!newSubtaskText.trim()) return;
 
     const newStages = [...stages];
-    newStages[stageIndex].tasks[taskIndex].subtasks.push({
+    const taskToUpdate = newStages[stageIndex].tasks[taskIndex];
+    
+    // Add to local state first
+    taskToUpdate.subtasks.push({
       text: newSubtaskText.trim(),
       completed: false
     });
     setStages(newStages);
+    
+    // Then save to server if possible
+    if (selectedClient && clientTasks) {
+      const stageLetter = stages[stageIndex].letter;
+      const stageKey = stageLetter === "T1" ? "T" : 
+                      stageLetter === "T2" ? "T" : 
+                      stageLetter;
+                      
+      const apiTask = clientTasks.find(t => 
+        t.text === taskToUpdate.text && 
+        (t.stage === stageKey)
+      );
+
+      if (apiTask) {
+        // Save to server with the updated subtasks list
+        updateTaskMutation.mutate({
+          taskId: apiTask.id,
+          data: { 
+            subtasks: taskToUpdate.subtasks.map(st => ({
+              id: apiTask.subtasks?.find(s => s.text === st.text)?.id || 0,
+              text: st.text,
+              completed: st.completed
+            }))
+          }
+        });
+      }
+    }
+    
     setNewSubtaskText("");
   };
 
@@ -324,8 +406,11 @@ export default function ActionPlan() {
       // Force a fresh timestamp to trigger a refetch everywhere
       setTimestamp(new Date().getTime());
       
-      // Also explicitly reset all task-related queries to be sure
-      queryClient.resetQueries({ queryKey: ["/api/action-plan/tasks"] });
+      // Invalidate ALL task-related queries to ensure both this page and the dashboard update
+      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      
+      // Also explicitly invalidate the system config in case task completion affects stages
+      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
       
       toast({
         title: "Task updated",
