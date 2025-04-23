@@ -3,6 +3,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Organization, User } from "@shared/schema";
+
+// Extended user type with organizations field
+interface SurvivorWithOrgs extends User {
+  phone?: string;
+  organizations?: { id: number; name: string }[];
+}
 import { Loader2, Plus, Pencil, Trash2, Building2, FolderOpen } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -78,13 +85,13 @@ export default function AllClientsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch all clients (survivors)
-  const { data: survivors, isLoading: survivorsLoading } = useQuery({
+  const { data: survivors = [], isLoading: survivorsLoading } = useQuery<SurvivorWithOrgs[]>({
     queryKey: ["/api/survivors"],
     enabled: user?.role === "super_admin",
   });
 
   // Fetch organizations for the dropdown
-  const { data: organizations } = useQuery({
+  const { data: organizations = [] } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
     enabled: user?.role === "super_admin",
   });
@@ -143,7 +150,7 @@ export default function AllClientsPage() {
     createSurvivorMutation.mutate(data);
   }
 
-  const viewClient = (client: any) => {
+  const viewClient = (client: SurvivorWithOrgs) => {
     // Use the selected client
     queryClient.setQueryData(['selectedClient'], client);
     navigate('/household');
@@ -286,7 +293,7 @@ export default function AllClientsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {organizations?.map((org: any) => (
+                            {organizations.map((org) => (
                               <SelectItem key={org.id} value={org.id.toString()}>
                                 {org.name}
                               </SelectItem>
@@ -372,7 +379,7 @@ export default function AllClientsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {survivors?.map((survivor: any) => (
+                    {survivors.map((survivor) => (
                       <TableRow key={survivor.id}>
                         <TableCell className="font-medium">
                           {survivor.name}
