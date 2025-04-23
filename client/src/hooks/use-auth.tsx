@@ -38,6 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Redirect super admins to admin dashboard
+      if (user.role === 'super_admin') {
+        window.location.href = '/admin';
+      } else if (user.role === 'admin') {
+        // Redirect organization admins to org admin dashboard
+        window.location.href = '/org-admin';
+      } else {
+        // Regular users go to home
+        window.location.href = '/';
+      }
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
@@ -59,6 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Redirect based on role, same as login
+      if (user.role === 'super_admin') {
+        window.location.href = '/admin';
+      } else if (user.role === 'admin') {
+        window.location.href = '/org-admin';
+      } else {
+        window.location.href = '/';
+      }
+      
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,

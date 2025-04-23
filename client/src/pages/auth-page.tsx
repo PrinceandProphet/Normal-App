@@ -45,9 +45,16 @@ export default function AuthPage() {
 
   // Use effect for navigation instead of during render
   useEffect(() => {
-    // If user is already logged in, redirect to home
+    // If user is already logged in, redirect based on role
     if (user) {
-      navigate('/');
+      // Super admins land on the Admin Dashboard
+      if (user.role === 'super_admin') {
+        navigate('/admin');
+      } 
+      // Regular users and others go to home
+      else {
+        navigate('/');
+      }
     }
   }, [user, navigate]);
 
