@@ -52,7 +52,7 @@ export default function Home() {
   }, [refreshTaskData]);
 
   // Get current stage from the API
-  const { data: systemConfig } = useQuery({
+  const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ["/api/system/config"],
   });
 
