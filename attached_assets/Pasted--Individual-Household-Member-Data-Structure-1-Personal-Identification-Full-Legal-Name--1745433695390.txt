@@ -1,0 +1,67 @@
+🧍‍♂️ Individual (Household Member) Data Structure
+
+1. Personal Identification
+	•	Full Legal Name
+	•	Date of Birth
+	•	Age (auto-calculated)
+	•	Gender Identity
+	•	Preferred Pronouns
+	•	SSN or ITIN (optional or masked)
+	•	Marital Status
+	•	Primary Language
+	•	Race / Ethnicity
+	•	Citizenship / Immigration Status
+	•	Veteran Status
+	•	Disability Status
+
+2. Contact Info
+	•	Phone Number
+	•	Email Address
+	•	Preferred Contact Method
+	•	Alternate Contact (Name, Relationship, Phone)
+
+3. Residency Info
+	•	Current Address
+	•	Date of Move-in
+	•	Type of Residence (Owner, Renter, Transitional, Unhoused, Other)
+	•	Previous Address (pre-disaster)
+	•	Length of Residency
+	•	Housing Status (Permanent, Temporary, Shelter, Hotel, etc.)
+	•	FEMA Case Number (if applicable)
+
+4. Education & Employment
+	•	Highest Education Level Attained
+	•	Currently Enrolled in School (Yes/No)
+	•	School Name and Location (if yes)
+	•	Employment Status (Full-time, Part-time, Unemployed, Self-employed, Retired, Student, Other)
+	•	Employer Name & Location
+	•	Job Title or Role
+	•	Monthly Household Income (can link to household total)
+	•	Income Source (Wages, Benefits, Disability, Child Support, etc.)
+
+5. Health & Wellness
+	•	Medical Conditions / Chronic Illnesses
+	•	Medications (critical only)
+	•	Mental Health Conditions
+	•	Mobility/Assistive Devices Used
+	•	Health Insurance Provider
+	•	Primary Care Provider Info
+
+6. Government or Institutional Involvement
+	•	Participation in Public Assistance Programs (TANF, SNAP, Medicaid, etc.)
+	•	Caseworker Name & Agency (if applicable)
+	•	Justice System Involvement (Past or Present)
+	•	Child Welfare System Involvement (Yes/No)
+	•	Immigration Proceedings or Asylum Application (Yes/No)
+
+7. Custom Tags (Grant-Aware Metadata)
+	•	Tag Suggestions (with autocomplete): single_parent, attends_school, pregnant, veteran_spouse, ESL_student, unhoused_prior, works_in_agriculture, former_foster_youth, evacuated_by_boat, no_internet, tribal_member, etc.
+	•	Custom Tag Entry (text field with autosuggest + create new option)
+	•	Notes (optional, searchable)
+
+8. Disaster-Specific Impacts
+	•	Injuries during disaster?
+	•	Lost medication/devices?
+	•	Access needs post-disaster?
+	•	Transport access post-disaster?
+	•	Lost documents (ID, SS card, title, etc.)?
