@@ -7,7 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Building2, Home, Users, Trash2, Pencil, X, UserCircle } from "lucide-react";
 import { useClientContext } from "@/hooks/use-client-context";
-import type { Property, HouseholdGroup, HouseholdMember } from "@shared/schema";
+import type { 
+  Property, HouseholdGroup, HouseholdMember,
+  InsertProperty, InsertHouseholdGroup, InsertHouseholdMember
+} from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -120,7 +123,7 @@ export default function Household() {
   };
 
   // Form setup for property
-  const propertyForm = useForm({
+  const propertyForm = useForm<InsertProperty>({
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
@@ -131,7 +134,7 @@ export default function Household() {
   });
 
   // Form setup for household group
-  const groupForm = useForm({
+  const groupForm = useForm<InsertHouseholdGroup>({
     resolver: zodResolver(insertHouseholdGroupSchema),
     defaultValues: {
       name: "",
@@ -141,7 +144,7 @@ export default function Household() {
   });
 
   // Form setup for member
-  const memberForm = useForm({
+  const memberForm = useForm<InsertHouseholdMember>({
     resolver: zodResolver(insertHouseholdMemberSchema),
     defaultValues: {
       name: "",
@@ -169,7 +172,7 @@ export default function Household() {
     },
   });
 
-  const addProperty = async (values: any) => {
+  const addProperty = async (values: InsertProperty) => {
     try {
       // If a client is selected, associate the property with them
       const propertyData = selectedClient 
@@ -194,7 +197,7 @@ export default function Household() {
     }
   };
 
-  const addGroup = async (values: any) => {
+  const addGroup = async (values: InsertHouseholdGroup) => {
     try {
       // Ensure the propertyId is set when creating a group
       const groupData = selectedClient
@@ -219,7 +222,7 @@ export default function Household() {
     }
   };
 
-  const addOrUpdateMember = async (values: any) => {
+  const addOrUpdateMember = async (values: InsertHouseholdMember) => {
     try {
       const formattedValues = selectedClient
         ? {
