@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Share2, FileDown, Pencil, X, Save, AlertCircle, ChevronRight, ChevronDown, UserCircle } from "lucide-react";
+import { Plus, Shield, Share2, FileDown, Pencil, X, Save, AlertCircle, ChevronRight, ChevronDown, UserCircle, ArrowRightCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useClientContext } from "@/hooks/use-client-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 interface SubTask {
   text: string;
@@ -111,7 +118,39 @@ export default function ActionPlan() {
   const [newTaskText, setNewTaskText] = useState("");
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [stages, setStages] = useState(recoveryStages);
-  const toast = useToast();
+  const { toast } = useToast();
+  
+  // Query for system configuration to get current stage
+  const { data: systemConfig } = useQuery({
+    queryKey: ["/api/system/config"],
+  });
+  
+  // Stage update mutation
+  const stageMutation = useMutation({
+    mutationFn: async (stage: string) => {
+      const response = await apiRequest("POST", "/api/system/config/stage", { stage });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Recovery phase updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update recovery phase",
+      });
+    }
+  });
+  
+  // Handle stage change
+  const handleStageChange = (stage: string) => {
+    stageMutation.mutate(stage);
+  };
   
   // Query for tasks specific to the selected client
   const { data: clientTasks, isLoading } = useQuery<ApiTask[]>({
@@ -381,16 +420,42 @@ export default function ActionPlan() {
             </div>
           )}
         </div>
-        {!isPublicView && selectedClient && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSharePlan}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share Plan
-            </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
+        {!isPublicView && (
+          <div className="flex flex-col md:flex-row gap-2">
+            {/* Current phase selection */}
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground">Current Recovery Phase:</div>
+              <Select
+                disabled={stageMutation.isPending}
+                value={systemConfig?.stage || 'S'}
+                onValueChange={handleStageChange}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="S">S - Secure & Stabilize</SelectItem>
+                  <SelectItem value="T">T - Take Stock</SelectItem>
+                  <SelectItem value="A">A - Align Recovery</SelectItem>
+                  <SelectItem value="R">R - Rebuild & Restore</SelectItem>
+                  <SelectItem value="T2">T - Transition to Normal</SelectItem>
+                </SelectContent>
+              </Select>
+              {stageMutation.isPending && <span className="text-sm text-muted-foreground animate-pulse">Updating...</span>}
+            </div>
+            
+            {selectedClient && (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleSharePlan}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Plan
+                </Button>
+                <Button variant="outline" onClick={handleExportPDF}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export PDF
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

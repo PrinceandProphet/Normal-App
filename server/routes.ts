@@ -179,6 +179,45 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Update the START framework stage
+  app.post("/api/system/config/stage", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Only allow super_admin or admin to update stage
+      if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Not authorized to update system stage" });
+      }
+      
+      const { stage } = req.body;
+      
+      // Validate stage value
+      if (!['S', 'T', 'A', 'R', 'T2'].includes(stage)) {
+        return res.status(400).json({ message: "Invalid stage value. Must be one of: S, T, A, R, T2" });
+      }
+      
+      const config = await storage.getSystemConfig();
+      
+      if (!config) {
+        return res.status(404).json({ message: "System configuration not found" });
+      }
+      
+      const updated = await storage.updateSystemConfig({
+        ...config,
+        stage
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Failed to update system stage:', error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to update system stage"
+      });
+    }
+  });
 
   app.post("/api/system/config/generate/phone", async (req, res) => {
     try {
