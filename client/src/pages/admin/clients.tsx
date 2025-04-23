@@ -122,8 +122,8 @@ export default function AllClientsPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [open, setOpen] = useState(false);
   const [showClientForm, setShowClientForm] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [, navigate] = useLocation();
@@ -137,19 +137,6 @@ export default function AllClientsPage() {
       email: "",
       userType: "survivor",
       role: "user",
-    },
-  });
-  
-  // Form setup for client editing
-  const editForm = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      address: "",
-      username: "",
     },
   });
 
@@ -466,79 +453,10 @@ export default function AllClientsPage() {
     navigate('/action-plan');
   };
 
-  // Update client mutation
-  const updateClientMutation = useMutation({
-    mutationFn: async (data: ClientFormValues & { id: number }) => {
-      const { id, ...updateData } = data;
-      
-      // Combine firstName and lastName for the name field
-      const fullData = {
-        ...updateData,
-        name: `${data.firstName} ${data.lastName}`,
-      };
-      
-      const response = await apiRequest('PATCH', `/api/users/${id}`, fullData);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update client");
-      }
-      return await response.json();
-    },
-    onSuccess: (updatedClient) => {
-      // Close dialog
-      setShowEditDialog(false);
-      
-      // Update the client in the data
-      queryClient.setQueryData<SurvivorData[]>(['/api/survivors'], (oldData) => {
-        if (!oldData) return [updatedClient];
-        
-        return oldData.map(client => 
-          client.id === updatedClient.id ? updatedClient : client
-        );
-      });
-      
-      // Show success message
-      toast({
-        title: "Client updated",
-        description: "The client was successfully updated",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error updating client",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Handle edit form submission
-  const onEditSubmit = (data: ClientFormValues) => {
-    if (!selectedClient) return;
-    
-    updateClientMutation.mutate({
-      ...data,
-      id: selectedClient.id,
-    });
-  };
-
   // Handle showing client details dialog
   const handleClientDetails = (client: SurvivorData) => {
-    // Set selected client
     setSelectedClient(client);
-    
-    // Populate the edit form with client data
-    editForm.reset({
-      firstName: client.firstName || "",
-      lastName: client.lastName || "",
-      email: client.email || "",
-      phone: client.phone || "",
-      address: client.address || "",
-      username: client.username || "",
-    });
-    
-    // Show the edit dialog
-    setShowEditDialog(true);
+    setOpen(true);
   };
 
   // Handle client deletion (this would need backend implementation)
@@ -889,150 +807,54 @@ export default function AllClientsPage() {
         </DialogContent>
       </Dialog>
             
-      {/* Client Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      {/* Client Details Dialog - Can be implemented later */}
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
+            <DialogTitle>Client Details</DialogTitle>
             <DialogDescription>
-              Update client information
+              View and edit client information
             </DialogDescription>
           </DialogHeader>
 
           {selectedClient && (
-            <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-                <div className="text-center mb-4">
-                  <User className="h-16 w-16 mx-auto text-primary/20" />
-                  <h3 className="mt-2 text-lg font-medium">
-                    {selectedClient.firstName && selectedClient.lastName
-                      ? `${selectedClient.firstName} ${selectedClient.lastName}`
-                      : selectedClient.name}
-                  </h3>
-                  {selectedClient.username && (
-                    <p className="text-sm text-muted-foreground">@{selectedClient.username}</p>
-                  )}
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <User className="h-16 w-16 mx-auto text-primary/20" />
+                <h3 className="mt-2 text-lg font-medium">
+                  {selectedClient.firstName && selectedClient.lastName
+                    ? `${selectedClient.firstName} ${selectedClient.lastName}`
+                    : selectedClient.name}
+                </h3>
+                {selectedClient.username && (
+                  <p className="text-sm text-muted-foreground">@{selectedClient.username}</p>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Email</p>
+                  <p className="text-sm">{selectedClient.email || "Not provided"}</p>
                 </div>
-                
-                {/* Basic Information */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Basic Information</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={editForm.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={editForm.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                <div>
+                  <p className="text-sm font-medium">Phone</p>
+                  <p className="text-sm">{selectedClient.phone || "Not provided"}</p>
                 </div>
-                
-                {/* Contact Information */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Contact Information</h3>
-                  <FormField
-                    control={editForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="col-span-2">
+                  <p className="text-sm font-medium">Address</p>
+                  <p className="text-sm">{selectedClient.address || "Not provided"}</p>
                 </div>
-                
-                {/* Address */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Address</h3>
-                  <FormField
-                    control={editForm.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                {/* Username */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Account</h3>
-                  <FormField
-                    control={editForm.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Username for client login (if enabled)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <DialogFooter className="gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setShowEditDialog(false)} type="button">
-                    Cancel
-                  </Button>
-                  <Button onClick={() => handleViewAsClient(selectedClient)} type="button">
-                    View as Client
-                  </Button>
-                  <Button type="submit" disabled={updateClientMutation.isPending}>
-                    {updateClientMutation.isPending && (
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => handleViewAsClient(selectedClient)}>
+                  View as Client
+                </Button>
+              </DialogFooter>
+            </div>
           )}
         </DialogContent>
       </Dialog>
