@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -35,6 +35,7 @@ const initialTasks = [
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Get current stage from the API
   const { data: systemConfig } = useQuery({
@@ -46,6 +47,8 @@ export default function Home() {
   // Get tasks from the API, fallback to initial tasks if none exist
   const { data: tasks = initialTasks } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks"],
+    staleTime: 0, // Always check for fresh data
+    refetchOnWindowFocus: true, // Refetch when the window regains focus
   });
 
   // Calculate task counts for the current stage
