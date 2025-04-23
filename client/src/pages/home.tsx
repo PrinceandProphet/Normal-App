@@ -88,10 +88,15 @@ export default function Home() {
     }
   });
   
-  // If no tasks exist in the database, initialize them
+  // If no tasks exist in the database, initialize them - only once per session
   useEffect(() => {
-    if (tasks.length === 0) {
+    // Create a flag in session storage to track initialization
+    const tasksInitialized = sessionStorage.getItem('tasksInitialized');
+    
+    if (tasks.length === 0 && !tasksInitialized) {
       initializeTasksMutation.mutate();
+      // Mark as initialized
+      sessionStorage.setItem('tasksInitialized', 'true');
     }
   }, [tasks.length]);
 
@@ -108,12 +113,26 @@ export default function Home() {
   
   // Calculate task counts for the current stage
   const stageTasks = tasks.filter(task => task.stage === mappedStage);
+  // Count tasks that are marked as completed
   const completedTaskCount = stageTasks.filter(task => task.completed).length;
-  const totalTaskCount = currentStage === "S" ? 4 : stageTasks.length || 0;
+  // Always set the total count based on the actual number of tasks in the current stage
+  const totalTaskCount = stageTasks.length;
+  // Calculate remaining tasks
   const remainingTaskCount = totalTaskCount - completedTaskCount;
+  // Calculate progress percentage
   const progressPercentage = totalTaskCount > 0 
     ? Math.round((completedTaskCount / totalTaskCount) * 100) 
     : 0;
+    
+  // Log task information for debugging
+  console.log('Task Data:', {
+    stage: mappedStage,
+    allTasks: tasks.length,
+    stageTasks: stageTasks.length,
+    completed: completedTaskCount,
+    remaining: remainingTaskCount,
+    progress: progressPercentage
+  });
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
