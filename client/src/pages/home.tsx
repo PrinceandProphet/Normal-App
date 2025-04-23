@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -58,12 +58,13 @@ export default function Home() {
 
   const currentStage = systemConfig?.stage || "S";
 
-  // Get tasks from the API
+  // Get tasks from the API with a stable response
   const { data: tasks = [], refetch: refetchTasks, isLoading: isTasksLoading } = useQuery<Task[]>({
-    queryKey: ["/api/action-plan/tasks", timestamp],
-    staleTime: 0, // Always check for fresh data
-    refetchOnWindowFocus: true, // Refetch when the window regains focus
-    refetchOnMount: true, // Always refetch when the component mounts
+    queryKey: ["/api/action-plan/tasks"],
+    staleTime: 60000, // Cache data for 60 seconds to prevent unnecessary refetches
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: true, // Only fetch when the component first mounts
+    refetchInterval: false, // Disable periodic refetching
   });
   
   // Initialize tasks mutation - creates default tasks if none exist
@@ -89,16 +90,27 @@ export default function Home() {
   });
   
   // If no tasks exist in the database, initialize them - only once per session
+  // Using a ref to ensure this effect only runs once
+  const initializedRef = useRef(false);
+  
   useEffect(() => {
     // Create a flag in session storage to track initialization
     const tasksInitialized = sessionStorage.getItem('tasksInitialized');
     
-    if (tasks.length === 0 && !tasksInitialized) {
-      initializeTasksMutation.mutate();
-      // Mark as initialized
+    // Only run if:
+    // 1. Tasks data has loaded (not isTasksLoading)
+    // 2. We have no tasks
+    // 3. We haven't initialized in this session
+    // 4. We haven't already initialized in this component instance
+    if (!isTasksLoading && tasks.length === 0 && !tasksInitialized && !initializedRef.current) {
+      // Mark as initialized both in ref and session storage
+      initializedRef.current = true;
       sessionStorage.setItem('tasksInitialized', 'true');
+      
+      // Initialize tasks
+      initializeTasksMutation.mutate();
     }
-  }, [tasks.length]);
+  }, [isTasksLoading, tasks.length, initializeTasksMutation]);
 
   // Map the system config stage value to the task stage value
   const stageMappings = {
