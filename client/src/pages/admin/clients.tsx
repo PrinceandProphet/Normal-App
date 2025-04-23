@@ -783,7 +783,7 @@ export default function AllClientsPage() {
                     <span className="hidden md:inline">Residency</span>
                   </TabsTrigger>
                   <TabsTrigger value="employment" className="flex items-center gap-1">
-                    <BriefcaseIcon className="h-4 w-4" />
+                    <BookOpen className="h-4 w-4" />
                     <span className="hidden md:inline">Employment</span>
                   </TabsTrigger>
                   <TabsTrigger value="health" className="flex items-center gap-1">
