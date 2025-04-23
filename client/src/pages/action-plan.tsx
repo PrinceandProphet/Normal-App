@@ -152,10 +152,20 @@ export default function ActionPlan() {
     stageMutation.mutate(stage);
   };
   
-  // Query for tasks specific to the selected client
+  // State to force refetching
+  const [timestamp, setTimestamp] = useState(new Date().getTime());
+  
+  // Force refresh when client changes or when needed
+  useEffect(() => {
+    setTimestamp(new Date().getTime());
+  }, [selectedClient]);
+  
+  // Query for tasks specific to the selected client with timestamp for fresh data
   const { data: clientTasks, isLoading } = useQuery<ApiTask[]>({
-    queryKey: ["/api/action-plan/tasks", selectedClient?.id],
+    queryKey: ["/api/action-plan/tasks", selectedClient?.id, timestamp],
     enabled: !!selectedClient,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   
   // Merge client tasks with the template stages when data changes
@@ -311,7 +321,10 @@ export default function ActionPlan() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate queries to refresh task data everywhere - force a refetch
+      // Force a fresh timestamp to trigger a refetch everywhere
+      setTimestamp(new Date().getTime());
+      
+      // Also explicitly reset all task-related queries to be sure
       queryClient.resetQueries({ queryKey: ["/api/action-plan/tasks"] });
       
       toast({

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -34,13 +34,22 @@ const initialTasks = [
 
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
+  const [timestamp, setTimestamp] = useState(new Date().getTime());
   const { toast } = useToast();
+  
+  // Function to force refresh the task data
+  const refreshTaskData = useCallback(() => {
+    setTimestamp(new Date().getTime());
+  }, []);
   
   // Add an effect to refresh tasks data when component mounts
   useEffect(() => {
-    // Force a refresh of the tasks data
-    queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
-  }, []);
+    refreshTaskData();
+    
+    // Also set up an interval to refresh every 5 seconds
+    const interval = setInterval(refreshTaskData, 5000);
+    return () => clearInterval(interval);
+  }, [refreshTaskData]);
 
   // Get current stage from the API
   const { data: systemConfig } = useQuery({
@@ -50,12 +59,12 @@ export default function Home() {
   const currentStage = systemConfig?.stage || "S";
 
   // Get tasks from the API, fallback to initial tasks if none exist
+  // Using timestamp in the query key forces a refetch when it changes
   const { data: tasks = initialTasks, refetch: refetchTasks } = useQuery<Task[]>({
-    queryKey: ["/api/action-plan/tasks"],
+    queryKey: ["/api/action-plan/tasks", timestamp],
     staleTime: 0, // Always check for fresh data
     refetchOnWindowFocus: true, // Refetch when the window regains focus
     refetchOnMount: true, // Always refetch when the component mounts
-    gcTime: 0, // Don't cache the data (v5 renamed cacheTime to gcTime)
   });
 
   // Calculate task counts for the current stage
