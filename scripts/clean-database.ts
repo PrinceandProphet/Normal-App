@@ -26,7 +26,8 @@ import {
   capitalSources,
   users,
   organizationMembers,
-  organizationSurvivors 
+  organizationSurvivors,
+  organizations
 } from "../shared/schema";
 import { eq, ne, isNull, and, or, not, sql } from "drizzle-orm";
 
@@ -119,6 +120,21 @@ async function cleanDatabase() {
       } else {
         console.log(`  - User with ID ${userId} doesn't exist!`);
       }
+    }
+    
+    // Clear organization reference from users
+    console.log("Clearing organization references from users...");
+    await db.update(users)
+      .set({ organizationId: null })
+      .where(not(isNull(users.organizationId)));
+    
+    // Now that the references are removed, we can delete organizations
+    console.log("Removing organizations...");
+    try {
+      await db.delete(organizations);
+      console.log("  - All organizations removed");
+    } catch (orgErr) {
+      console.error("  - Failed to delete organizations:", orgErr);
     }
     
     // Delete users that aren't in the preserved list or super_admin

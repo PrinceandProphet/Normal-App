@@ -145,25 +145,8 @@ export default function CapitalSources() {
     }
   }
 
-  // Sample funding opportunities data
-  const fundingOpportunities = [
-    {
-      id: 1,
-      name: "Disaster Recovery Grant",
-      agency: "State Emergency Management",
-      deadline: "2025-04-01",
-      maxAmount: 25000,
-      description: "Emergency assistance for households affected by natural disasters",
-    },
-    {
-      id: 2,
-      name: "Home Repair Program",
-      agency: "Housing Department",
-      deadline: "2025-03-31",
-      maxAmount: 15000,
-      description: "Funding for essential home repairs due to disaster damage",
-    },
-  ];
+  // No funding opportunities available at this time
+  const fundingOpportunities: any[] = [];
 
   return (
     <div className="space-y-6">
@@ -417,35 +400,48 @@ export default function CapitalSources() {
             </a>
           </Button>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {fundingOpportunities.map((opportunity) => (
-            <Card key={opportunity.id}>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold">{opportunity.name}</h3>
-                    <p className="text-sm text-muted-foreground">{opportunity.agency}</p>
-                    <p className="text-sm font-medium">
-                      Up to ${opportunity.maxAmount.toLocaleString()}
-                    </p>
+        {fundingOpportunities.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {fundingOpportunities.map((opportunity) => (
+              <Card key={opportunity.id}>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold">{opportunity.name}</h3>
+                      <p className="text-sm text-muted-foreground">{opportunity.agency}</p>
+                      <p className="text-sm font-medium">
+                        Up to ${opportunity.maxAmount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm">
+                        <span className="font-medium">Deadline:</span>{" "}
+                        {new Date(opportunity.deadline).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {opportunity.description}
+                      </p>
+                    </div>
+                    <Button className="w-full">
+                      Begin Application
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm">
-                      <span className="font-medium">Deadline:</span>{" "}
-                      {new Date(opportunity.deadline).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {opportunity.description}
-                    </p>
-                  </div>
-                  <Button className="w-full">
-                    Begin Application
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="bg-muted/40">
+            <CardContent className="pt-6 text-center">
+              <div className="mx-auto max-w-md space-y-4 py-6">
+                <h3 className="text-xl font-medium">No Funding Opportunities Available</h3>
+                <p className="text-sm text-muted-foreground">
+                  There are currently no funding opportunities available. Check back later or use the "Report New Opportunity" button to suggest a program for inclusion.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
