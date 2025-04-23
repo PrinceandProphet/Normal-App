@@ -126,46 +126,43 @@ export default function AllClientsPage() {
   const [showClientForm, setShowClientForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [filteredClients, setFilteredClients] = useState<SurvivorData[]>([]);
   const [, navigate] = useLocation();
   
-  // Function to handle search refresh
-  const refreshSearch = () => {
-    // Force re-filtering by directly updating the table data
-    if (!clients) return;
-    
-    if (searchTerm) {
-      // Filter the data based on search term
-      const filteredData = clients.filter(client => {
-        if (!client) return false;
-        
-        // Construct a full name from name field and/or firstName+lastName fields
-        const nameFromFields = client.firstName && client.lastName 
-          ? `${client.firstName} ${client.lastName}`
-          : '';
-        const fullName = client.name || nameFromFields || '';
-        
-        // Search in all relevant fields
-        return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (client.firstName && client.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.lastName && client.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
-      });
-      
-      // Directly update the table data with filtered results
-      table.setOptions(prev => ({
-        ...prev,
-        data: filteredData,
-      }));
-      
-      console.log('Forced search refresh:', filteredData.length, 'matches for', searchTerm);
-    } else {
-      // Reset to original data when search is cleared
-      table.setOptions(prev => ({
-        ...prev,
-        data: clients,
-      }));
+  // Function to perform search
+  const performSearch = (term: string, clientData: SurvivorData[] | undefined) => {
+    if (!clientData) {
+      setFilteredClients([]);
+      return;
     }
+    
+    if (!term) {
+      setFilteredClients(clientData);
+      return;
+    }
+    
+    const lowerTerm = term.toLowerCase();
+    
+    // Filter clients based on search term
+    const filtered = clientData.filter(client => {
+      if (!client) return false;
+      
+      // Construct full name from various properties
+      const nameFromFields = client.firstName && client.lastName 
+        ? `${client.firstName} ${client.lastName}`
+        : '';
+      const fullName = client.name || nameFromFields || '';
+      
+      // Search across multiple fields
+      return fullName.toLowerCase().includes(lowerTerm) ||
+        (client.firstName && client.firstName.toLowerCase().includes(lowerTerm)) ||
+        (client.lastName && client.lastName.toLowerCase().includes(lowerTerm)) ||
+        (client.email && client.email.toLowerCase().includes(lowerTerm)) ||
+        (client.username && client.username.toLowerCase().includes(lowerTerm));
+    });
+    
+    setFilteredClients(filtered);
+    console.log(`Search for "${term}" found ${filtered.length} results`);
   };
   
   // Form setup for client creation
@@ -216,6 +213,12 @@ export default function AllClientsPage() {
         
         // Add the new client to the beginning of the array
         return [newClient, ...oldData];
+      });
+      
+      // Also update our filtered data to include the new client at the top
+      setFilteredClients(prev => {
+        if (!prev) return [newClient];
+        return [newClient, ...prev];
       });
       
       // Show success message
@@ -454,12 +457,14 @@ export default function AllClientsPage() {
     });
   };
   
-  // Calculate filtered data
-  const filteredData = getFilteredData();
+  // Update filtered clients whenever the original clients data or search term changes
+  useEffect(() => {
+    performSearch(searchTerm, clients);
+  }, [clients, searchTerm]);
   
   // Create the table instance
   const table = useReactTable({
-    data: filteredData,
+    data: filteredClients,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -472,8 +477,6 @@ export default function AllClientsPage() {
       columnFilters,
     },
   });
-
-  // No need for additional effects as we're recalculating filtered data on render
 
   // Handle viewing as a specific client
   const handleViewAsClient = (client: SurvivorData) => {
@@ -527,7 +530,7 @@ export default function AllClientsPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <form onSubmit={(e) => {
               e.preventDefault();
-              refreshSearch();
+              performSearch(searchTerm, clients);
             }}>
               <div className="flex">
                 <div className="relative flex-1">
@@ -535,29 +538,14 @@ export default function AllClientsPage() {
                     placeholder="Search clients..."
                     value={searchTerm}
                     onChange={(e) => {
-                      const term = e.target.value;
+                      const term = e.target.value; 
                       setSearchTerm(term);
-                      
-                      // Immediately apply the filter
-                      if (clients) {
-                        // Use the same filtering function for consistency
-                        const filtered = term ? getFilteredData() : clients;
-                        
-                        // Update table data
-                        table.setOptions(prev => ({
-                          ...prev,
-                          data: filtered,
-                        }));
-                        
-                        if (term) {
-                          console.log('Live search:', filtered.length, 'matches for', term);
-                        }
-                      }
+                      // The useEffect will handle updating the filtered results
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        refreshSearch();
+                        performSearch(searchTerm, clients);
                       }
                     }}
                     className="pl-8 w-full pr-8"
@@ -570,12 +558,7 @@ export default function AllClientsPage() {
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={() => {
                         setSearchTerm("");
-                        if (clients) {
-                          table.setOptions(prev => ({
-                            ...prev,
-                            data: clients,
-                          }));
-                        }
+                        // The useEffect will handle clearing the filter
                       }}
                     >
                       <XCircle className="h-4 w-4" />
