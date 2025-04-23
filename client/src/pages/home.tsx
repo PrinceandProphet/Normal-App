@@ -50,10 +50,12 @@ export default function Home() {
   const currentStage = systemConfig?.stage || "S";
 
   // Get tasks from the API, fallback to initial tasks if none exist
-  const { data: tasks = initialTasks } = useQuery<Task[]>({
+  const { data: tasks = initialTasks, refetch: refetchTasks } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks"],
     staleTime: 0, // Always check for fresh data
     refetchOnWindowFocus: true, // Refetch when the window regains focus
+    refetchOnMount: true, // Always refetch when the component mounts
+    gcTime: 0, // Don't cache the data (v5 renamed cacheTime to gcTime)
   });
 
   // Calculate task counts for the current stage
@@ -126,7 +128,7 @@ export default function Home() {
                 size="icon"
                 className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
                 onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+                  refetchTasks();
                   toast({
                     title: "Tasks refreshed",
                     description: "The task data has been updated.",

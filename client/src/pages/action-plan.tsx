@@ -311,8 +311,14 @@ export default function ActionPlan() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate queries to refresh task data everywhere
-      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      // Invalidate queries to refresh task data everywhere - force a refetch
+      queryClient.resetQueries({ queryKey: ["/api/action-plan/tasks"] });
+      
+      toast({
+        title: "Task updated",
+        description: "Your task has been successfully updated",
+        duration: 2000,
+      });
     },
     onError: (error) => {
       toast({
