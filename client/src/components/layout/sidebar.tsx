@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
+  { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"], isSpecial: true },
   { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"], isSpecial: true },
   { name: "Home", href: "/", icon: Home },
   { name: "Action Plan", href: "/action-plan", icon: Shield },
@@ -29,7 +30,6 @@ const navigation = [
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
   { name: "Profile Settings", href: "/profile", icon: Settings },
-  { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"] },
 ];
 
 export default function Sidebar() {
