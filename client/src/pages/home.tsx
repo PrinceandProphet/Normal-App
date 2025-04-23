@@ -59,7 +59,7 @@ export default function Home() {
   const currentStage = systemConfig?.stage || "S";
 
   // Get tasks from the API
-  const { data: tasks = [], refetch: refetchTasks } = useQuery<Task[]>({
+  const { data: tasks = [], refetch: refetchTasks, isLoading: isTasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks", timestamp],
     staleTime: 0, // Always check for fresh data
     refetchOnWindowFocus: true, // Refetch when the window regains focus
@@ -124,15 +124,22 @@ export default function Home() {
     ? Math.round((completedTaskCount / totalTaskCount) * 100) 
     : 0;
     
-  // Log task information for debugging
-  console.log('Task Data:', {
-    stage: mappedStage,
-    allTasks: tasks.length,
-    stageTasks: stageTasks.length,
-    completed: completedTaskCount,
-    remaining: remainingTaskCount,
-    progress: progressPercentage
-  });
+  // Display placeholder values during loading
+  const displayRemainingTasks = isTasksLoading ? "..." : remainingTaskCount;
+  const displayCompletedTasks = isTasksLoading ? "..." : completedTaskCount;
+  const displayTotalTasks = isTasksLoading ? "..." : totalTaskCount;
+  
+  // Log task information for debugging (only when not loading)
+  if (!isTasksLoading) {
+    console.log('Task Data:', {
+      stage: mappedStage,
+      allTasks: tasks.length,
+      stageTasks: stageTasks.length,
+      completed: completedTaskCount,
+      remaining: remainingTaskCount,
+      progress: progressPercentage
+    });
+  }
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
@@ -214,7 +221,11 @@ export default function Home() {
           <CardContent className="space-y-4">
             <div>
               <div className="text-2xl font-bold">
-                {remainingTaskCount}
+                {isTasksLoading ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  remainingTaskCount
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 Remaining tasks in Stage {currentStage}
@@ -225,13 +236,13 @@ export default function Home() {
             <div className="space-y-1">
               <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-primary rounded-full transition-all duration-500 ease-in-out" 
+                  className={`h-full bg-primary rounded-full transition-all duration-500 ease-in-out ${isTasksLoading ? 'animate-pulse' : ''}`}
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{completedTaskCount} completed</span>
-                <span>{totalTaskCount} total</span>
+                <span>{displayCompletedTasks} completed</span>
+                <span>{displayTotalTasks} total</span>
               </div>
             </div>
 
