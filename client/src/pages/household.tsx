@@ -377,14 +377,14 @@ export default function Household() {
   };
   
   // Helper function to insert meta tags in text fields
-  const insertMetaTag = (fieldName: string, tag: string) => {
-    const currentValue = memberForm.getValues(fieldName) as string || '';
+  const insertMetaTag = (fieldName: keyof typeof memberForm.getValues, tag: string) => {
+    const currentValue = memberForm.getValues(fieldName)?.toString() || '';
     const newValue = currentValue + ` #${tag}`;
     memberForm.setValue(fieldName, newValue.trim());
     
     toast({
       title: "Meta Tag Added",
-      description: `Added #${tag} to ${fieldName}`,
+      description: `Added #${tag} to notes`,
     });
   };
 
@@ -1002,8 +1002,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 2. Contact Information Section */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Contact Information</h3>
+                                            <div className={activeTab === "contact" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Contact Information</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1093,8 +1093,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 3. Residency Information */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Residency Information</h3>
+                                            <div className={activeTab === "residency" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Residency Information</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1195,8 +1195,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 4. Education & Employment */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Education & Employment</h3>
+                                            <div className={activeTab === "education" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Education & Employment</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1347,8 +1347,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 5. Health & Wellness */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Health & Wellness</h3>
+                                            <div className={activeTab === "health" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Health & Wellness</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1465,8 +1465,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 6. Government or Institutional Involvement */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Government/Institutional Involvement</h3>
+                                            <div className={activeTab === "govt" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Government/Institutional Involvement</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <FormField
                                                   control={memberForm.control}
@@ -1554,8 +1554,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 7. Disaster-Specific Impacts */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Disaster-Specific Impacts</h3>
+                                            <div className={activeTab === "disaster" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Disaster-Specific Impacts</h3>
                                               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                                                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                   <FormField
@@ -1630,8 +1630,8 @@ export default function Household() {
                                             </div>
 
                                             {/* 8. Notes and Additional Info */}
-                                            <div className="space-y-4 border-t pt-4">
-                                              <h3 className="font-semibold text-lg">Notes and Additional Information</h3>
+                                            <div className={activeTab === "notes" ? "" : "hidden"}>
+                                              <h3 className="font-semibold text-lg text-primary mb-4">Notes and Additional Information</h3>
                                               <div className="grid gap-4 grid-cols-1">
                                                 <div>
                                                   <FormField
