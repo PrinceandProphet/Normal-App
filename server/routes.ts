@@ -1305,7 +1305,8 @@ export async function registerRoutes(app: Express) {
           createdById: req.user.id,
           createdByType: req.user.userType,
           assignedToId: req.user.id,
-          assignedToType: req.user.userType
+          assignedToType: req.user.userType,
+          subtasks: "[]" // Empty JSON array for subtasks
         },
         { 
           text: "Register with FEMA", 
@@ -1315,7 +1316,8 @@ export async function registerRoutes(app: Express) {
           createdById: req.user.id,
           createdByType: req.user.userType,
           assignedToId: req.user.id,
-          assignedToType: req.user.userType
+          assignedToType: req.user.userType,
+          subtasks: "[]" // Empty JSON array for subtasks
         },
         { 
           text: "Address immediate medical needs", 
