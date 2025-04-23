@@ -1,18 +1,28 @@
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { SurvivorData, useClientContext } from "@/hooks/use-client-context"
-import { ChevronDown, UserCircle } from "lucide-react"
-import { useEffect } from "react"
+import { Check, ChevronDown, Search, UserCircle } from "lucide-react"
+import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
+import { cn } from "@/lib/utils"
 
 export function ClientSelector() {
   const { selectedClient, setSelectedClient, clients, isLoading } = useClientContext()
   const [location, setLocation] = useLocation()
+  const [open, setOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState("")
 
   // Reset client selection when navigating to pages that don't need client context
   useEffect(() => {
@@ -24,6 +34,7 @@ export function ClientSelector() {
 
   const handleSelectClient = (client: SurvivorData) => {
     setSelectedClient(client)
+    setOpen(false)
     
     // If already on a client-specific page, keep the same page type but for new client
     const clientSpecificPages = ['/action-plan', '/household', '/documents', '/messages', '/contacts']
@@ -52,50 +63,87 @@ export function ClientSelector() {
     )
   }
 
+  // Get client's full name or fallback to name or 'Client'
+  const getClientFullName = (client: SurvivorData) => {
+    if (client.firstName && client.lastName) {
+      return `${client.firstName} ${client.lastName}`;
+    } else if (client.name) {
+      return client.name;
+    } else {
+      return 'Client';
+    }
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 min-w-[180px] justify-between">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          role="combobox" 
+          aria-expanded={open}
+          size="sm" 
+          className="w-[220px] justify-between"
+        >
           {selectedClient ? (
-            <>
-              <span className="truncate">
-                {selectedClient.firstName || ''} {selectedClient.lastName || selectedClient.name || 'Client'}
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </>
+            <span className="flex items-center truncate">
+              <UserCircle className="mr-2 h-4 w-4" />
+              {getClientFullName(selectedClient)}
+            </span>
           ) : (
-            <>
-              <span>Select a client</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </>
+            <span className="flex items-center">
+              <Search className="mr-2 h-4 w-4" />
+              Search clients...
+            </span>
           )}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[220px] max-h-[400px] overflow-y-auto">
-        {clients && clients.length > 0 ? (
-          clients.map((client) => (
-            <DropdownMenuItem 
-              key={client.id}
-              onClick={() => handleSelectClient(client)}
-              className={`cursor-pointer ${selectedClient?.id === client.id ? 'bg-primary/10 text-primary' : ''}`}
-            >
-              <UserCircle className="h-4 w-4 mr-2" />
-              <span className="truncate">
-                {client.firstName || ''} {client.lastName || client.name || 'Client'}
-              </span>
-              {client.status && (
-                <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-muted">
-                  {client.status}
-                </span>
-              )}
-            </DropdownMenuItem>
-          ))
-        ) : (
-          <div className="p-2 text-sm text-muted-foreground text-center">
-            No clients available
-          </div>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder="Search clients..." 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandList>
+            <CommandEmpty>No clients found.</CommandEmpty>
+            <CommandGroup>
+              {clients && clients.length > 0 ? 
+                clients
+                  .filter(client => {
+                    if (!searchValue) return true;
+                    const fullName = getClientFullName(client).toLowerCase();
+                    return fullName.includes(searchValue.toLowerCase());
+                  })
+                  .map(client => (
+                    <CommandItem
+                      key={client.id}
+                      value={client.id.toString()}
+                      onSelect={() => handleSelectClient(client)}
+                      className="flex items-center"
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      <span className="truncate">{getClientFullName(client)}</span>
+                      {client.status && (
+                        <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-muted">
+                          {client.status}
+                        </span>
+                      )}
+                      {selectedClient?.id === client.id && (
+                        <Check className="ml-auto h-4 w-4 text-primary" />
+                      )}
+                    </CommandItem>
+                  ))
+                : (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    No clients available
+                  </div>
+                )
+              }
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
