@@ -95,36 +95,79 @@ export const householdMembers = pgTable("household_members", {
   type: text("type").notNull(),
   groupId: integer("group_id").references(() => householdGroups.id, { onDelete: 'cascade' }),
 
-  // Sensitive Information - Consider encryption at rest
-  ssn: text("ssn"),
+  // 1. Personal Identification
   dateOfBirth: text("date_of_birth"),
-
-  // Employment Information
-  employer: text("employer"),
-  occupation: text("occupation"),
-  employmentStatus: text("employment_status"),
-  annualIncome: numeric("annual_income"),
-  institution: text("institution"),
-
-  // Demographic & Relationship Info
-  relationship: text("relationship"),
+  gender: text("gender"),
+  pronouns: text("pronouns"),
+  ssn: text("ssn"),
   maritalStatus: text("marital_status"),
-  educationLevel: text("education_level"),
   primaryLanguage: text("primary_language"),
-
-  // Grant Qualification Attributes
+  race: text("race"),
+  ethnicity: text("ethnicity"),
+  citizenshipStatus: text("citizenship_status"),
   isVeteran: boolean("is_veteran").default(false),
   hasDisabilities: boolean("has_disabilities").default(false),
   disabilityNotes: text("disability_notes"),
+
+  // 2. Contact Info
+  phone: text("phone"),
+  email: text("email"),
+  preferredContactMethod: text("preferred_contact_method"),
+  alternateContactName: text("alternate_contact_name"),
+  alternateContactRelationship: text("alternate_contact_relationship"),
+  alternateContactPhone: text("alternate_contact_phone"),
+
+  // 3. Residency Info
+  currentAddress: text("current_address"),
+  moveInDate: text("move_in_date"),
+  residenceType: text("residence_type"),
+  previousAddress: text("previous_address"),
+  lengthOfResidency: text("length_of_residency"),
+  housingStatus: text("housing_status"),
+  femaCaseNumber: text("fema_case_number"),
+
+  // 4. Education & Employment
+  educationLevel: text("education_level"),
+  isStudentFullTime: boolean("is_student_full_time").default(false),
+  institution: text("institution"),
+  employmentStatus: text("employment_status"),
+  employer: text("employer"),
+  occupation: text("occupation"),
+  annualIncome: numeric("annual_income"),
+  incomeSource: text("income_source"),
+
+  // 5. Health & Wellness
+  medicalConditions: text("medical_conditions"),
+  medications: text("medications"),
+  mentalHealthConditions: text("mental_health_conditions"),
+  mobilityDevices: text("mobility_devices"),
+  healthInsurance: text("health_insurance"),
+  primaryCareProvider: text("primary_care_provider"),
   specialNeeds: text("special_needs"),
 
-  // Additional Qualifiers
-  isStudentFullTime: boolean("is_student_full_time").default(false),
+  // 6. Government or Institutional Involvement
+  publicAssistancePrograms: text("public_assistance_programs").array(),
+  caseworkerName: text("caseworker_name"),
+  caseworkerAgency: text("caseworker_agency"),
+  justiceSystemInvolvement: boolean("justice_system_involvement").default(false),
+  childWelfareInvolvement: boolean("child_welfare_involvement").default(false),
+  immigrationProceedings: boolean("immigration_proceedings").default(false),
+
+  // 7. Custom Tags (Grant-Aware Metadata)
+  qualifyingTags: text("qualifying_tags").array(),
+  notes: text("notes"),
+
+  // 8. Disaster-Specific Impacts
+  disasterInjuries: boolean("disaster_injuries").default(false),
+  lostMedication: boolean("lost_medication").default(false),
+  postDisasterAccessNeeds: text("post_disaster_access_needs"),
+  transportAccess: boolean("transport_access").default(false),
+  lostDocuments: text("lost_documents").array(),
+
+  // Other Member Properties
+  relationship: text("relationship"),
   isSenior: boolean("is_senior").default(false),
   isPregnant: boolean("is_pregnant").default(false),
-
-  // Tags for Grant Matching
-  qualifyingTags: text("qualifying_tags").array(),
 
   // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -236,8 +279,11 @@ export const insertHouseholdGroupSchema = createInsertSchema(householdGroups)
 
 export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
+    // Basic Information
     name: z.string().min(1, "Name is required"),
     type: z.enum(['adult', 'child', 'senior', 'dependent']),
+    
+    // 1. Personal Identification
     dateOfBirth: z.string().optional(),
     relationship: z.enum([
       'head',
@@ -247,8 +293,41 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       'grandparent',
       'other'
     ]).optional(),
-
-    // Employment Status Options
+    gender: z.string().optional(),
+    pronouns: z.string().optional(),
+    race: z.string().optional(),
+    ethnicity: z.string().optional(),
+    primaryLanguage: z.string().optional(),
+    citizenshipStatus: z.string().optional(),
+    ssn: z.string()
+      .regex(/^\d{3}-?\d{2}-?\d{4}$/, "Invalid SSN format")
+      .optional(),
+    maritalStatus: z.enum([
+      'single',
+      'married',
+      'divorced',
+      'widowed',
+      'separated'
+    ]).optional(),
+    
+    // 2. Contact Information
+    phone: z.string().optional(),
+    email: z.string().email("Please enter a valid email").optional().or(z.literal('')),
+    preferredContactMethod: z.string().optional(),
+    alternateContactName: z.string().optional(),
+    alternateContactRelationship: z.string().optional(),
+    alternateContactPhone: z.string().optional(),
+    
+    // 3. Residency Information
+    currentAddress: z.string().optional(),
+    moveInDate: z.string().optional(),
+    residenceType: z.string().optional(),
+    previousAddress: z.string().optional(),
+    lengthOfResidency: z.string().optional(),
+    housingStatus: z.string().optional(),
+    femaCaseNumber: z.string().optional(),
+    
+    // 4. Education & Employment 
     employmentStatus: z.enum([
       'full_time',
       'part_time',
@@ -257,8 +336,6 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       'retired',
       'student'
     ]).optional(),
-
-    // Education Level Options
     educationLevel: z.enum([
       'less_than_high_school',
       'high_school',
@@ -268,33 +345,47 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
       'masters',
       'doctorate'
     ]).optional(),
-
-    // Marital Status Options
-    maritalStatus: z.enum([
-      'single',
-      'married',
-      'divorced',
-      'widowed',
-      'separated'
-    ]).optional(),
-
-    // Sensitive Data Validation
-    ssn: z.string()
-      .regex(/^\d{3}-?\d{2}-?\d{4}$/, "Invalid SSN format")
-      .optional(),
-
+    employer: z.string().optional(),
+    occupation: z.string().optional(),
     annualIncome: z.number().min(0).optional(),
+    incomeSource: z.string().optional(),
     institution: z.string().optional(),
-
-    // Arrays and Other Fields
+    
+    // 5. Health & Wellness
+    medicalConditions: z.string().optional(),
+    medications: z.string().optional(),
+    mentalHealthConditions: z.string().optional(),
+    mobilityDevices: z.string().optional(),
+    healthInsurance: z.string().optional(),
+    primaryCareProvider: z.string().optional(),
+    specialNeeds: z.string().optional(),
+    
+    // 6. Government or Institutional Involvement
+    publicAssistancePrograms: z.array(z.string()).optional(),
+    caseworkerName: z.string().optional(),
+    caseworkerAgency: z.string().optional(),
+    
+    // 7. Custom Tags (Grant-Aware Metadata)
     qualifyingTags: z.array(z.string()).optional(),
+    notes: z.string().optional(),
+    
+    // 8. Disaster-Specific Impacts
+    postDisasterAccessNeeds: z.string().optional(),
+    lostDocuments: z.array(z.string()).optional(),
 
     // Boolean Fields
     isVeteran: z.boolean().optional(),
     hasDisabilities: z.boolean().optional(),
+    disabilityNotes: z.string().optional(),
     isStudentFullTime: z.boolean().optional(),
     isSenior: z.boolean().optional(),
     isPregnant: z.boolean().optional(),
+    justiceSystemInvolvement: z.boolean().optional(),
+    childWelfareInvolvement: z.boolean().optional(),
+    immigrationProceedings: z.boolean().optional(),
+    disasterInjuries: z.boolean().optional(),
+    lostMedication: z.boolean().optional(),
+    transportAccess: z.boolean().optional(),
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
