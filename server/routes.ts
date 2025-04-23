@@ -1327,7 +1327,8 @@ export async function registerRoutes(app: Express) {
           createdById: req.user.id,
           createdByType: req.user.userType,
           assignedToId: req.user.id,
-          assignedToType: req.user.userType
+          assignedToType: req.user.userType,
+          subtasks: "[]" // Empty JSON array for subtasks
         },
         { 
           text: "Secure food and water supply", 
@@ -1337,7 +1338,8 @@ export async function registerRoutes(app: Express) {
           createdById: req.user.id,
           createdByType: req.user.userType,
           assignedToId: req.user.id,
-          assignedToType: req.user.userType
+          assignedToType: req.user.userType,
+          subtasks: "[]" // Empty JSON array for subtasks
         }
       ];
       
@@ -1366,6 +1368,11 @@ export async function registerRoutes(app: Express) {
       // Add creator information
       taskData.createdById = req.user.id;
       taskData.createdByType = req.user.userType;
+      
+      // Initialize empty subtasks array if not provided
+      if (!taskData.subtasks) {
+        taskData.subtasks = "[]";
+      }
       
       // Check assignment permissions if task is being assigned
       if (taskData.assignedToId && taskData.assignedToType) {
