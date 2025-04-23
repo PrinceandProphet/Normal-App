@@ -126,7 +126,7 @@ export default function Sidebar() {
           
           {!collapsed && (
             <div className="mt-3 px-3 text-xs text-gray-500">
-              Logged in as: <span className="font-medium">{user.username || user.name}</span>
+              Logged in as: <span className="font-medium">{user.username || user.name || user.email || "User"}</span>
             </div>
           )}
         </div>
