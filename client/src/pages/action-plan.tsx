@@ -258,18 +258,43 @@ export default function ActionPlan() {
 
   const toggleSubtaskCompletion = (stageIndex: number, taskIndex: number, subtaskIndex: number) => {
     const newStages = [...stages];
-    newStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex].completed =
-      !newStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex].completed;
+    const taskToUpdate = newStages[stageIndex].tasks[taskIndex];
+    const subtaskToUpdate = taskToUpdate.subtasks[subtaskIndex];
+    
+    // Toggle completion status
+    subtaskToUpdate.completed = !subtaskToUpdate.completed;
 
     // Check if all subtasks are completed
-    const allSubtasksCompleted = newStages[stageIndex].tasks[taskIndex].subtasks.every(st => st.completed);
-    if (allSubtasksCompleted) {
-      newStages[stageIndex].tasks[taskIndex].completed = true;
-    } else {
-      newStages[stageIndex].tasks[taskIndex].completed = false;
-    }
+    const allSubtasksCompleted = taskToUpdate.subtasks.every(st => st.completed);
+    taskToUpdate.completed = allSubtasksCompleted;
 
     setStages(newStages);
+    
+    // Find the corresponding API task to get its ID
+    if (selectedClient && clientTasks) {
+      const apiTask = clientTasks.find(t => 
+        t.text === taskToUpdate.text && 
+        (t.stage === stages[stageIndex].letter || 
+          (stages[stageIndex].letter === 'T1' && t.stage === 'T') || 
+          (stages[stageIndex].letter === 'T2' && t.stage === 'T')
+        )
+      );
+
+      if (apiTask) {
+        // Save to server
+        updateTaskMutation.mutate({
+          taskId: apiTask.id,
+          data: { 
+            completed: taskToUpdate.completed,
+            subtasks: taskToUpdate.subtasks.map(st => ({
+              id: apiTask.subtasks?.find(s => s.text === st.text)?.id || 0,
+              text: st.text,
+              completed: st.completed
+            }))
+          }
+        });
+      }
+    }
   };
 
   const handleEditTask = (stageIndex: number, taskIndex: number, newText: string) => {
@@ -279,28 +304,93 @@ export default function ActionPlan() {
     setEditingTask(null);
   };
 
+  // Task update mutation
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, data }: { taskId: number, data: Partial<ApiTask> }) => {
+      const response = await apiRequest("PATCH", `/api/action-plan/tasks/${taskId}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh task data everywhere
+      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update task",
+      });
+    }
+  });
+
   const toggleTaskCompletion = (stageIndex: number, taskIndex: number) => {
     const newStages = [...stages];
-    newStages[stageIndex].tasks[taskIndex].completed = !newStages[stageIndex].tasks[taskIndex].completed;
+    const taskToUpdate = newStages[stageIndex].tasks[taskIndex];
+    const newCompletedStatus = !taskToUpdate.completed;
+    taskToUpdate.completed = newCompletedStatus;
 
     // If the task has subtasks, update their completion status too
-    const task = newStages[stageIndex].tasks[taskIndex];
-    if (task.subtasks.length > 0) {
-      task.subtasks.forEach(subtask => {
-        subtask.completed = task.completed;
+    if (taskToUpdate.subtasks.length > 0) {
+      taskToUpdate.subtasks.forEach(subtask => {
+        subtask.completed = newCompletedStatus;
       });
     }
 
     setStages(newStages);
 
-    // Invalidate the tasks query to update the home page
-    queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+    // Find the corresponding API task to get its ID
+    if (selectedClient && clientTasks) {
+      const apiTask = clientTasks.find(t => 
+        t.text === taskToUpdate.text && 
+        (t.stage === stages[stageIndex].letter || 
+          (stages[stageIndex].letter === 'T1' && t.stage === 'T') || 
+          (stages[stageIndex].letter === 'T2' && t.stage === 'T')
+        )
+      );
+
+      if (apiTask) {
+        // Save to server
+        updateTaskMutation.mutate({
+          taskId: apiTask.id,
+          data: { 
+            completed: newCompletedStatus,
+            // Include subtasks if they exist
+            subtasks: taskToUpdate.subtasks.map(st => ({
+              id: apiTask.subtasks?.find(s => s.text === st.text)?.id || 0,
+              text: st.text,
+              completed: st.completed
+            }))
+          }
+        });
+      }
+    }
   };
 
   const toggleTaskUrgency = (stageIndex: number, taskIndex: number) => {
     const newStages = [...stages];
-    newStages[stageIndex].tasks[taskIndex].urgent = !newStages[stageIndex].tasks[taskIndex].urgent;
+    const taskToUpdate = newStages[stageIndex].tasks[taskIndex];
+    const newUrgentStatus = !taskToUpdate.urgent;
+    taskToUpdate.urgent = newUrgentStatus;
     setStages(newStages);
+
+    // Find the corresponding API task to get its ID
+    if (selectedClient && clientTasks) {
+      const apiTask = clientTasks.find(t => 
+        t.text === taskToUpdate.text && 
+        (t.stage === stages[stageIndex].letter || 
+          (stages[stageIndex].letter === 'T1' && t.stage === 'T') || 
+          (stages[stageIndex].letter === 'T2' && t.stage === 'T')
+        )
+      );
+
+      if (apiTask) {
+        // Save to server
+        updateTaskMutation.mutate({
+          taskId: apiTask.id,
+          data: { urgent: newUrgentStatus }
+        });
+      }
+    }
   };
 
   const handleSharePlan = async () => {
