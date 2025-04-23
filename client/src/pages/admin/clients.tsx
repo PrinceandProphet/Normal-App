@@ -461,17 +461,7 @@ export default function AllClientsPage() {
         
         return (
           <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewAsClient(client);
-              }}
-              title="View as this client"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -481,15 +471,12 @@ export default function AllClientsPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
                 <DropdownMenuItem 
-                  onClick={() => handleViewAsClient(client)}
-                  className="cursor-pointer"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View as
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleClientDetails(client)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClientDetails(client);
+                  }}
                   className="cursor-pointer"
                 >
                   <Edit className="mr-2 h-4 w-4" />
@@ -719,7 +706,7 @@ export default function AllClientsPage() {
               table.getRowModel().rows.map((row) => (
                 <TableRow 
                   key={row.id}
-                  onClick={() => handleViewAsClient(row.original)}
+                  onClick={() => handleClientDetails(row.original)}
                   className="cursor-pointer hover:bg-accent"
                 >
                   {row.getVisibleCells().map((cell) => (
