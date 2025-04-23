@@ -48,8 +48,14 @@ export default function Home() {
     queryKey: ["/api/action-plan/tasks"],
   });
 
-  // For Stage S, show initial tasks count
-  const taskCount = currentStage === "S" ? 4 : tasks.filter(task => task.stage === currentStage).length;
+  // Calculate task counts for the current stage
+  const stageTasks = tasks.filter(task => task.stage === currentStage);
+  const completedTaskCount = stageTasks.filter(task => task.completed).length;
+  const totalTaskCount = currentStage === "S" ? 4 : stageTasks.length;
+  const remainingTaskCount = totalTaskCount - completedTaskCount;
+  const progressPercentage = totalTaskCount > 0 
+    ? Math.round((completedTaskCount / totalTaskCount) * 100) 
+    : 0;
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
@@ -110,16 +116,35 @@ export default function Home() {
               <CheckSquare className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">
-              {taskCount}
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-2xl font-bold">
+                {remainingTaskCount}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Remaining tasks in Stage {currentStage}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Tasks in Stage {currentStage}
-            </p>
-            <p className="text-xs text-muted-foreground mt-4 italic">
-              Coming soon: Interactive task management directly from your dashboard
-            </p>
+
+            {/* Progress bar */}
+            <div className="space-y-1">
+              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-500 ease-in-out" 
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{completedTaskCount} completed</span>
+                <span>{totalTaskCount} total</span>
+              </div>
+            </div>
+
+            <Link href="/action-plan">
+              <Button variant="link" className="p-0 h-auto text-xs font-medium">
+                View & Manage Tasks →
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -131,13 +156,15 @@ export default function Home() {
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">{fundingOpportunities.length}</div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Available grant applications
-            </p>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-2xl font-bold">{fundingOpportunities.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Available grant applications
+              </p>
+            </div>
             <Link href="/capital-sources#opportunities">
-              <Button variant="link" className="px-0 font-medium">View Opportunities →</Button>
+              <Button variant="link" className="p-0 h-auto text-xs font-medium">View Opportunities →</Button>
             </Link>
           </CardContent>
         </Card>
@@ -150,13 +177,15 @@ export default function Home() {
               <FileText className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-2">{documents.length}</div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Uploaded documents
-            </p>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-2xl font-bold">{documents.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Uploaded documents
+              </p>
+            </div>
             <Link href="/documents">
-              <Button variant="link" className="px-0 font-medium">View Documents →</Button>
+              <Button variant="link" className="p-0 h-auto text-xs font-medium">View Documents →</Button>
             </Link>
           </CardContent>
         </Card>
@@ -185,9 +214,14 @@ export default function Home() {
           <CardHeader>
             <CardTitle className="text-lg">Latest Messages</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-sm text-muted-foreground">
+                Stay connected with your support team and get updates on your recovery progress.
+              </div>
+            </div>
             <Link href="/messages">
-              <Button variant="link" className="px-0 font-medium">View Message Center →</Button>
+              <Button variant="link" className="p-0 h-auto text-xs font-medium">View Message Center →</Button>
             </Link>
           </CardContent>
         </Card>
