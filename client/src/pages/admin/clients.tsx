@@ -50,7 +50,7 @@ import {
   ArrowUpDown, CheckCircle, XCircle, Clock, RefreshCw, 
   Eye, Edit, Trash2, Plus, Building2
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
@@ -429,9 +429,37 @@ export default function AllClientsPage() {
     },
   ];
 
+  // Directly filter the data for the table
+  const getFilteredData = () => {
+    if (!clients) return [];
+    
+    if (!searchTerm) return clients;
+    
+    // Filter the data based on search term
+    return clients.filter(client => {
+      if (!client) return false;
+      
+      // Construct a full name from name field and/or firstName+lastName fields
+      const nameFromFields = client.firstName && client.lastName 
+        ? `${client.firstName} ${client.lastName}`
+        : '';
+      const fullName = client.name || nameFromFields || '';
+      
+      // Search in all relevant fields
+      return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.firstName && client.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (client.lastName && client.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (client.username && client.username.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
+  };
+  
+  // Calculate filtered data
+  const filteredData = getFilteredData();
+  
   // Create the table instance
   const table = useReactTable({
-    data: clients || [],
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -445,16 +473,7 @@ export default function AllClientsPage() {
     },
   });
 
-  // Apply global filter for search - now triggered manually through refreshSearch()
-  useEffect(() => {
-    // Initial load of data
-    if (clients && table) {
-      table.setOptions(prev => ({
-        ...prev,
-        data: clients,
-      }));
-    }
-  }, [clients, table]);
+  // No need for additional effects as we're recalculating filtered data on render
 
   // Handle viewing as a specific client
   const handleViewAsClient = (client: SurvivorData) => {
@@ -516,37 +535,22 @@ export default function AllClientsPage() {
                     placeholder="Search clients..."
                     value={searchTerm}
                     onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      // Refresh search on each keystroke
+                      const term = e.target.value;
+                      setSearchTerm(term);
+                      
+                      // Immediately apply the filter
                       if (clients) {
-                        const term = e.target.value;
+                        // Use the same filtering function for consistency
+                        const filtered = term ? getFilteredData() : clients;
+                        
+                        // Update table data
+                        table.setOptions(prev => ({
+                          ...prev,
+                          data: filtered,
+                        }));
+                        
                         if (term) {
-                          const filteredData = clients.filter(client => {
-                            if (!client) return false;
-                            
-                            const nameFromFields = client.firstName && client.lastName 
-                              ? `${client.firstName} ${client.lastName}`
-                              : '';
-                            const fullName = client.name || nameFromFields || '';
-                            
-                            return fullName.toLowerCase().includes(term.toLowerCase()) ||
-                              (client.firstName && client.firstName.toLowerCase().includes(term.toLowerCase())) ||
-                              (client.lastName && client.lastName.toLowerCase().includes(term.toLowerCase())) ||
-                              (client.email && client.email.toLowerCase().includes(term.toLowerCase())) ||
-                              (client.username && client.username.toLowerCase().includes(term.toLowerCase()));
-                          });
-                          
-                          table.setOptions(prev => ({
-                            ...prev,
-                            data: filteredData,
-                          }));
-                          
-                          console.log('Live search:', filteredData.length, 'matches for', term);
-                        } else {
-                          table.setOptions(prev => ({
-                            ...prev,
-                            data: clients,
-                          }));
+                          console.log('Live search:', filtered.length, 'matches for', term);
                         }
                       }
                     }}
