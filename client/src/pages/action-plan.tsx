@@ -406,11 +406,21 @@ export default function ActionPlan() {
       // Force a fresh timestamp to trigger a refetch everywhere
       setTimestamp(new Date().getTime());
       
-      // Invalidate ALL task-related queries to ensure both this page and the dashboard update
-      queryClient.invalidateQueries({ queryKey: ["/api/action-plan/tasks"] });
+      // Use type: 'all' to ensure all query cache for this endpoint is fully invalidated
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/action-plan/tasks"],
+        type: 'all',  // Forces a complete refresh
+        refetchType: 'all' // Refetch all queries (active and inactive)
+      });
       
       // Also explicitly invalidate the system config in case task completion affects stages
-      queryClient.invalidateQueries({ queryKey: ["/api/system/config"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/system/config"],
+        type: 'all'
+      });
+      
+      // Attempt to force a hard refetch by removing the data first
+      queryClient.resetQueries({ queryKey: ["/api/action-plan/tasks"] });
       
       toast({
         title: "Task updated",
