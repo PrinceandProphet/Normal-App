@@ -265,6 +265,11 @@ export const insertTaskSchema = createInsertSchema(tasks)
     stage: z.enum(["secure_stabilize", "take_stock", "align_recovery", "rebuild_restore", "transition_normal"]),
     createdByType: z.enum(["survivor", "practitioner"]),
     assignedToType: z.enum(["survivor", "practitioner"]).optional(),
+    subtasks: z.array(z.object({
+      id: z.string(),
+      text: z.string(),
+      completed: z.boolean().default(false)
+    })).optional(),
   })
   .omit({ id: true, createdAt: true });
 

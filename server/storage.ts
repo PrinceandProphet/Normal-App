@@ -644,7 +644,24 @@ export class DatabaseStorage implements IStorage {
 
   // Tasks
   async getTasks(): Promise<Task[]> {
-    return await db.select().from(tasks);
+    const taskList = await db.select().from(tasks);
+
+    // Process the subtasks for each task
+    return taskList.map(task => {
+      if (task.subtasks) {
+        try {
+          // Parse the subtasks JSON string to an array
+          const parsedSubtasks = JSON.parse(task.subtasks as string);
+          task.subtasks = parsedSubtasks;
+        } catch (error) {
+          console.error(`Error parsing subtasks JSON for task ${task.id}:`, error);
+          task.subtasks = [];
+        }
+      } else {
+        task.subtasks = [];
+      }
+      return task;
+    });
   }
   
   async getTask(id: number): Promise<Task | undefined> {
@@ -652,14 +669,54 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(tasks)
       .where(eq(tasks.id, id));
+    
+    if (task) {
+      // Process the subtasks field
+      if (task.subtasks) {
+        try {
+          // Parse the subtasks JSON string to an array
+          const parsedSubtasks = JSON.parse(task.subtasks as string);
+          task.subtasks = parsedSubtasks;
+        } catch (error) {
+          console.error(`Error parsing subtasks JSON for task ${task.id}:`, error);
+          task.subtasks = [];
+        }
+      } else {
+        task.subtasks = [];
+      }
+    }
+    
     return task;
   }
 
   async createTask(task: InsertTask): Promise<Task> {
+    // Handle subtasks
+    let taskToInsert = { ...task };
+    
+    if (task.subtasks) {
+      // Convert subtasks to JSON string
+      taskToInsert.subtasks = JSON.stringify(task.subtasks);
+    }
+    
     const [created] = await db.insert(tasks).values({
-      ...task,
+      ...taskToInsert,
       createdAt: new Date(),
     }).returning();
+    
+    // Process the subtasks in the returned task
+    if (created.subtasks) {
+      try {
+        // Parse the subtasks JSON string to an array
+        const parsedSubtasks = JSON.parse(created.subtasks as string);
+        created.subtasks = parsedSubtasks;
+      } catch (error) {
+        console.error(`Error parsing subtasks JSON for new task ${created.id}:`, error);
+        created.subtasks = [];
+      }
+    } else {
+      created.subtasks = [];
+    }
+    
     return created;
   }
 
