@@ -33,7 +33,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       
       <Route path="*">
-        <LoadingWrapper delay={150} fullHeight={true}>
+        <LoadingWrapper delay={100} fullHeight={true}>
           <div className="flex h-screen bg-background">
             <Sidebar />
             <main className="flex-1 overflow-y-auto p-8">
@@ -44,71 +44,71 @@ function Router() {
               </div>
               <Switch>
                 <Route path="/">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Home />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/action-plan">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <ActionPlan />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/household">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Household />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/documents">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Documents />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/messages">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Messages />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/contacts">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Contacts />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/capital-sources">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <CapitalSources />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/profile">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Profile />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/admin">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <AdminPage />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>
                 <Route path="/admin/organizations">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <Suspense fallback={<LoadingFallback />}>
                         <OrganizationsPage />
                       </Suspense>
@@ -116,8 +116,8 @@ function Router() {
                   </AuthCheck>
                 </Route>
                 <Route path="/admin/clients">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50} isForm>
                       <Suspense fallback={<LoadingFallback />}>
                         <AllClientsPage />
                       </Suspense>
@@ -125,8 +125,8 @@ function Router() {
                   </AuthCheck>
                 </Route>
                 <Route path="/org-admin">
-                  <AuthCheck>
-                    <LoadingWrapper>
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
                       <OrgAdminPage />
                     </LoadingWrapper>
                   </AuthCheck>

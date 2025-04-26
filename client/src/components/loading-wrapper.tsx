@@ -5,6 +5,8 @@ interface LoadingWrapperProps {
   children: ReactNode;
   delay?: number; // Delay before showing content in ms
   fullHeight?: boolean;
+  isForm?: boolean; // Set to true for forms to prevent blocking inputs
+  noAnimation?: boolean; // Set to true to disable fade animation (useful for forms)
 }
 
 /**
@@ -14,18 +16,26 @@ interface LoadingWrapperProps {
 export function LoadingWrapper({ 
   children, 
   delay = 100, 
-  fullHeight = false 
+  fullHeight = false,
+  isForm = false,
+  noAnimation = false
 }: LoadingWrapperProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isForm); // Don't show loading state for forms
   
   // Create a delayed render to prevent flickering during navigation
   useEffect(() => {
+    // Skip loading state for forms entirely
+    if (isForm) {
+      setIsLoading(false);
+      return;
+    }
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, delay);
     
     return () => clearTimeout(timer);
-  }, [delay]);
+  }, [delay, isForm]);
   
   if (isLoading) {
     return (
@@ -35,8 +45,11 @@ export function LoadingWrapper({
     );
   }
   
+  // Conditionally apply animation
+  const animationClass = noAnimation ? '' : 'animate-in fade-in duration-300';
+  
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className={animationClass}>
       {children}
     </div>
   );
