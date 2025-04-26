@@ -414,7 +414,16 @@ export default function OrganizationsPage() {
       </div>
 
       {/* Add/Edit Organization Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog 
+        open={open} 
+        onOpenChange={(newOpen) => {
+          setOpen(newOpen);
+          // If dialog is closing, reset the form
+          if (!newOpen) {
+            form.reset();
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -429,7 +438,10 @@ export default function OrganizationsPage() {
 
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)(e);
+              }}
               className="space-y-6"
             >
               <div className="grid grid-cols-2 gap-4">

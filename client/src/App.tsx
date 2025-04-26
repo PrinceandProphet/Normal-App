@@ -108,7 +108,7 @@ function Router() {
                 </Route>
                 <Route path="/admin/organizations">
                   <AuthCheck noLoading>
-                    <LoadingWrapper delay={50}>
+                    <LoadingWrapper delay={50} isForm>
                       <Suspense fallback={<LoadingFallback />}>
                         <OrganizationsPage />
                       </Suspense>
