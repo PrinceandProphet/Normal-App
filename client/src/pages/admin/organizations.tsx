@@ -299,7 +299,15 @@ export default function OrganizationsPage() {
             Manage all organizations in the system
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            resetForm(); // Reset the form before opening dialog
+            setOpen(true); // Directly open the dialog
+          }} 
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" />
           Add Organization
         </Button>
@@ -390,8 +398,30 @@ export default function OrganizationsPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          if (confirm("Are you sure you want to delete this organization?")) {
-                            deleteOrgMutation.mutate(org.id);
+                          // Detect production environment
+                          const isProduction = window.location.hostname.includes('.replit.app') || 
+                                              window.location.hostname === 'production-hostname.com';
+                          
+                          if (isProduction) {
+                            // Enhanced confirmation for production environment
+                            const confirmText = `DELETE-${org.name.toUpperCase()}`;
+                            const userInput = window.prompt(
+                              `⚠️ WARNING: You are in PRODUCTION mode!\n\nThis will permanently delete organization "${org.name}" and may affect linked client data.\n\nTo confirm, type "${confirmText}" exactly:`
+                            );
+                            
+                            if (userInput === confirmText) {
+                              deleteOrgMutation.mutate(org.id);
+                            } else {
+                              toast({
+                                title: "Deletion cancelled",
+                                description: "Organization deletion was cancelled or confirmation text did not match.",
+                              });
+                            }
+                          } else {
+                            // Standard confirmation for development
+                            if (confirm("Are you sure you want to delete this organization?")) {
+                              deleteOrgMutation.mutate(org.id);
+                            }
                           }
                         }}
                         title="Delete organization"

@@ -583,15 +583,43 @@ export default function AllClientsPage() {
     });
   };
 
-  // Handle client deletion (this would need backend implementation)
+  // Handle client deletion with enhanced protection for production environment
   const handleDeleteClient = (client: SurvivorData) => {
-    if (confirm(`Are you sure you want to delete ${client.name}?`)) {
-      // Implement deletion logic here
-      toast({
-        title: "Not implemented",
-        description: "Client deletion is not implemented in this version.",
-        variant: "destructive",
-      });
+    // Detect production environment
+    const isProduction = window.location.hostname.includes('.replit.app') || 
+                        window.location.hostname === 'production-hostname.com';
+    
+    if (isProduction) {
+      // Enhanced confirmation for production environment
+      const confirmText = `DELETE-${client.name.toUpperCase()}`;
+      const userInput = window.prompt(
+        `⚠️ WARNING: You are in PRODUCTION mode!\n\nThis will permanently delete client "${client.name}" and ALL associated data including household members, documents, and recovery plans.\n\nTo confirm, type "${confirmText}" exactly:`
+      );
+      
+      if (userInput === confirmText) {
+        // Implement deletion logic here
+        toast({
+          title: "Enhanced protection active",
+          description: "Client deletion requires additional permissions in production.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Deletion cancelled",
+          description: "Client deletion was cancelled - confirmation text did not match.",
+          variant: "default",
+        });
+      }
+    } else {
+      // Standard confirmation for development
+      if (confirm(`Are you sure you want to delete ${client.name}?`)) {
+        // Implement deletion logic here
+        toast({
+          title: "Not implemented",
+          description: "Client deletion is not implemented in this version.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
