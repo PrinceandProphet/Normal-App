@@ -1123,6 +1123,26 @@ export class DatabaseStorage implements IStorage {
     const properties = await this.getProperties();
     const survivorProperty = properties.find(p => p.survivorId === survivorId);
     
+    // Extract zip code from address if zipCode field is not populated
+    let zipCode = null;
+    if (survivorProperty) {
+      if (survivorProperty.zipCode) {
+        zipCode = survivorProperty.zipCode;
+      } else if (survivorProperty.address) {
+        // Try to extract ZIP code from address
+        const zipMatch = survivorProperty.address.match(/\b\d{5}(?:-\d{4})?\b/);
+        if (zipMatch) {
+          zipCode = zipMatch[0];
+          
+          // Update the property with the extracted zip code for future use
+          await db
+            .update(properties)
+            .set({ zipCode })
+            .where(eq(properties.id, survivorProperty.id));
+        }
+      }
+    }
+    
     // Get survivor's household members for household size and income data
     const householdGroups = await this.getHouseholdGroups();
     const survivorGroups = householdGroups.filter(g => 
@@ -1151,12 +1171,12 @@ export class DatabaseStorage implements IStorage {
       
       switch(criterion.type) {
         case 'zipCode':
-          if (survivorProperty && survivorProperty.zipCode) {
+          if (zipCode) {
             const zipCodeMatches = criterion.ranges.some((range: any) => {
               // Convert to numbers for comparison
               const min = parseInt(range.min, 10);
               const max = parseInt(range.max, 10);
-              const zip = parseInt(survivorProperty.zipCode, 10);
+              const zip = parseInt(zipCode, 10);
               
               return zip >= min && zip <= max;
             });
@@ -1165,12 +1185,12 @@ export class DatabaseStorage implements IStorage {
               matchCount++;
               matchDetails.zipCode = {
                 matches: true,
-                value: survivorProperty.zipCode
+                value: zipCode
               };
             } else {
               matchDetails.zipCode = {
                 matches: false,
-                value: survivorProperty.zipCode
+                value: zipCode
               };
             }
           } else {

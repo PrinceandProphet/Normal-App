@@ -75,6 +75,7 @@ export const systemConfig = pgTable("system_config", {
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   address: text("address").notNull(),
+  zipCode: text("zip_code"),  // Adding zip code field
   type: text("type").notNull(),
   ownershipStatus: text("ownership_status").notNull(),
   primaryResidence: boolean("primary_residence").default(false),
