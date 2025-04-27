@@ -3,12 +3,23 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Mail, 
+  MessageSquare, 
+  Phone, 
+  PhoneOff, 
+  Send, 
+  Save, 
+  Mic, 
+  BellRing 
+} from "lucide-react";
 
 export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
@@ -270,7 +281,7 @@ export default function Messages() {
               </div>
 
               {(user?.userType === "survivor" || selectedContact) && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-4">
                   {/* Channel selector */}
                   <div className="flex gap-2">
                     <Select
@@ -289,21 +300,143 @@ export default function Messages() {
                     </Select>
                   </div>
                   
-                  {/* Message input */}
-                  <div className="flex gap-2">
-                    <Textarea
-                      value={messageContent}
-                      onChange={(e) => setMessageContent(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={sendMessage}
-                      disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                    >
-                      {sendMessageMutation.isPending ? "Sending..." : "Send"}
-                    </Button>
-                  </div>
+                  {/* Adaptive message input based on channel */}
+                  {channel === "email" && (
+                    <div className="border rounded-md p-3 bg-card">
+                      <div className="flex items-center mb-2">
+                        <span className="text-sm font-medium mr-2">To:</span>
+                        <span className="text-sm">
+                          {selectedContact 
+                            ? contacts?.find(c => c.id === selectedContact)?.name
+                            : user?.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center mb-3">
+                        <span className="text-sm font-medium mr-2">Subject:</span>
+                        <span className="text-sm text-muted-foreground">Message regarding your case</span>
+                      </div>
+                      <Textarea
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        placeholder="Type your email message..."
+                        className="min-h-[120px]"
+                      />
+                      <div className="flex justify-end mt-3">
+                        <Button 
+                          onClick={sendMessage}
+                          disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                          className="gap-2"
+                        >
+                          <Mail className="h-4 w-4" />
+                          {sendMessageMutation.isPending ? "Sending..." : "Send Email"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {channel === "sms" && (
+                    <div className="border rounded-md p-3 bg-card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm">
+                          To: {selectedContact 
+                            ? contacts?.find(c => c.id === selectedContact)?.name
+                            : user?.name}
+                        </span>
+                      </div>
+                      <div className="bg-muted p-3 rounded-md mb-2 max-h-[180px] overflow-y-auto">
+                        <Textarea
+                          value={messageContent}
+                          onChange={(e) => setMessageContent(e.target.value)}
+                          placeholder="Type your text message..."
+                          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 resize-none"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={sendMessage}
+                          disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                          className="rounded-full aspect-square p-2"
+                        >
+                          <Send className="h-4 w-4" />
+                          <span className="sr-only">Send Text</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {channel === "call" && (
+                    <div className="border rounded-md p-3 bg-card">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <span className="text-sm">
+                            Call to: {selectedContact 
+                              ? contacts?.find(c => c.id === selectedContact)?.name
+                              : user?.name}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">Demo</Badge>
+                      </div>
+                      <div className="bg-muted rounded-md p-3 mb-4">
+                        <p className="text-sm text-muted-foreground mb-2">Call Notes:</p>
+                        <Textarea
+                          value={messageContent}
+                          onChange={(e) => setMessageContent(e.target.value)}
+                          placeholder="Enter call notes for this conversation..."
+                          className="border-none bg-background"
+                        />
+                      </div>
+                      <div className="flex justify-center gap-4">
+                        <Button 
+                          variant="outline" 
+                          className="rounded-full aspect-square p-3"
+                        >
+                          <Mic className="h-4 w-4" />
+                          <span className="sr-only">Mic</span>
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          className="rounded-full aspect-square p-3"
+                        >
+                          <PhoneOff className="h-4 w-4" />
+                          <span className="sr-only">End Call</span>
+                        </Button>
+                        <Button 
+                          onClick={sendMessage}
+                          disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                          className="rounded-full aspect-square p-3"
+                          variant="default"
+                        >
+                          <Save className="h-4 w-4" />
+                          <span className="sr-only">Save Call Notes</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {channel === "system" && (
+                    <div className="border rounded-md p-3 bg-card">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BellRing className="h-4 w-4" />
+                        <span className="text-sm font-medium">System Notification</span>
+                      </div>
+                      <Textarea
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        placeholder="Enter system notification message..."
+                        className="mb-3"
+                      />
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={sendMessage}
+                          disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                        >
+                          {sendMessageMutation.isPending ? "Sending..." : "Send Notification"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
