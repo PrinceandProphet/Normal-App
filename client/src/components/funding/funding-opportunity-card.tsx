@@ -61,20 +61,31 @@ export default function FundingOpportunityCard({ opportunity, onEdit, onDelete, 
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="relative pb-2">
+    <Card className="overflow-hidden flex flex-col h-full">
+      <CardHeader className="relative pb-2 space-y-1">
         {opportunity.isPublic && (
           <Badge variant="outline" className="absolute top-2 right-2 bg-green-50 text-green-700 border-green-200">
             Public
           </Badge>
         )}
-        <CardTitle className="line-clamp-1">{opportunity.name}</CardTitle>
-        <CardDescription className="line-clamp-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <CardTitle className="text-lg break-words hyphens-auto">
+                {opportunity.name}
+              </CardTitle>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{opportunity.name}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <CardDescription className="line-clamp-2 mt-1">
           {opportunity.description}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-4 pb-2">
+      <CardContent className="space-y-4 pb-2 flex-grow">
         {/* Award amount */}
         <div className="flex items-center gap-2">
           <Banknote className="h-4 w-4 text-muted-foreground" />
