@@ -137,18 +137,7 @@ export async function registerRoutes(app: Express) {
     res.status(204).send();
   });
 
-  // Messages
-  app.get("/api/contacts/:contactId/messages", async (req, res) => {
-    const contactId = parseInt(req.params.contactId);
-    const messages = await storage.getMessages(contactId);
-    res.json(messages);
-  });
-
-  app.post("/api/messages", async (req, res) => {
-    const message = insertMessageSchema.parse(req.body);
-    const created = await storage.createMessage(message);
-    res.status(201).json(created);
-  });
+  // Old Messages routes now handled in ./routes/messages.ts
 
   // Templates
   app.get("/api/templates", async (req, res) => {
