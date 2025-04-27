@@ -88,6 +88,8 @@ router.post("/", async (req, res) => {
     // Parse and validate the request body
     const validatedData = insertFundingOpportunitySchema.safeParse(req.body);
     if (!validatedData.success) {
+      console.error("Validation failed:", JSON.stringify(validatedData.error.format(), null, 2));
+      console.error("Received data:", JSON.stringify(req.body, null, 2));
       return res.status(400).json({ 
         message: "Invalid funding opportunity data", 
         errors: validatedData.error.format() 
