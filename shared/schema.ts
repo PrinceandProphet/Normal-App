@@ -11,6 +11,14 @@ export const organizations = pgTable("organizations", {
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
+  // Email configuration fields
+  emailDomain: text("email_domain"),
+  emailDomainVerified: boolean("email_domain_verified").default(false),
+  emailSenderName: text("email_sender_name"),
+  emailSenderEmail: text("email_sender_email"),
+  emailDkimSelector: text("email_dkim_selector"),
+  emailDkimKey: text("email_dkim_key"),
+  emailSpfRecord: text("email_spf_record"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -511,6 +519,14 @@ export const insertOrganizationSchema = createInsertSchema(organizations)
     name: z.string().min(1, "Organization name is required"),
     type: z.enum(["government", "non_profit", "private", "other"]),
     email: z.string().email("Please enter a valid email").optional(),
+    // Email configuration fields
+    emailDomain: z.string().optional(),
+    emailDomainVerified: z.boolean().default(false),
+    emailSenderName: z.string().optional(),
+    emailSenderEmail: z.string().email("Please enter a valid sender email").optional(),
+    emailDkimSelector: z.string().optional(),
+    emailDkimKey: z.string().optional(),
+    emailSpfRecord: z.string().optional(),
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
