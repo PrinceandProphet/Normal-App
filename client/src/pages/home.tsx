@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FileText, DollarSign, CheckSquare, Shield, RefreshCw } from "lucide-react";
+import { FileText, DollarSign, CheckSquare, Shield, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Task, Document, CapitalSource, SystemConfig } from "@shared/schema";
 
@@ -35,7 +36,11 @@ const initialTasks = [
 export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [timestamp, setTimestamp] = useState(new Date().getTime());
+  const [isLowerSectionCollapsed, setIsLowerSectionCollapsed] = useState(false);
   const { toast } = useToast();
+  
+  // Get the current user from the auth context
+  const { user } = useAuth();
   
   // Function to force refresh the task data
   const refreshTaskData = useCallback(() => {
@@ -204,6 +209,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
+      {/* Fixed Dashboard Metrics - Always Visible */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* To Do's Card */}
         <Card className="backdrop-blur-sm bg-white/50">
@@ -310,40 +316,77 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Link href="/documents">
-              <Button className="w-full shadow-lg bg-gradient-to-r from-primary to-primary/90">
-                Upload New Document
-              </Button>
-            </Link>
-            <Link href="/capital-sources">
-              <Button variant="outline" className="w-full border-2">
-                Browse Funding Opportunities
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      {/* Dividing line - separates collapsible content */}
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border"></div>
+        </div>
+        {(user?.role === 'admin' || user?.role === 'super_admin') && (
+          <div className="relative flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-background hover:bg-accent"
+              onClick={() => setIsLowerSectionCollapsed(!isLowerSectionCollapsed)}
+            >
+              {isLowerSectionCollapsed ? (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  Show More
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  Collapse
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Latest Messages</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm text-muted-foreground">
-                Stay connected with your support team and get updates on your recovery progress.
+      {/* Collapsible section for admins */}
+      <div className={cn(
+        "transition-all duration-500 ease-in-out",
+        isLowerSectionCollapsed && (user?.role === 'admin' || user?.role === 'super_admin') ? 
+          "max-h-0 opacity-0 overflow-hidden" : 
+          "max-h-[1000px] opacity-100"
+      )}>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href="/documents">
+                <Button className="w-full shadow-lg bg-gradient-to-r from-primary to-primary/90">
+                  Upload New Document
+                </Button>
+              </Link>
+              <Link href="/capital-sources">
+                <Button variant="outline" className="w-full border-2">
+                  Browse Funding Opportunities
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Latest Messages</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground">
+                  Stay connected with your support team and get updates on your recovery progress.
+                </div>
               </div>
-            </div>
-            <Link href="/messages">
-              <Button variant="link" className="p-0 h-auto text-xs font-medium">View Message Center →</Button>
-            </Link>
-          </CardContent>
-        </Card>
+              <Link href="/messages">
+                <Button variant="link" className="p-0 h-auto text-xs font-medium">View Message Center →</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
