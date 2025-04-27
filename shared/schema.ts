@@ -556,8 +556,8 @@ export const insertFundingOpportunitySchema = createInsertSchema(fundingOpportun
     awardAmount: z.number().min(0, "Award amount must be non-negative").optional(),
     awardMinimum: z.number().min(0, "Minimum award must be non-negative").optional(),
     awardMaximum: z.number().min(0, "Maximum award must be non-negative").optional(),
-    applicationStartDate: z.date().optional(),
-    applicationEndDate: z.date().optional(),
+    applicationStartDate: z.union([z.date(), z.string()]).optional(),
+    applicationEndDate: z.union([z.date(), z.string()]).optional(),
     eligibilityCriteria: eligibilityCriteriaSchema.optional(),
     isPublic: z.boolean().default(true),
   })
