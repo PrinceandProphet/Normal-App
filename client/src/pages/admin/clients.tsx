@@ -584,42 +584,31 @@ export default function AllClientsPage() {
   };
 
   // Handle client deletion with enhanced protection for production environment
+  // Client deletion mutation
+  const deleteClientMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/survivors/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
+      toast({
+        title: "Client deleted",
+        description: "The client has been deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Failed to delete client:", error);
+      toast({
+        title: "Failed to delete client",
+        description: error.message || "An error occurred while deleting the client",
+        variant: "destructive",
+      });
+    },
+  });
+  
   const handleDeleteClient = (client: SurvivorData) => {
-    // Detect production environment
-    const isProduction = window.location.hostname.includes('.replit.app') || 
-                        window.location.hostname === 'production-hostname.com';
-    
-    if (isProduction) {
-      // Enhanced confirmation for production environment
-      const confirmText = `DELETE-${client.name.toUpperCase()}`;
-      const userInput = window.prompt(
-        `⚠️ WARNING: You are in PRODUCTION mode!\n\nThis will permanently delete client "${client.name}" and ALL associated data including household members, documents, and recovery plans.\n\nTo confirm, type "${confirmText}" exactly:`
-      );
-      
-      if (userInput === confirmText) {
-        // Implement deletion logic here
-        toast({
-          title: "Enhanced protection active",
-          description: "Client deletion requires additional permissions in production.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Deletion cancelled",
-          description: "Client deletion was cancelled - confirmation text did not match.",
-          variant: "default",
-        });
-      }
-    } else {
-      // Standard confirmation for development
-      if (confirm(`Are you sure you want to delete ${client.name}?`)) {
-        // Implement deletion logic here
-        toast({
-          title: "Not implemented",
-          description: "Client deletion is not implemented in this version.",
-          variant: "destructive",
-        });
-      }
+    if (confirm(`Are you sure you want to delete ${client.name}? This will permanently delete all associated data.`)) {
+      deleteClientMutation.mutate(client.id);
     }
   };
 

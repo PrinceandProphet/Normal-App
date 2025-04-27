@@ -402,26 +402,9 @@ export default function OrganizationsPage() {
                           const isProduction = window.location.hostname.includes('.replit.app') || 
                                               window.location.hostname === 'production-hostname.com';
                           
-                          if (isProduction) {
-                            // Enhanced confirmation for production environment
-                            const confirmText = `DELETE-${org.name.toUpperCase()}`;
-                            const userInput = window.prompt(
-                              `⚠️ WARNING: You are in PRODUCTION mode!\n\nThis will permanently delete organization "${org.name}" and may affect linked client data.\n\nTo confirm, type "${confirmText}" exactly:`
-                            );
-                            
-                            if (userInput === confirmText) {
-                              deleteOrgMutation.mutate(org.id);
-                            } else {
-                              toast({
-                                title: "Deletion cancelled",
-                                description: "Organization deletion was cancelled or confirmation text did not match.",
-                              });
-                            }
-                          } else {
-                            // Standard confirmation for development
-                            if (confirm("Are you sure you want to delete this organization?")) {
-                              deleteOrgMutation.mutate(org.id);
-                            }
+                          // Simple confirmation for organization deletion
+                          if (confirm(`Are you sure you want to delete organization "${org.name}"? This will permanently delete all associated data.`)) {
+                            deleteOrgMutation.mutate(org.id);
                           }
                         }}
                         title="Delete organization"
