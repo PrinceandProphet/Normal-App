@@ -36,7 +36,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Plus, Building2, Users, Phone, Mail, Globe, MapPin, Trash2, Edit, RefreshCw } from "lucide-react";
+import { Plus, Building2, Users, Phone, Mail, Globe, MapPin, Trash2, Edit, RefreshCw, Settings, ArrowUpRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -72,6 +73,7 @@ export default function OrganizationsPage() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editingOrganization, setEditingOrganization] = useState<Organization | null>(null);
+  const [, navigate] = useLocation();
 
   // Fetch organizations
   const { data: organizations, isLoading, isError } = useQuery<Organization[]>({
@@ -393,6 +395,14 @@ export default function OrganizationsPage() {
                         title="Edit organization"
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/organizations/${org.id}/settings`)}
+                        title="Organization settings"
+                      >
+                        <Settings className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
