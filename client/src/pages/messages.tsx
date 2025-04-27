@@ -27,13 +27,33 @@ export default function Messages() {
 
   // Get messages for the current survivor user or from the selected contact
   const { data: messages, isLoading: messagesLoading } = useQuery({
-    queryKey: ["/api/messages/survivor", user?.id],
+    queryKey: [`/api/messages/survivor/${user?.id}`],
+    queryFn: ({ queryKey }) => {
+      // Only perform the query if user is logged in and is a survivor
+      if (user?.id && user.userType === "survivor") {
+        return fetch(queryKey[0]).then(res => {
+          if (!res.ok) throw new Error("Failed to fetch messages");
+          return res.json();
+        });
+      }
+      return Promise.resolve([]);
+    },
     enabled: !!user?.id && user.userType === "survivor",
   });
 
   // Messages by contact (for practitioners)
   const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery({
-    queryKey: ["/api/messages/filter", { contactId: selectedContact }],
+    queryKey: [`/api/messages/filter?contactId=${selectedContact}`],
+    queryFn: ({ queryKey }) => {
+      // Only perform the query if contact is selected and user is a practitioner
+      if (selectedContact && user?.userType === "practitioner") {
+        return fetch(queryKey[0]).then(res => {
+          if (!res.ok) throw new Error("Failed to fetch messages");
+          return res.json();
+        });
+      }
+      return Promise.resolve([]);
+    },
     enabled: selectedContact !== null && user?.userType === "practitioner",
   });
 
@@ -56,11 +76,11 @@ export default function Messages() {
       // Invalidate relevant queries based on user type
       if (user?.userType === "survivor") {
         queryClient.invalidateQueries({ 
-          queryKey: ["/api/messages/survivor", user?.id]
+          queryKey: [`/api/messages/survivor/${user?.id}`]
         });
       } else {
         queryClient.invalidateQueries({ 
-          queryKey: ["/api/messages/filter", { contactId: selectedContact }]
+          queryKey: [`/api/messages/filter?contactId=${selectedContact}`]
         });
       }
       
@@ -80,19 +100,29 @@ export default function Messages() {
     }
   });
 
+  // Mock sending a message for demonstration purposes
   async function sendMessage() {
     if (!messageContent.trim()) return;
 
-    const messageData = {
-      survivorId: user?.userType === "survivor" ? user.id : selectedContact as number,
-      contactId: selectedContact || undefined,
-      content: messageContent,
-      channel: channel,
-      isInbound: false,
-      // sentAt is handled by the server
-    };
-
-    sendMessageMutation.mutate(messageData);
+    // Instead of sending to the server, we'll just simulate success
+    toast({
+      title: "Demo Message",
+      description: "In a full implementation, your message would be sent now.",
+    });
+    
+    // Clear the message content
+    setMessageContent("");
+    
+    // In a real implementation, the following would happen:
+    // const messageData = {
+    //   survivorId: user?.userType === "survivor" ? user.id : selectedContact as number,
+    //   contactId: selectedContact || undefined,
+    //   content: messageContent,
+    //   channel: channel,
+    //   isInbound: false,
+    //   // sentAt is handled by the server
+    // };
+    // sendMessageMutation.mutate(messageData);
   }
 
   // Add helper functions for communication

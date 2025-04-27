@@ -57,7 +57,14 @@ const checkSurvivorAccess = async (req: Request, res: Response, next: Function) 
 router.get("/survivor/:survivorId", authenticateUser, checkSurvivorAccess, async (req, res) => {
   try {
     const { survivorId } = req.params;
-    const messages = await storage.getClientMessages(parseInt(survivorId));
+    // Make sure survivorId is a valid number before passing to database
+    const survivorIdNum = parseInt(survivorId);
+    
+    if (isNaN(survivorIdNum)) {
+      return res.status(400).json({ error: "Invalid survivor ID" });
+    }
+    
+    const messages = await storage.getClientMessages(survivorIdNum);
     res.json(messages);
   } catch (error) {
     console.error("Error fetching messages:", error);
