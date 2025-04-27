@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, primaryKey, date, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -245,6 +245,33 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Funding opportunities (grants) table
+export const fundingOpportunities = pgTable("funding_opportunities", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  
+  // Grant details
+  awardAmount: numeric("award_amount"), // Single amount
+  awardMinimum: numeric("award_minimum"), // For range-based awards
+  awardMaximum: numeric("award_maximum"), // For range-based awards
+  
+  // Application period
+  applicationStartDate: date("application_start_date").notNull(),
+  applicationEndDate: date("application_end_date").notNull(),
+  
+  // Eligibility criteria
+  eligibilityCriteria: json("eligibility_criteria").notNull().default({}),
+  
+  // Visibility settings
+  isPublic: boolean("is_public").default(true),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -437,6 +464,79 @@ export const insertOrganizationSurvivorSchema = createInsertSchema(organizationS
   })
   .omit({ addedAt: true, updatedAt: true });
 
+// Define ZipCode range schema for funding opportunities eligibility criteria
+export const zipCodeRangeSchema = z.object({
+  type: z.literal('zipCode'),
+  ranges: z.array(
+    z.object({
+      min: z.string().regex(/^\d{5}$/, "Invalid zip code format"),
+      max: z.string().regex(/^\d{5}$/, "Invalid zip code format"),
+    })
+  ),
+});
+
+// Define Income range schema for funding opportunities eligibility criteria
+export const incomeRangeSchema = z.object({
+  type: z.literal('income'),
+  ranges: z.array(
+    z.object({
+      min: z.number().min(0, "Minimum income must be non-negative"),
+      max: z.number().min(0, "Maximum income must be non-negative"),
+    })
+  ),
+});
+
+// Define Disaster event schema for funding opportunities eligibility criteria
+export const disasterEventSchema = z.object({
+  type: z.literal('disasterEvent'),
+  events: z.array(z.string().min(1, "Disaster event name is required")),
+});
+
+// Define household size schema for funding opportunities eligibility criteria
+export const householdSizeSchema = z.object({
+  type: z.literal('householdSize'),
+  ranges: z.array(
+    z.object({
+      min: z.number().min(1, "Minimum household size must be at least 1"),
+      max: z.number().min(1, "Maximum household size must be at least 1"),
+    })
+  ),
+});
+
+// Define custom criteria schema for funding opportunities eligibility criteria
+export const customCriteriaSchema = z.object({
+  type: z.literal('custom'),
+  key: z.string().min(1, "Criteria key is required"),
+  values: z.array(z.string().min(1, "Criteria value is required")),
+});
+
+// Union all eligibility criteria schemas
+export const eligibilityCriteriaSchema = z.array(
+  z.union([
+    zipCodeRangeSchema,
+    incomeRangeSchema,
+    disasterEventSchema,
+    householdSizeSchema,
+    customCriteriaSchema
+  ])
+);
+
+// Funding opportunities insert schema
+export const insertFundingOpportunitySchema = createInsertSchema(fundingOpportunities)
+  .extend({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().min(1, "Description is required"),
+    // Either awardAmount OR both awardMinimum and awardMaximum must be provided
+    awardAmount: z.number().min(0, "Award amount must be non-negative").optional(),
+    awardMinimum: z.number().min(0, "Minimum award must be non-negative").optional(),
+    awardMaximum: z.number().min(0, "Maximum award must be non-negative").optional(),
+    applicationStartDate: z.date(),
+    applicationEndDate: z.date(),
+    eligibilityCriteria: eligibilityCriteriaSchema.optional(),
+    isPublic: z.boolean().default(true),
+  })
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
 // Export types
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -453,6 +553,7 @@ export type User = typeof users.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type OrganizationSurvivor = typeof organizationSurvivors.$inferSelect;
+export type FundingOpportunity = typeof fundingOpportunities.$inferSelect;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -469,3 +570,4 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
 export type InsertOrganizationSurvivor = z.infer<typeof insertOrganizationSurvivorSchema>;
+export type InsertFundingOpportunity = z.infer<typeof insertFundingOpportunitySchema>;

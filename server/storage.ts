@@ -15,6 +15,7 @@ import {
   type OrganizationMember, type InsertOrganizationMember, organizationMembers,
   type OrganizationSurvivor, type InsertOrganizationSurvivor, organizationSurvivors,
   type Task, type InsertTask, tasks,
+  type FundingOpportunity, type InsertFundingOpportunity, fundingOpportunities,
 } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
@@ -56,6 +57,14 @@ export interface IStorage {
   removeSurvivorFromOrganization(survivorId: number, orgId: number): Promise<void>;
   updateSurvivorOrganizationStatus(survivorId: number, orgId: number, status: string, notes?: string): Promise<OrganizationSurvivor>;
   setPrimarySurvivorOrganization(survivorId: number, orgId: number): Promise<OrganizationSurvivor>;
+
+  // Funding Opportunities (Grants)
+  getFundingOpportunities(organizationId?: number): Promise<FundingOpportunity[]>;
+  getFundingOpportunity(id: number): Promise<FundingOpportunity | undefined>;
+  createFundingOpportunity(opportunity: InsertFundingOpportunity): Promise<FundingOpportunity>;
+  updateFundingOpportunity(id: number, opportunity: Partial<InsertFundingOpportunity>): Promise<FundingOpportunity>;
+  deleteFundingOpportunity(id: number): Promise<void>;
+  getPublicFundingOpportunities(): Promise<FundingOpportunity[]>;
 
   // Documents
   getDocuments(): Promise<Document[]>;
