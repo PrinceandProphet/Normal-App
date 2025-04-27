@@ -192,15 +192,42 @@ router.get("/filter", authenticateUser, async (req, res) => {
     // Create filter object with optional parameters
     const filter: any = {};
     
-    if (survivorId) filter.survivorId = parseInt(survivorId as string);
-    if (contactId) filter.contactId = parseInt(contactId as string);
+    // Safely parse integers with validation
+    const safeParseInt = (value: string): number | undefined => {
+      const parsed = parseInt(value);
+      return !isNaN(parsed) ? parsed : undefined;
+    };
+
+    if (survivorId) {
+      const id = safeParseInt(survivorId as string);
+      if (id !== undefined) filter.survivorId = id;
+    }
+    
+    if (contactId) {
+      const id = safeParseInt(contactId as string);
+      if (id !== undefined) filter.contactId = id;
+    }
+    
     if (channel) filter.channel = channel as string;
     if (isRead) filter.isRead = isRead === 'true';
-    if (parentId) filter.parentId = parseInt(parentId as string);
+    
+    if (parentId) {
+      const id = safeParseInt(parentId as string);
+      if (id !== undefined) filter.parentId = id;
+    }
+    
     if (startDate) filter.startDate = new Date(startDate as string);
     if (endDate) filter.endDate = new Date(endDate as string);
-    if (limit) filter.limit = parseInt(limit as string);
-    if (offset) filter.offset = parseInt(offset as string);
+    
+    if (limit) {
+      const limitVal = safeParseInt(limit as string);
+      if (limitVal !== undefined) filter.limit = limitVal;
+    }
+    
+    if (offset) {
+      const offsetVal = safeParseInt(offset as string);
+      if (offsetVal !== undefined) filter.offset = offsetVal;
+    }
     
     const messages = await storage.getMessages(filter);
     res.json(messages);

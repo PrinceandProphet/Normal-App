@@ -54,11 +54,13 @@ export default function Messages() {
 
   // Messages by contact (for practitioners)
   const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery({
-    queryKey: [`/api/messages/filter?contactId=${selectedContact}`],
+    queryKey: ['/api/messages/filter', { contactId: selectedContact }],
     queryFn: ({ queryKey }) => {
       // Only perform the query if contact is selected and user is a practitioner
       if (selectedContact && user?.userType === "practitioner") {
-        return fetch(queryKey[0]).then(res => {
+        // Properly construct the URL with the contact ID
+        const url = `/api/messages/filter?contactId=${selectedContact}`;
+        return fetch(url).then(res => {
           if (!res.ok) throw new Error("Failed to fetch messages");
           return res.json();
         });
@@ -91,7 +93,7 @@ export default function Messages() {
         });
       } else {
         queryClient.invalidateQueries({ 
-          queryKey: [`/api/messages/filter?contactId=${selectedContact}`]
+          queryKey: ['/api/messages/filter', { contactId: selectedContact }]
         });
       }
       
