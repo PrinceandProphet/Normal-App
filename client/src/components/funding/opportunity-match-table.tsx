@@ -22,8 +22,16 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
 
+// Extended interface to include additional data from our database query
+interface OpportunityMatchWithDetails extends OpportunityMatch {
+  opportunityName: string;
+  survivorName: string;
+  awardAmount: number | null;
+  applicationEndDate: Date | null;
+}
+
 interface OpportunityMatchTableProps {
-  matches: OpportunityMatch[];
+  matches: OpportunityMatchWithDetails[];
   isSurvivorView?: boolean;
 }
 

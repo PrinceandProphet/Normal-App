@@ -938,24 +938,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Opportunity Matches
-  async getOpportunityMatches(opportunityId?: number, survivorId?: number): Promise<OpportunityMatch[]> {
-    let query = db.select().from(opportunityMatches);
+  async getOpportunityMatches(opportunityId?: number, survivorId?: number): Promise<(OpportunityMatch & { 
+    opportunityName: string;
+    survivorName: string;
+    awardAmount: number | null;
+    applicationEndDate: Date | null;
+  })[]> {
+    const result = await db
+      .select({
+        ...opportunityMatches,
+        opportunityName: fundingOpportunities.name,
+        survivorName: users.name,
+        awardAmount: fundingOpportunities.awardAmount,
+        applicationEndDate: fundingOpportunities.applicationEndDate,
+      })
+      .from(opportunityMatches)
+      .leftJoin(fundingOpportunities, eq(opportunityMatches.opportunityId, fundingOpportunities.id))
+      .leftJoin(users, eq(opportunityMatches.survivorId, users.id))
+      .where(
+        and(
+          opportunityId ? eq(opportunityMatches.opportunityId, opportunityId) : undefined,
+          survivorId ? eq(opportunityMatches.survivorId, survivorId) : undefined
+        )
+      )
+      .orderBy(desc(opportunityMatches.matchScore));
     
-    if (opportunityId) {
-      query = query.where(eq(opportunityMatches.opportunityId, opportunityId));
-    }
-    
-    if (survivorId) {
-      query = query.where(eq(opportunityMatches.survivorId, survivorId));
-    }
-    
-    return await query.orderBy(desc(opportunityMatches.matchScore));
+    return result;
   }
   
-  async getOpportunityMatch(opportunityId: number, survivorId: number): Promise<OpportunityMatch | undefined> {
+  async getOpportunityMatch(opportunityId: number, survivorId: number): Promise<(OpportunityMatch & { 
+    opportunityName: string;
+    survivorName: string;
+    awardAmount: number | null;
+    applicationEndDate: Date | null;
+  }) | undefined> {
     const [match] = await db
-      .select()
+      .select({
+        ...opportunityMatches,
+        opportunityName: fundingOpportunities.name,
+        survivorName: users.name,
+        awardAmount: fundingOpportunities.awardAmount,
+        applicationEndDate: fundingOpportunities.applicationEndDate,
+      })
       .from(opportunityMatches)
+      .leftJoin(fundingOpportunities, eq(opportunityMatches.opportunityId, fundingOpportunities.id))
+      .leftJoin(users, eq(opportunityMatches.survivorId, users.id))
       .where(
         and(
           eq(opportunityMatches.opportunityId, opportunityId),
