@@ -345,7 +345,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Collapsible section for admins */}
+      {/* Collapsible section for admins and super admins */}
       <div className={cn(
         "transition-all duration-500 ease-in-out",
         isLowerSectionCollapsed && (user?.role === 'admin' || user?.role === 'super_admin') ? 
