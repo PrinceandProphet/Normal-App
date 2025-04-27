@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,11 +7,15 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
+  const [channel, setChannel] = useState<string>("email");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: contacts } = useQuery({
     queryKey: ["/api/contacts"],
@@ -21,38 +25,74 @@ export default function Messages() {
     queryKey: ["/api/system/config"],
   });
 
-  const { data: messages } = useQuery({
-    queryKey: ["/api/contacts", selectedContact, "messages"],
-    enabled: selectedContact !== null,
+  // Get messages for the current survivor user or from the selected contact
+  const { data: messages, isLoading: messagesLoading } = useQuery({
+    queryKey: ["/api/messages/survivor", user?.id],
+    enabled: !!user?.id && user.userType === "survivor",
   });
 
-  async function sendMessage() {
-    if (!selectedContact || !messageContent.trim()) return;
+  // Messages by contact (for practitioners)
+  const { data: contactMessages, isLoading: contactMessagesLoading } = useQuery({
+    queryKey: ["/api/messages/filter", { contactId: selectedContact }],
+    enabled: selectedContact !== null && user?.userType === "practitioner",
+  });
 
-    try {
-      await apiRequest("POST", "/api/messages", {
-        contactId: selectedContact,
-        content: messageContent,
-        type: "email",
-        isInbound: false,
-        timestamp: new Date(),
-      });
+  // Combine both potential message sources
+  const displayMessages = user?.userType === "survivor" ? messages : contactMessages;
 
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/contacts", selectedContact, "messages"]
-      });
+  // Create message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: {
+      survivorId: number;
+      contactId?: number;
+      content: string;
+      channel: string;
+      isInbound: boolean;
+    }) => {
+      const response = await apiRequest("POST", "/api/messages", messageData);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries based on user type
+      if (user?.userType === "survivor") {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/messages/survivor", user?.id]
+        });
+      } else {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/messages/filter", { contactId: selectedContact }]
+        });
+      }
+      
       setMessageContent("");
       toast({
         title: "Success",
         description: "Message sent successfully",
       });
-    } catch (error) {
+    },
+    onError: (error) => {
+      console.error("Error sending message:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to send message",
       });
     }
+  });
+
+  async function sendMessage() {
+    if (!messageContent.trim()) return;
+
+    const messageData = {
+      survivorId: user?.userType === "survivor" ? user.id : selectedContact as number,
+      contactId: selectedContact || undefined,
+      content: messageContent,
+      channel: channel,
+      isInbound: false,
+      // sentAt is handled by the server
+    };
+
+    sendMessageMutation.mutate(messageData);
   }
 
   // Add helper functions for communication
@@ -147,7 +187,7 @@ export default function Messages() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto space-y-4">
-                {messages?.map((message) => (
+                {displayMessages?.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.isInbound ? "justify-start" : "justify-end"}`}
@@ -159,24 +199,83 @@ export default function Messages() {
                           : "bg-primary text-primary-foreground"
                         }`}
                     >
+                      {/* Channel indicator */}
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs capitalize font-semibold">
+                          {message.channel}
+                        </span>
+                        <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
+                          message.status === 'delivered' ? 'bg-green-200 text-green-800' : 
+                          message.status === 'read' ? 'bg-blue-200 text-blue-800' :
+                          message.status === 'failed' ? 'bg-red-200 text-red-800' : 
+                          'bg-gray-200 text-gray-800'
+                        }`}>
+                          {message.status}
+                        </span>
+                      </div>
+                      
+                      {/* Message content */}
                       <p>{message.content}</p>
-                      <p className="text-xs opacity-70">
-                        {format(new Date(message.timestamp), "PPp")}
+                      
+                      {/* Message timestamp */}
+                      <p className="text-xs opacity-70 mt-1">
+                        {format(new Date(message.sentAt), "PPp")}
                       </p>
                     </div>
                   </div>
                 ))}
+                
+                {/* Loading state */}
+                {(messagesLoading || contactMessagesLoading) && (
+                  <div className="flex justify-center py-4">
+                    <p className="text-sm text-muted-foreground">Loading messages...</p>
+                  </div>
+                )}
+                
+                {/* Empty state */}
+                {!messagesLoading && !contactMessagesLoading && 
+                 (!displayMessages || displayMessages.length === 0) && (
+                  <div className="flex justify-center py-8">
+                    <p className="text-muted-foreground">No messages found</p>
+                  </div>
+                )}
               </div>
 
-              {selectedContact && (
-                <div className="mt-4 flex gap-2">
-                  <Textarea
-                    value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1"
-                  />
-                  <Button onClick={sendMessage}>Send</Button>
+              {(user?.userType === "survivor" || selectedContact) && (
+                <div className="mt-4 space-y-2">
+                  {/* Channel selector */}
+                  <div className="flex gap-2">
+                    <Select
+                      value={channel}
+                      onValueChange={setChannel}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="sms">SMS</SelectItem>
+                        <SelectItem value="call">Call</SelectItem>
+                        <SelectItem value="system">System</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Message input */}
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                      placeholder="Type your message..."
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={sendMessage}
+                      disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                    >
+                      {sendMessageMutation.isPending ? "Sending..." : "Send"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
