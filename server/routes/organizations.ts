@@ -4,6 +4,7 @@ import { z } from "zod";
 import { insertOrganizationSchema, insertOrganizationSurvivorSchema } from "@shared/schema";
 import { canAccessSurvivor } from "../middleware/survivorAccess";
 import { accessControlService } from "../services/accessControl";
+import { emailService } from "../services/email";
 
 const router = Router();
 
@@ -429,6 +430,102 @@ router.patch("/:id/survivors/:survivorId", async (req, res) => {
     return res.json(result);
   } catch (error) {
     console.error("Error updating survivor relationship:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Email Configuration Routes
+
+// Get DNS verification records for domain setup
+router.get("/:id/email/dns-records", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  const orgId = parseInt(req.params.id);
+  if (isNaN(orgId)) {
+    return res.status(400).json({ message: "Invalid organization ID" });
+  }
+  
+  // Check if user has permission to access this organization's email settings
+  const canAccess = 
+    req.user.role === "super_admin" ||
+    (req.user.role === "admin" && req.user.organizationId === orgId);
+  
+  if (!canAccess) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  
+  try {
+    const organization = await storage.getOrganization(orgId);
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+    
+    if (!organization.emailDomain) {
+      return res.status(400).json({ message: "No domain configured for this organization" });
+    }
+    
+    const dnsRecords = emailService.getDomainVerificationRecords(organization.emailDomain);
+    return res.json(dnsRecords);
+  } catch (error) {
+    console.error("Error getting DNS records:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Verify domain DNS records
+router.post("/:id/email/verify-domain", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  const orgId = parseInt(req.params.id);
+  if (isNaN(orgId)) {
+    return res.status(400).json({ message: "Invalid organization ID" });
+  }
+  
+  // Check if user has permission to verify this organization's domain
+  const canAccess = 
+    req.user.role === "super_admin" ||
+    (req.user.role === "admin" && req.user.organizationId === orgId);
+  
+  if (!canAccess) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  
+  try {
+    const organization = await storage.getOrganization(orgId);
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+    
+    if (!organization.emailDomain) {
+      return res.status(400).json({ message: "No domain configured for this organization" });
+    }
+    
+    const verificationResult = await emailService.verifyDomain(organization.emailDomain, orgId);
+    
+    if (verificationResult.success) {
+      // Re-fetch the organization to get the updated verification status
+      const updatedOrg = await storage.getOrganization(orgId);
+      return res.json({ 
+        success: true, 
+        message: "Domain verified successfully",
+        organization: updatedOrg,
+        details: verificationResult
+      });
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Domain verification failed",
+        details: verificationResult
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying domain:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
