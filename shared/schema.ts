@@ -252,6 +252,9 @@ export const fundingOpportunities = pgTable("funding_opportunities", {
   description: text("description").notNull(),
   organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   
+  // Status field (required by database)
+  status: text("status").notNull().default("active"),
+  
   // Grant details
   awardAmount: numeric("award_amount"), // Single amount
   awardMinimum: numeric("award_minimum"), // For range-based awards
@@ -526,6 +529,7 @@ export const insertFundingOpportunitySchema = createInsertSchema(fundingOpportun
   .extend({
     name: z.string().min(1, "Name is required"),
     description: z.string().min(1, "Description is required"),
+    status: z.string().default("active"),
     // Either awardAmount OR both awardMinimum and awardMaximum must be provided
     awardAmount: z.number().min(0, "Award amount must be non-negative").optional(),
     awardMinimum: z.number().min(0, "Minimum award must be non-negative").optional(),
