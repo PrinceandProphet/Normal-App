@@ -105,13 +105,13 @@ matchingRouter.patch("/opportunities/:opportunityId/survivors/:survivorId/match"
 });
 
 // Manually run the matching engine
-matchingRouter.post("/run-matching", async (req, res) => {
+matchingRouter.post("/run", async (req, res) => {
   try {
-    const newMatchesCount = await storage.runMatchingEngine();
+    const newMatchCount = await storage.runMatchingEngine();
     res.json({ 
       success: true, 
-      message: `Matching process completed successfully. Found ${newMatchesCount} new matches.`,
-      newMatchesCount
+      message: `Matching process completed successfully. Found ${newMatchCount} new matches.`,
+      newMatchCount
     });
   } catch (error) {
     console.error("Error running matching engine:", error);

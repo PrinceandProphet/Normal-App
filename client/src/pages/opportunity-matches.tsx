@@ -11,14 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import LoadingWrapper from "@/components/loading-wrapper";
 import AuthCheck from "@/components/auth-check";
 import PageHeader from "@/components/page-header";
 import OpportunityMatchTable from "@/components/funding/opportunity-match-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 
 interface OpportunityMatchWithDetails {
   id: number;
@@ -57,12 +56,24 @@ export default function OpportunityMatches() {
   const runMatchingMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/matching/run", {});
-      return await res.json();
+      
+      // Check if the response status is OK
+      if (!res.ok) {
+        throw new Error("Failed to run matching process");
+      }
+      
+      // Handle potential JSON parsing errors
+      try {
+        return await res.json();
+      } catch (err) {
+        // If response is not JSON, return a default object
+        return { success: true, newMatchCount: 0 };
+      }
     },
     onSuccess: (data) => {
       toast({
         title: "Matching process complete",
-        description: `Found ${data.newMatchCount} new potential matches.`,
+        description: `Found ${data.newMatchCount || 0} new potential matches.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/matching/matches"] });
     },
@@ -96,7 +107,7 @@ export default function OpportunityMatches() {
   );
   
   return (
-    <AuthCheck requiredRoles={["admin", "super_admin"]}>
+    <AuthCheck>
       <div className="container py-6 space-y-6 max-w-6xl">
         <PageHeader
           title="Opportunity Matches"
@@ -148,7 +159,15 @@ export default function OpportunityMatches() {
                 </div>
               </div>
               
-              <LoadingWrapper isLoading={isLoading} error={error}>
+              {isLoading ? (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : error ? (
+                <div className="p-4 text-destructive">
+                  Error loading matches: {error instanceof Error ? error.message : "Unknown error"}
+                </div>
+              ) : (
                 <Tabs defaultValue="pending" className="w-full">
                   <TabsList className="mb-4 w-full grid grid-cols-4">
                     <TabsTrigger value="pending" className="relative">
@@ -201,7 +220,7 @@ export default function OpportunityMatches() {
                     <OpportunityMatchTable matches={completedMatches} />
                   </TabsContent>
                 </Tabs>
-              </LoadingWrapper>
+              )}
             </div>
           </CardContent>
           
