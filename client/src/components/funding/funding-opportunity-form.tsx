@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, ClipboardEdit, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -755,12 +755,26 @@ export default function FundingOpportunityForm({ opportunity, onClose }) {
             type="submit" 
             disabled={createMutation.isPending || updateMutation.isPending}
           >
-            {(createMutation.isPending || updateMutation.isPending) && (
-              <div className="mr-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </div>
+            {(createMutation.isPending || updateMutation.isPending) ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {opportunity ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              <>
+                {opportunity ? (
+                  <>
+                    <ClipboardEdit className="mr-2 h-4 w-4" />
+                    Update Funding Opportunity
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Create Funding Opportunity
+                  </>
+                )}
+              </>
             )}
-            {opportunity ? "Update" : "Create"} Funding Opportunity
           </Button>
         </div>
       </form>
