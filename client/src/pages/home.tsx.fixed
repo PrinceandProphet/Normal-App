@@ -323,76 +323,77 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Admin Section Header - VISIBLE FOR ALL USERS IN DEBUG MODE */}
-      <div className="mt-8 mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            Admin Quick Actions 
-            <span className="ml-2 text-sm text-muted-foreground">(Debug: User Role = {user?.role || 'not logged in'})</span>
-          </h2>
+      {/* DEBUG: Admin Section - Visible for everyone */}
+      <div className="mt-8 mb-4 p-4 border-2 border-orange-500 bg-orange-50 rounded-lg">
+        <div className="flex flex-col space-y-2">
+          <h2 className="text-xl font-semibold text-orange-700">Debug Mode</h2>
+          <div className="text-sm text-orange-700">
+            <p>User Role: <strong>{user?.role || 'not logged in'}</strong></p>
+            <p>Username: <strong>{user?.username || 'not logged in'}</strong></p>
+            <p>This section would normally only be visible to admins and super_admins</p>
+          </div>
           <Button 
             variant="outline"
             size="sm"
-            className="flex items-center gap-1 bg-background border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/30"
+            className="flex items-center gap-1 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 w-fit"
             onClick={() => setIsLowerSectionCollapsed(!isLowerSectionCollapsed)}
           >
             {isLowerSectionCollapsed ? (
               <>
                 <ChevronDown className="h-4 w-4" />
-                <span>Show Actions</span>
+                <span>Show Quick Actions</span>
               </>
             ) : (
               <>
                 <ChevronUp className="h-4 w-4" />
-                <span>Hide Actions</span>
+                <span>Hide Quick Actions</span>
               </>
             )}
           </Button>
         </div>
-        <div className="mt-2 w-full border-t-2 border-primary/10"></div>
       </div>
 
-      {/* Collapsible section - VISIBLE FOR ALL USERS IN DEBUG MODE */}
-        <div className={cn(
-          "transition-all duration-500 ease-in-out",
-          isLowerSectionCollapsed ? "max-h-0 opacity-0 overflow-hidden" : "max-h-[1000px] opacity-100"
-        )}>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Link href="/documents">
-                  <Button className="w-full shadow-lg bg-gradient-to-r from-primary to-primary/90">
-                    Upload New Document
-                  </Button>
-                </Link>
-                <Link href="/capital-sources">
-                  <Button variant="outline" className="w-full border-2">
-                    Browse Funding Opportunities
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+      {/* Collapsible section - Always visible in debug mode */}
+      <div className={cn(
+        "transition-all duration-500 ease-in-out",
+        isLowerSectionCollapsed ? "max-h-0 opacity-0 overflow-hidden" : "max-h-[1000px] opacity-100"
+      )}>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href="/documents">
+                <Button className="w-full shadow-lg bg-gradient-to-r from-primary to-primary/90">
+                  Upload New Document
+                </Button>
+              </Link>
+              <Link href="/capital-sources">
+                <Button variant="outline" className="w-full border-2">
+                  Browse Funding Opportunities
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Latest Messages</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Stay connected with your support team and get updates on your recovery progress.
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Latest Messages</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground">
+                  Stay connected with your support team and get updates on your recovery progress.
                 </div>
-                <Link href="/messages">
-                  <Button variant="link" className="p-0 h-auto text-xs font-medium">View Message Center →</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+              <Link href="/messages">
+                <Button variant="link" className="p-0 h-auto text-xs font-medium">View Message Center →</Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
+      </div>
     </div>
   );
 }
