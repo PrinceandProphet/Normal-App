@@ -873,19 +873,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateFundingOpportunity(id: number, opportunity: Partial<InsertFundingOpportunity>): Promise<FundingOpportunity> {
-    // Format eligibility criteria as JSON if it's an array
-    let updateData = { ...opportunity, updatedAt: new Date() };
-    if (Array.isArray(opportunity.eligibilityCriteria)) {
-      updateData.eligibilityCriteria = JSON.stringify(opportunity.eligibilityCriteria);
+    try {
+      console.log("Updating funding opportunity:", id, JSON.stringify(opportunity, null, 2));
+      
+      // Format data for update
+      let updateData = { 
+        ...opportunity, 
+        updatedAt: new Date() 
+      };
+      
+      // Handle date conversions if needed
+      if (opportunity.applicationStartDate instanceof Date) {
+        updateData.applicationStartDate = opportunity.applicationStartDate.toISOString().substring(0, 10);
+      }
+      
+      if (opportunity.applicationEndDate instanceof Date) {
+        updateData.applicationEndDate = opportunity.applicationEndDate.toISOString().substring(0, 10);
+      }
+      
+      // Format eligibility criteria as JSON if it's an array
+      if (Array.isArray(opportunity.eligibilityCriteria)) {
+        updateData.eligibilityCriteria = JSON.stringify(opportunity.eligibilityCriteria);
+      }
+      
+      // Ensure awardAmount is a number (not a string)
+      if (typeof opportunity.awardAmount === 'string') {
+        updateData.awardAmount = parseFloat(opportunity.awardAmount) || 0;
+      }
+      
+      console.log("Formatted update data:", JSON.stringify(updateData, null, 2));
+      
+      const [updated] = await db
+        .update(fundingOpportunities)
+        .set(updateData)
+        .where(eq(fundingOpportunities.id, id))
+        .returning();
+      
+      if (!updated) throw new Error("Funding opportunity not found");
+      return updated;
+    } catch (error) {
+      console.error("Error updating funding opportunity:", error);
+      throw error;
     }
-
-    const [updated] = await db
-      .update(fundingOpportunities)
-      .set(updateData)
-      .where(eq(fundingOpportunities.id, id))
-      .returning();
-    if (!updated) throw new Error("Funding opportunity not found");
-    return updated;
   }
 
   async deleteFundingOpportunity(id: number): Promise<void> {

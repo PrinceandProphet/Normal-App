@@ -132,9 +132,13 @@ router.patch("/:id", async (req, res) => {
   
   try {
     const id = parseInt(req.params.id);
+    console.log(`Attempting to update funding opportunity with ID: ${id}`);
+    
+    // Fetch the opportunity to update
     const opportunity = await storage.getFundingOpportunity(id);
     
     if (!opportunity) {
+      console.warn(`Funding opportunity with ID ${id} not found`);
       return res.status(404).json({ message: "Funding opportunity not found" });
     }
     
@@ -143,12 +147,16 @@ router.patch("/:id", async (req, res) => {
       req.user?.role !== "super_admin" && 
       (req.user?.role !== "admin" || req.user?.organizationId !== opportunity.organizationId)
     ) {
+      console.warn(`Access denied for user ${req.user?.id} to update opportunity ${id}`);
       return res.status(403).json({ message: "Access denied" });
     }
+    
+    console.log("Validating update data for funding opportunity:", req.body);
     
     // Validate the update data
     const validatedData = insertFundingOpportunitySchema.partial().safeParse(req.body);
     if (!validatedData.success) {
+      console.error("Validation failed for funding opportunity update:", validatedData.error.format());
       return res.status(400).json({ 
         message: "Invalid funding opportunity data", 
         errors: validatedData.error.format() 
@@ -161,12 +169,27 @@ router.patch("/:id", async (req, res) => {
       validatedData.data.organizationId && 
       validatedData.data.organizationId !== req.user.organizationId
     ) {
+      console.warn(
+        `User ${req.user?.id} attempted to transfer opportunity ${id} to organization ${validatedData.data.organizationId}`
+      );
       return res.status(403).json({ 
         message: "You cannot transfer a funding opportunity to another organization" 
       });
     }
     
+    console.log("Update data validated successfully, proceeding with update");
+    
+    // Process eligibility criteria if present
+    if (validatedData.data.eligibilityCriteria) {
+      console.log("Updating eligibility criteria:", 
+        Array.isArray(validatedData.data.eligibilityCriteria) 
+          ? JSON.stringify(validatedData.data.eligibilityCriteria) 
+          : validatedData.data.eligibilityCriteria
+      );
+    }
+    
     const updated = await storage.updateFundingOpportunity(id, validatedData.data);
+    console.log(`Successfully updated funding opportunity ${id}`);
     res.json(updated);
   } catch (error) {
     console.error("Error updating funding opportunity:", error);

@@ -111,13 +111,13 @@ export default function FundingOpportunityForm({ opportunity, onClose }) {
     defaultValues: {
       name: opportunity?.name || "",
       description: opportunity?.description || "",
-      organizationId: opportunity?.organizationId || user?.organizationId || 6, // Default to our newly created demo organization
+      organizationId: opportunity?.organizationId || user?.organizationId || 6, // Default to our demo organization
       status: opportunity?.status || "active",
       applicationStartDate: opportunity?.applicationStartDate ? new Date(opportunity.applicationStartDate) : undefined,
       applicationEndDate: opportunity?.applicationEndDate ? new Date(opportunity.applicationEndDate) : undefined,
-      awardAmount: opportunity?.awardAmount?.toString() || "0",
-      isPublic: opportunity?.isPublic || false,
-      eligibilityCriteria: [],
+      awardAmount: opportunity?.awardAmount !== undefined ? opportunity.awardAmount.toString() : "0",
+      isPublic: opportunity?.isPublic !== undefined ? opportunity.isPublic : false,
+      eligibilityCriteria: [], // We'll populate this in useEffect
     },
   });
 
@@ -198,16 +198,24 @@ export default function FundingOpportunityForm({ opportunity, onClose }) {
 
   // Initialize eligibility criteria from existing opportunity
   useEffect(() => {
-    if (opportunity?.eligibilityCriteria) {
-      try {
-        const criteria = typeof opportunity.eligibilityCriteria === 'string'
-          ? JSON.parse(opportunity.eligibilityCriteria)
-          : opportunity.eligibilityCriteria;
-        
-        // Reset the form with the parsed criteria
-        form.setValue("eligibilityCriteria", criteria);
-      } catch (error) {
-        console.error("Error parsing eligibility criteria:", error);
+    // Only run this for edit mode (when opportunity is provided)
+    if (opportunity) {
+      console.log("Loading opportunity data for edit:", opportunity);
+      
+      // Parse eligibility criteria if it exists
+      if (opportunity.eligibilityCriteria) {
+        try {
+          const criteria = typeof opportunity.eligibilityCriteria === 'string'
+            ? JSON.parse(opportunity.eligibilityCriteria)
+            : opportunity.eligibilityCriteria;
+          
+          // Reset the form with the parsed criteria
+          form.setValue("eligibilityCriteria", criteria);
+        } catch (error) {
+          console.error("Error parsing eligibility criteria:", error);
+          // Set to empty array if parsing fails
+          form.setValue("eligibilityCriteria", []);
+        }
       }
     }
   }, [opportunity, form]);
