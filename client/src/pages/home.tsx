@@ -42,6 +42,13 @@ export default function Home() {
   // Get the current user from the auth context
   const { user } = useAuth();
   
+  // Debug user role
+  useEffect(() => {
+    console.log('Current user:', user);
+    console.log('User role:', user?.role);
+    console.log('Is admin or super_admin?', user?.role === 'admin' || user?.role === 'super_admin');
+  }, [user]);
+  
   // Function to force refresh the task data
   const refreshTaskData = useCallback(() => {
     setTimestamp(new Date().getTime());
