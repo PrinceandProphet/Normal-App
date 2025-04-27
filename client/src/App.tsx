@@ -28,6 +28,7 @@ import AuthCheck from "@/components/auth-check";
 // Lazy load admin subpages
 const OrganizationsPage = lazy(() => import("@/pages/admin/organizations"));
 const AllClientsPage = lazy(() => import("@/pages/admin/clients"));
+const OrganizationSettingsPage = lazy(() => import("@/pages/organizations/settings"));
 
 function Router() {
   return (
@@ -122,6 +123,15 @@ function Router() {
                     <LoadingWrapper delay={50} isForm>
                       <Suspense fallback={<LoadingFallback />}>
                         <AllClientsPage />
+                      </Suspense>
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/organizations/:id/settings">
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <OrganizationSettingsPage />
                       </Suspense>
                     </LoadingWrapper>
                   </AuthCheck>
