@@ -29,6 +29,9 @@ const adminNavigation = [
   
   // Org Admin Section
   { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"] },
+  
+  // Shared Admin Features
+  { name: "Funding Opportunities", href: "/funding-opportunities", icon: DollarSign, roles: ["super_admin", "admin"] },
 ];
 
 // User navigation - can be collapsed

@@ -15,13 +15,14 @@ import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
+import FundingOpportunities from "@/pages/funding-opportunities";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/hooks/use-client-context";
 import { ClientSelector } from "@/components/client-selector";
 import { Loader2 } from "lucide-react";
-import { LoadingWrapper } from "@/components/loading-wrapper";
-import { AuthCheck } from "@/components/auth-check";
+import LoadingWrapper from "@/components/loading-wrapper";
+import AuthCheck from "@/components/auth-check";
 
 // Lazy load admin subpages
 const OrganizationsPage = lazy(() => import("@/pages/admin/organizations"));
@@ -128,6 +129,13 @@ function Router() {
                   <AuthCheck noLoading>
                     <LoadingWrapper delay={50}>
                       <OrgAdminPage />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/funding-opportunities">
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
+                      <FundingOpportunities />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>

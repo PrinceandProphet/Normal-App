@@ -13,7 +13,7 @@ interface LoadingWrapperProps {
  * A wrapper component that shows a loading indicator initially, then fades in content.
  * This helps prevent UI flickering when navigating between pages.
  */
-export function LoadingWrapper({ 
+function LoadingWrapper({ 
   children, 
   delay = 100, 
   fullHeight = false,
@@ -54,3 +54,6 @@ export function LoadingWrapper({
     </div>
   );
 }
+
+export default LoadingWrapper;
+export { LoadingWrapper };

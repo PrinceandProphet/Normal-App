@@ -13,7 +13,7 @@ interface AuthCheckProps {
  * A component that checks if the user is authenticated and redirects to the login page if not.
  * This component should wrap protected routes.
  */
-export function AuthCheck({ children, isForm = false, noLoading = false }: AuthCheckProps) {
+function AuthCheck({ children, isForm = false, noLoading = false }: AuthCheckProps) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [showLoading, setShowLoading] = useState(!isForm && !noLoading);
@@ -57,3 +57,5 @@ export function AuthCheck({ children, isForm = false, noLoading = false }: AuthC
   // Otherwise render nothing while redirecting
   return null;
 }
+
+export default AuthCheck;
