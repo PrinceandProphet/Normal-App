@@ -390,17 +390,36 @@ export default function OpportunityMatchTable({
                 
                 <div className="md:col-span-2">
                   <h4 className="text-sm font-medium text-muted-foreground mb-1">Match Criteria</h4>
-                  <div className="bg-muted p-3 rounded-md text-sm">
+                  <div className="bg-muted p-3 rounded-md text-sm space-y-2">
                     {selectedMatch.matchCriteria && Object.entries(selectedMatch.matchCriteria).map(([key, value]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                        <span className="font-medium">
-                          {value === true ? "Yes" : 
-                           value === false ? "No" : 
-                           value === null ? "N/A" : 
-                           typeof value === 'object' ? JSON.stringify(value) : 
-                           String(value)}
-                        </span>
+                      <div key={key} className="flex flex-col">
+                        <div className="flex justify-between items-center">
+                          <span className="capitalize font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          {typeof value === 'object' && value !== null ? (
+                            <Badge variant={value.matches ? "success" : "outline"}>
+                              {value.matches ? "Match" : "No Match"}
+                            </Badge>
+                          ) : (
+                            <span className="font-medium">
+                              {value === true ? "Yes" : 
+                               value === false ? "No" : 
+                               value === null ? "N/A" : 
+                               String(value)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Display nested object properties */}
+                        {typeof value === 'object' && value !== null && (
+                          <div className="mt-1 ml-4 text-xs text-muted-foreground">
+                            {Object.entries(value).filter(([k]) => k !== 'matches').map(([k, v]) => (
+                              <div key={k} className="flex justify-between">
+                                <span className="capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
+                                <span>{v === null ? "N/A" : String(v)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
