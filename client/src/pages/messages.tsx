@@ -144,10 +144,8 @@ export default function Messages() {
         ) : (
           <p>
             No system contact methods configured. 
-            <Link href="/profile">
-              <a className="text-primary hover:underline ml-1">
-                Configure in Profile Settings
-              </a>
+            <Link className="text-primary hover:underline ml-1" href="/profile">
+              Configure in Profile Settings
             </Link>
           </p>
         )}
