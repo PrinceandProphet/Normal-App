@@ -8,9 +8,10 @@ import {
   Shield,
   Settings,
   DollarSign,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Building2,
   LogOut,
   ServerCog
@@ -19,15 +20,19 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
-const navigation = [
+// Define navigation with sections
+const adminNavigation = [
   // Super Admin Section
-  { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"], isSpecial: true },
-  { name: "Organizations", href: "/admin/organizations", icon: Building2, roles: ["super_admin"], isSpecial: true },
-  { name: "All Clients", href: "/admin/clients", icon: Users, roles: ["super_admin"], isSpecial: true },
+  { name: "Admin Dashboard", href: "/admin", icon: ServerCog, roles: ["super_admin"] },
+  { name: "Organizations", href: "/admin/organizations", icon: Building2, roles: ["super_admin"] },
+  { name: "All Clients", href: "/admin/clients", icon: Users, roles: ["super_admin"] },
   
   // Org Admin Section
-  { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"], isSpecial: true },
-  
+  { name: "Organization Dashboard", href: "/org-admin", icon: Building2, roles: ["admin"] },
+];
+
+// User navigation - can be collapsed
+const userNavigation = [
   // Regular user navigation
   { name: "Home", href: "/", icon: Home },
   { name: "Action Plan", href: "/action-plan", icon: Shield },
@@ -42,10 +47,35 @@ const navigation = [
 export default function Sidebar() {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [userMenuCollapsed, setUserMenuCollapsed] = useState(false);
   const { logoutMutation, user } = useAuth();
+
+  // Check if user is admin or super_admin
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super_admin');
 
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+
+  // Helper function to render a navigation item
+  const renderNavItem = (item: any, isCollapsed: boolean = false) => {
+    const Icon = item.icon;
+    return (
+      <Link 
+        href={item.href}
+        className={cn(
+          "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
+          "hover:bg-primary/10 hover:text-primary",
+          location === item.href
+            ? "bg-primary/10 text-primary"
+            : "text-gray-600"
+        )}
+        title={isCollapsed ? item.name : undefined}
+      >
+        <Icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+        {!isCollapsed && item.name}
+      </Link>
+    );
   };
 
   return (
@@ -76,37 +106,49 @@ export default function Sidebar() {
       </div>
 
       <nav className="px-4 py-6 flex-grow">
-        {navigation
-          .filter(item => !item.roles || (user && item.roles.includes(user.role)))
+        {/* Admin Navigation Section */}
+        {user && adminNavigation
+          .filter(item => item.roles.includes(user.role))
           .map((item, index, filteredItems) => {
-            const Icon = item.icon;
-            const showDivider = item.isSpecial && 
-              index < filteredItems.length - 1 && 
-              filteredItems[index + 1] && 
-              !filteredItems[index + 1].isSpecial;
-              
+            const showDivider = index === filteredItems.length - 1 && filteredItems.length > 0;
             return (
               <div key={item.name}>
-                <Link 
-                  href={item.href}
-                  className={cn(
-                    "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
-                    "hover:bg-primary/10 hover:text-primary",
-                    location === item.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-gray-600"
-                  )}
-                  title={collapsed ? item.name : undefined}
-                >
-                  <Icon className={cn("h-5 w-5", collapsed ? "mr-0" : "mr-3")} />
-                  {!collapsed && item.name}
-                </Link>
+                {renderNavItem(item, collapsed)}
                 {showDivider && (
                   <div className="h-px bg-border/60 my-2 mx-1" />
                 )}
               </div>
             );
           })}
+
+        {/* User Navigation Section with collapsible header for admins */}
+        {isAdminUser && !collapsed ? (
+          <div 
+            className="flex items-center justify-between px-3 py-2 mb-1 text-sm font-medium text-gray-600 cursor-pointer hover:bg-primary/5 rounded-lg"
+            onClick={() => setUserMenuCollapsed(!userMenuCollapsed)}
+          >
+            <span>Client Sections</span>
+            {userMenuCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </div>
+        ) : null}
+
+        {/* User Navigation Items */}
+        {(!isAdminUser || !userMenuCollapsed || collapsed) && (
+          <div className={cn(
+            "transition-all duration-300 overflow-hidden",
+            !isAdminUser || !userMenuCollapsed || collapsed ? "max-h-96" : "max-h-0"
+          )}>
+            {userNavigation.map((item) => (
+              <div key={item.name}>
+                {renderNavItem(item, collapsed)}
+              </div>
+            ))}
+          </div>
+        )}
       </nav>
       
       {/* Logout button */}
