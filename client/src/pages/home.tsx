@@ -42,13 +42,6 @@ export default function Home() {
   // Get the current user from the auth context
   const { user } = useAuth();
   
-  // Debug user role
-  useEffect(() => {
-    console.log('Current user:', user);
-    console.log('User role:', user?.role);
-    console.log('Is admin or super_admin?', user?.role === 'admin' || user?.role === 'super_admin');
-  }, [user]);
-  
   // Function to force refresh the task data
   const refreshTaskData = useCallback(() => {
     setTimestamp(new Date().getTime());
@@ -323,40 +316,41 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* DEBUG: Admin Section - Visible for everyone */}
-      <div className="mt-8 mb-4 p-4 border-2 border-orange-500 bg-orange-50 rounded-lg">
-        <div className="flex flex-col space-y-2">
-          <h2 className="text-xl font-semibold text-orange-700">Debug Mode</h2>
-          <div className="text-sm text-orange-700">
-            <p>User Role: <strong>{user?.role || 'not logged in'}</strong></p>
-            <p>Username: <strong>{user?.username || 'not logged in'}</strong></p>
-            <p>This section would normally only be visible to admins and super_admins</p>
-          </div>
-          <Button 
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1 bg-orange-100 border-2 border-orange-300 hover:bg-orange-200 w-fit"
-            onClick={() => setIsLowerSectionCollapsed(!isLowerSectionCollapsed)}
-          >
-            {isLowerSectionCollapsed ? (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                <span>Show Quick Actions</span>
-              </>
-            ) : (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                <span>Hide Quick Actions</span>
-              </>
-            )}
-          </Button>
+      {/* Dividing line - separates collapsible content */}
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border"></div>
         </div>
+        {(user?.role === 'admin' || user?.role === 'super_admin') && (
+          <div className="relative flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-background hover:bg-accent"
+              onClick={() => setIsLowerSectionCollapsed(!isLowerSectionCollapsed)}
+            >
+              {isLowerSectionCollapsed ? (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  Show More
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  Collapse
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Collapsible section - Always visible in debug mode */}
+      {/* Collapsible section for admins */}
       <div className={cn(
         "transition-all duration-500 ease-in-out",
-        isLowerSectionCollapsed ? "max-h-0 opacity-0 overflow-hidden" : "max-h-[1000px] opacity-100"
+        isLowerSectionCollapsed && (user?.role === 'admin' || user?.role === 'super_admin') ? 
+          "max-h-0 opacity-0 overflow-hidden" : 
+          "max-h-[1000px] opacity-100"
       )}>
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
