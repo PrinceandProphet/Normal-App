@@ -23,6 +23,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { encrypt, decrypt, isEncrypted } from "./utils/encryption";
 
 export interface IStorage {
   // Session Store (for authentication)
@@ -89,8 +90,30 @@ export interface IStorage {
   deleteContact(id: number): Promise<void>;
 
   // Messages
-  getMessages(contactId: number): Promise<Message[]>;
+  // Get messages for a specific client/survivor
+  getClientMessages(survivorId: number): Promise<Message[]>;
+  // Get messages by optional filters (pagination support)
+  getMessages(filters: {
+    survivorId?: number;
+    contactId?: number;
+    channel?: string;
+    isRead?: boolean;
+    parentId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<Message[]>;
+  // Get a specific message by id
+  getMessage(id: number): Promise<Message | undefined>;
+  // Create a new message with encryption
   createMessage(message: InsertMessage): Promise<Message>;
+  // Mark a message as read
+  markMessageAsRead(id: number): Promise<Message>;
+  // Update a message status
+  updateMessageStatus(id: number, status: string): Promise<Message>;
+  // Delete a message
+  deleteMessage(id: number): Promise<void>;
 
   // Templates
   getTemplates(): Promise<DocumentTemplate[]>;
@@ -449,17 +472,185 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Messages
-  async getMessages(contactId: number): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.contactId, contactId))
-      .orderBy(messages.timestamp);
+
+  /**
+   * Decrypts a single message object
+   */
+  private decryptMessage(message: Message): Message {
+    if (message && message.content && isEncrypted(message.content)) {
+      return {
+        ...message,
+        content: decrypt(message.content)
+      };
+    }
+    return message;
   }
 
+  /**
+   * Decrypts an array of messages
+   */
+  private decryptMessages(messages: Message[]): Message[] {
+    return messages.map(this.decryptMessage.bind(this));
+  }
+
+  /**
+   * Get all messages for a specific client/survivor
+   */
+  async getClientMessages(survivorId: number): Promise<Message[]> {
+    const result = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.survivorId, survivorId))
+      .orderBy(desc(messages.sentAt));
+    
+    // Decrypt message content before returning
+    return this.decryptMessages(result);
+  }
+
+  /**
+   * Get messages with flexible filtering
+   */
+  async getMessages(filters: {
+    survivorId?: number;
+    contactId?: number;
+    channel?: string;
+    isRead?: boolean;
+    parentId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<Message[]> {
+    // Start with a basic query
+    let query = db.select().from(messages);
+    
+    // Apply filters
+    if (filters.survivorId !== undefined) {
+      query = query.where(eq(messages.survivorId, filters.survivorId));
+    }
+    
+    if (filters.contactId !== undefined) {
+      query = query.where(eq(messages.contactId, filters.contactId));
+    }
+    
+    if (filters.channel !== undefined) {
+      query = query.where(eq(messages.channel, filters.channel));
+    }
+    
+    if (filters.isRead !== undefined) {
+      query = query.where(eq(messages.isRead, filters.isRead));
+    }
+    
+    if (filters.parentId !== undefined) {
+      query = query.where(eq(messages.parentId, filters.parentId));
+    }
+    
+    // Date range filtering
+    if (filters.startDate) {
+      query = query.where(messages.sentAt, '>=', filters.startDate);
+    }
+    
+    if (filters.endDate) {
+      query = query.where(messages.sentAt, '<=', filters.endDate);
+    }
+    
+    // Order by sent date descending (newest first)
+    query = query.orderBy(desc(messages.sentAt));
+    
+    // Apply pagination if specified
+    if (filters.limit !== undefined) {
+      query = query.limit(filters.limit);
+      
+      if (filters.offset !== undefined) {
+        query = query.offset(filters.offset);
+      }
+    }
+    
+    const result = await query;
+    
+    // Decrypt message content before returning
+    return this.decryptMessages(result);
+  }
+
+  /**
+   * Get a specific message by ID
+   */
+  async getMessage(id: number): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, id));
+    
+    // Decrypt the message if found
+    return message ? this.decryptMessage(message) : undefined;
+  }
+
+  /**
+   * Create a new message with encryption
+   */
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [created] = await db.insert(messages).values(message).returning();
-    return created;
+    // Encrypt the message content
+    const encryptedMessage = {
+      ...message,
+      content: encrypt(message.content),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const [created] = await db
+      .insert(messages)
+      .values(encryptedMessage)
+      .returning();
+    
+    // Decrypt before returning to the caller
+    return this.decryptMessage(created);
+  }
+
+  /**
+   * Mark a message as read
+   */
+  async markMessageAsRead(id: number): Promise<Message> {
+    const [updated] = await db
+      .update(messages)
+      .set({ 
+        isRead: true,
+        updatedAt: new Date()
+      })
+      .where(eq(messages.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("Message not found");
+    }
+    
+    return this.decryptMessage(updated);
+  }
+
+  /**
+   * Update a message status
+   */
+  async updateMessageStatus(id: number, status: string): Promise<Message> {
+    const [updated] = await db
+      .update(messages)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(messages.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("Message not found");
+    }
+    
+    return this.decryptMessage(updated);
+  }
+
+  /**
+   * Delete a message
+   */
+  async deleteMessage(id: number): Promise<void> {
+    await db.delete(messages).where(eq(messages.id, id));
   }
 
   // Templates
