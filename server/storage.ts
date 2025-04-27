@@ -65,6 +65,14 @@ export interface IStorage {
   updateFundingOpportunity(id: number, opportunity: Partial<InsertFundingOpportunity>): Promise<FundingOpportunity>;
   deleteFundingOpportunity(id: number): Promise<void>;
   getPublicFundingOpportunities(): Promise<FundingOpportunity[]>;
+  
+  // Opportunity Matches
+  getOpportunityMatches(opportunityId?: number, survivorId?: number): Promise<OpportunityMatch[]>;
+  getOpportunityMatch(opportunityId: number, survivorId: number): Promise<OpportunityMatch | undefined>;
+  createOpportunityMatch(match: InsertOpportunityMatch): Promise<OpportunityMatch>;
+  updateOpportunityMatch(opportunityId: number, survivorId: number, match: Partial<InsertOpportunityMatch>): Promise<OpportunityMatch>;
+  deleteOpportunityMatch(opportunityId: number, survivorId: number): Promise<void>;
+  runMatchingEngine(): Promise<number>; // Returns count of new matches created
 
   // Documents
   getDocuments(): Promise<Document[]>;

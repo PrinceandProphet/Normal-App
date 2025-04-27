@@ -275,6 +275,28 @@ export const fundingOpportunities = pgTable("funding_opportunities", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Opportunity matches table - stores matched clients to funding opportunities
+export const opportunityMatches = pgTable("opportunity_matches", {
+  id: serial("id").primaryKey(),
+  opportunityId: integer("opportunity_id").notNull().references(() => fundingOpportunities.id, { onDelete: 'cascade' }),
+  survivorId: integer("survivor_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Match details
+  matchScore: numeric("match_score").notNull(), // 0-100 score representing how well client matches criteria
+  matchCriteria: json("match_criteria").notNull().default({}), // Detailed breakdown of what criteria matched
+  
+  // Match status
+  status: text("status").notNull().default("pending"), // pending, notified, applied, approved, rejected
+  
+  // Additional data
+  notes: text("notes"),
+  lastCheckedAt: timestamp("last_checked_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => ({
+  uniqueMatchIndex: primaryKey({ columns: [t.opportunityId, t.survivorId] }),
+}));
+
 // Insert schemas
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -575,3 +597,16 @@ export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
 export type InsertOrganizationSurvivor = z.infer<typeof insertOrganizationSurvivorSchema>;
 export type InsertFundingOpportunity = z.infer<typeof insertFundingOpportunitySchema>;
+
+// Opportunity matches insert schema
+export const insertOpportunityMatchSchema = createInsertSchema(opportunityMatches)
+  .extend({
+    status: z.enum(['pending', 'notified', 'applied', 'approved', 'rejected']).default('pending'),
+    matchScore: z.number().min(0).max(100),
+    matchCriteria: z.record(z.string(), z.any()),
+    notes: z.string().optional(),
+  })
+  .omit({ id: true, createdAt: true, updatedAt: true, lastCheckedAt: true });
+
+export type OpportunityMatch = typeof opportunityMatches.$inferSelect;
+export type InsertOpportunityMatch = z.infer<typeof insertOpportunityMatchSchema>;
