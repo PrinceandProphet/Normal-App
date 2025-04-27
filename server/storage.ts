@@ -798,6 +798,72 @@ export class DatabaseStorage implements IStorage {
   async deleteTask(id: number): Promise<void> {
     await db.delete(tasks).where(eq(tasks.id, id));
   }
+
+  // Funding Opportunities (Grants)
+  async getFundingOpportunities(organizationId?: number): Promise<FundingOpportunity[]> {
+    if (organizationId) {
+      return await db
+        .select()
+        .from(fundingOpportunities)
+        .where(eq(fundingOpportunities.organizationId, organizationId));
+    }
+    return await db.select().from(fundingOpportunities);
+  }
+
+  async getFundingOpportunity(id: number): Promise<FundingOpportunity | undefined> {
+    const [opportunity] = await db
+      .select()
+      .from(fundingOpportunities)
+      .where(eq(fundingOpportunities.id, id));
+    return opportunity;
+  }
+
+  async createFundingOpportunity(opportunity: InsertFundingOpportunity): Promise<FundingOpportunity> {
+    // Format eligibility criteria as JSON if it's an array
+    const formattedOpportunity = {
+      ...opportunity,
+      eligibilityCriteria: Array.isArray(opportunity.eligibilityCriteria)
+        ? JSON.stringify(opportunity.eligibilityCriteria)
+        : opportunity.eligibilityCriteria || '{}'
+    };
+
+    const [created] = await db
+      .insert(fundingOpportunities)
+      .values({
+        ...formattedOpportunity,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return created;
+  }
+
+  async updateFundingOpportunity(id: number, opportunity: Partial<InsertFundingOpportunity>): Promise<FundingOpportunity> {
+    // Format eligibility criteria as JSON if it's an array
+    let updateData = { ...opportunity, updatedAt: new Date() };
+    if (Array.isArray(opportunity.eligibilityCriteria)) {
+      updateData.eligibilityCriteria = JSON.stringify(opportunity.eligibilityCriteria);
+    }
+
+    const [updated] = await db
+      .update(fundingOpportunities)
+      .set(updateData)
+      .where(eq(fundingOpportunities.id, id))
+      .returning();
+    if (!updated) throw new Error("Funding opportunity not found");
+    return updated;
+  }
+
+  async deleteFundingOpportunity(id: number): Promise<void> {
+    await db.delete(fundingOpportunities).where(eq(fundingOpportunities.id, id));
+  }
+
+  async getPublicFundingOpportunities(): Promise<FundingOpportunity[]> {
+    return await db
+      .select()
+      .from(fundingOpportunities)
+      .where(eq(fundingOpportunities.isPublic, true));
+  }
 }
 
 export const storage = new DatabaseStorage();
