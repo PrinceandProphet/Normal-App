@@ -819,23 +819,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFundingOpportunity(opportunity: InsertFundingOpportunity): Promise<FundingOpportunity> {
-    // Format eligibility criteria as JSON if it's an array
-    const formattedOpportunity = {
-      ...opportunity,
-      eligibilityCriteria: Array.isArray(opportunity.eligibilityCriteria)
-        ? JSON.stringify(opportunity.eligibilityCriteria)
-        : opportunity.eligibilityCriteria || '{}'
-    };
+    try {
+      console.log("Creating funding opportunity:", JSON.stringify(opportunity, null, 2));
+      
+      // Format eligibility criteria as JSON if it's an array
+      const formattedOpportunity = {
+        ...opportunity,
+        // Ensure we have a status field
+        status: opportunity.status || "active",
+        // Convert application dates to string format for database
+        applicationStartDate: opportunity.applicationStartDate ? 
+          opportunity.applicationStartDate.toISOString().substring(0, 10) : null,
+        applicationEndDate: opportunity.applicationEndDate ? 
+          opportunity.applicationEndDate.toISOString().substring(0, 10) : null,
+        // Ensure awardAmount is a number (not a string)
+        awardAmount: typeof opportunity.awardAmount === 'string' ? 
+          parseFloat(opportunity.awardAmount) : opportunity.awardAmount,
+        // Format eligibility criteria as JSON string
+        eligibilityCriteria: Array.isArray(opportunity.eligibilityCriteria)
+          ? JSON.stringify(opportunity.eligibilityCriteria)
+          : opportunity.eligibilityCriteria || '[]'
+      };
 
-    const [created] = await db
-      .insert(fundingOpportunities)
-      .values({
-        ...formattedOpportunity,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    return created;
+      // Ensure organization ID is valid
+      if (!formattedOpportunity.organizationId || formattedOpportunity.organizationId <= 0) {
+        throw new Error("Invalid organization ID");
+      }
+
+      console.log("Formatted opportunity:", JSON.stringify(formattedOpportunity, null, 2));
+      
+      const [created] = await db
+        .insert(fundingOpportunities)
+        .values({
+          name: formattedOpportunity.name,
+          description: formattedOpportunity.description,
+          organizationId: formattedOpportunity.organizationId,
+          status: formattedOpportunity.status,
+          awardAmount: formattedOpportunity.awardAmount,
+          awardMinimum: formattedOpportunity.awardMinimum,
+          awardMaximum: formattedOpportunity.awardMaximum,
+          applicationStartDate: formattedOpportunity.applicationStartDate,
+          applicationEndDate: formattedOpportunity.applicationEndDate,
+          eligibilityCriteria: formattedOpportunity.eligibilityCriteria,
+          isPublic: formattedOpportunity.isPublic,
+        })
+        .returning();
+      
+      return created;
+    } catch (error) {
+      console.error("Error creating funding opportunity:", error);
+      throw error;
+    }
   }
 
   async updateFundingOpportunity(id: number, opportunity: Partial<InsertFundingOpportunity>): Promise<FundingOpportunity> {

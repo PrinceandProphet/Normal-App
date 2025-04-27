@@ -58,9 +58,13 @@ const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   organizationId: z.number(),
+  status: z.string().default("active"),
   applicationStartDate: z.date().optional(),
   applicationEndDate: z.date().optional(),
-  awardAmount: z.string().transform((val) => val === "" ? null : Number(val)),
+  awardAmount: z.union([
+    z.string().transform((val) => val === "" ? 0 : Number(val)),
+    z.number().min(0)
+  ]),
   isPublic: z.boolean().default(false),
   eligibilityCriteria: z.array(
     z.object({
@@ -107,10 +111,11 @@ export default function FundingOpportunityForm({ opportunity, onClose }) {
     defaultValues: {
       name: opportunity?.name || "",
       description: opportunity?.description || "",
-      organizationId: opportunity?.organizationId || user?.organizationId || 0,
+      organizationId: opportunity?.organizationId || user?.organizationId || 1, // Default to first org instead of 0
+      status: opportunity?.status || "active",
       applicationStartDate: opportunity?.applicationStartDate ? new Date(opportunity.applicationStartDate) : undefined,
       applicationEndDate: opportunity?.applicationEndDate ? new Date(opportunity.applicationEndDate) : undefined,
-      awardAmount: opportunity?.awardAmount?.toString() || "",
+      awardAmount: opportunity?.awardAmount?.toString() || "0",
       isPublic: opportunity?.isPublic || false,
       eligibilityCriteria: [],
     },
