@@ -448,6 +448,22 @@ export default function Household() {
                   />
                   <FormField
                     control={propertyForm.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zip Code</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter zip code" />
+                        </FormControl>
+                        <FormDescription>
+                          The zip code is used for location-based matching with funding opportunities
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={propertyForm.control}
                     name="type"
                     render={({ field }) => (
                       <FormItem>
@@ -515,7 +531,8 @@ export default function Household() {
                       {property.address}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground capitalize">
-                      {property.type.replace("_", " ")} • {property.ownershipStatus}
+                      {property.type.replace("_", " ")} • {property.ownershipStatus} 
+                      {property.zipCode && <span> • Zip: {property.zipCode}</span>}
                     </p>
                   </div>
                   <div className="flex gap-2">
