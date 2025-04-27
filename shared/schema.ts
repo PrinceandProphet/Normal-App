@@ -203,13 +203,36 @@ export const contacts = pgTable("contacts", {
   isEmergency: boolean("is_emergency").default(false),
 });
 
-export const messages = pgTable("messages", {
+// Forward declare the messages table for self-reference
+export const messagesTable = "messages";
+
+// Define messages table with type annotations
+export const messages = pgTable(messagesTable, {
   id: serial("id").primaryKey(),
-  contactId: integer("contact_id").notNull(),
+  // Connect messages to specific clients/survivors
+  survivorId: integer("survivor_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Optional contactId for external contacts (can be null for system messages)
+  contactId: integer("contact_id").references(() => contacts.id),
+  // Encrypted message content
   content: text("content").notNull(),
-  type: text("type").notNull(),
+  // Message metadata
+  subject: text("subject"),
+  // Channel type (email, sms, call, system)
+  channel: text("channel").notNull(),
+  // Message direction
   isInbound: boolean("is_inbound").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
+  // Message read status
+  isRead: boolean("is_read").default(false),
+  // Message status (sent, delivered, failed)
+  status: text("status").default("sent"),
+  // Optional reference to other messages (for replies/threads)
+  parentId: integer("parent_id").references(() => messages.id),
+  // Unique external ID (for tracking in external systems)
+  externalId: text("external_id").unique(),
+  // Timestamps
+  sentAt: timestamp("sent_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const documentTemplates = pgTable("document_templates", {
@@ -310,7 +333,22 @@ export const insertCapitalSourceSchema = z.object({
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true });
 export const insertContactSchema = createInsertSchema(contacts).omit({ id: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
+export const insertMessageSchema = createInsertSchema(messages)
+  .extend({
+    // Require the channel type to be a specific value
+    channel: z.enum(["email", "sms", "call", "system"]),
+    // Make contactId optional
+    contactId: z.number().optional(),
+    // Encryption happens at the storage layer, so content is just regular text here
+    content: z.string().min(1, "Message content is required"),
+    // Add validation for status
+    status: z.enum(["sent", "delivered", "read", "failed"]).default("sent"),
+    // Optional fields
+    subject: z.string().optional(),
+    parentId: z.number().optional(),
+    externalId: z.string().optional()
+  })
+  .omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
 export const insertChecklistSchema = createInsertSchema(checklists).omit({ id: true });
 export const insertTaskSchema = createInsertSchema(tasks)
