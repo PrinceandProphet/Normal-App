@@ -85,11 +85,20 @@ router.post("/", async (req, res) => {
       return res.status(403).json({ message: "Unauthorized: Admin access required" });
     }
     
+    // Ensure the request has an organizationId first (fallback to our demo organization if needed)
+    const dataWithOrg = {
+      ...req.body,
+      organizationId: parseInt(req.body.organizationId) || 6, // Use our demo organization as fallback
+      status: req.body.status || "active" // Ensure status field is present
+    };
+    
+    console.log("Preparing data for validation:", JSON.stringify(dataWithOrg, null, 2));
+    
     // Parse and validate the request body
-    const validatedData = insertFundingOpportunitySchema.safeParse(req.body);
+    const validatedData = insertFundingOpportunitySchema.safeParse(dataWithOrg);
     if (!validatedData.success) {
       console.error("Validation failed:", JSON.stringify(validatedData.error.format(), null, 2));
-      console.error("Received data:", JSON.stringify(req.body, null, 2));
+      console.error("Received data:", JSON.stringify(dataWithOrg, null, 2));
       return res.status(400).json({ 
         message: "Invalid funding opportunity data", 
         errors: validatedData.error.format() 
@@ -106,6 +115,7 @@ router.post("/", async (req, res) => {
       });
     }
     
+    console.log("Creating funding opportunity with data:", JSON.stringify(validatedData.data, null, 2));
     const created = await storage.createFundingOpportunity(validatedData.data);
     res.status(201).json(created);
   } catch (error) {

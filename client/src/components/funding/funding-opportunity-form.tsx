@@ -111,7 +111,7 @@ export default function FundingOpportunityForm({ opportunity, onClose }) {
     defaultValues: {
       name: opportunity?.name || "",
       description: opportunity?.description || "",
-      organizationId: opportunity?.organizationId || user?.organizationId || 1, // Default to first org instead of 0
+      organizationId: opportunity?.organizationId || user?.organizationId || 6, // Default to our newly created demo organization
       status: opportunity?.status || "active",
       applicationStartDate: opportunity?.applicationStartDate ? new Date(opportunity.applicationStartDate) : undefined,
       applicationEndDate: opportunity?.applicationEndDate ? new Date(opportunity.applicationEndDate) : undefined,
