@@ -71,6 +71,7 @@ const formSchema = z.object({
 
 export default function OrganizationsPage() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
   const [editingOrganization, setEditingOrganization] = useState<Organization | null>(null);
 
