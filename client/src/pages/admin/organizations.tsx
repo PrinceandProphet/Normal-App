@@ -36,9 +36,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Plus, Building2, Users, Phone, Mail, Globe, MapPin, Trash2, Edit, RefreshCw } from "lucide-react";
+import { Plus, Building2, Users, Phone, Mail, Globe, MapPin, Trash2, Edit, RefreshCw, Eye } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Organization } from "@shared/schema";
@@ -386,6 +387,14 @@ export default function OrganizationsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/admin/organizations/${org.id}`)}
+                        title="View organization details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
