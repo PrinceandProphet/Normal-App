@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -154,11 +154,11 @@ export default function Messages() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
         
-        {/* System Contact Info - Even more subtle as a badge/tooltip */}
+        {/* System Contact Info - Minimal top-right placement */}
         <div className="text-sm">
           {(systemConfig?.emailAddress || systemConfig?.phoneNumber) ? (
             <div className="flex items-center gap-3">
@@ -169,7 +169,6 @@ export default function Messages() {
                   title="Click to copy email"
                 >
                   <Mail className="h-4 w-4" />
-                  <span className="hidden sm:inline">{systemConfig.emailAddress}</span>
                 </button>
               )}
               {systemConfig.phoneNumber && (
@@ -179,7 +178,6 @@ export default function Messages() {
                   title="Click to call"
                 >
                   <Phone className="h-4 w-4" />
-                  <span className="hidden sm:inline">{systemConfig.phoneNumber}</span>
                 </a>
               )}
             </div>
@@ -187,332 +185,328 @@ export default function Messages() {
             <Link 
               className="text-primary hover:underline text-sm flex items-center gap-1"
               href="/profile"
+              title="Configure contact info"
             >
               <BellRing className="h-4 w-4" />
-              <span>Configure Contact Info</span>
             </Link>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 md:col-span-4 lg:col-span-3">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Contacts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {contacts?.map((contact) => (
-                  <Button
-                    key={contact.id}
-                    variant={selectedContact === contact.id ? "default" : "ghost"}
-                    className="w-full justify-start text-base font-normal px-3 py-2 h-auto"
-                    onClick={() => setSelectedContact(contact.id)}
+      {/* iPhone-like messaging UI */}
+      <Card className="shadow-sm overflow-hidden max-w-3xl mx-auto">
+        {/* "To:" field at the top to replace contacts sidebar */}
+        <div className="bg-muted/40 px-4 py-3 border-b">
+          <div className="flex items-center">
+            <span className="text-sm font-medium mr-2 w-8">To:</span>
+            <Select
+              value={selectedContact ? selectedContact.toString() : ""}
+              onValueChange={(value) => setSelectedContact(Number(value))}
+            >
+              <SelectTrigger className="border-0 bg-transparent hover:bg-muted focus:ring-0 shadow-none h-8 font-normal focus:text-foreground">
+                <SelectValue placeholder="Select a contact" />
+              </SelectTrigger>
+              <SelectContent>
+                {contacts?.map(contact => (
+                  <SelectItem 
+                    key={contact.id} 
+                    value={contact.id.toString()}
+                    className="font-normal"
                   >
                     {contact.name}
-                  </Button>
+                  </SelectItem>
                 ))}
-                
-                {(!contacts || contacts.length === 0) && (
-                  <p className="text-sm text-muted-foreground py-2 px-3">No contacts available</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-
-        <div className="col-span-12 md:col-span-8 lg:col-span-9">
-          <Card className="h-[650px] flex flex-col shadow-sm">
-            <CardHeader className="pb-3 border-b">
-              <CardTitle className="flex items-center text-lg">
-                {selectedContact ? (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                    {contacts?.find(c => c.id === selectedContact)?.name}
-                  </>
-                ) : (
-                  "Select a contact to start messaging"
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-0">
-              <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-muted/30">
-                {displayMessages?.map((message) => (
+        <CardContent className="flex-1 flex flex-col p-0">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
+            {/* Date header - group messages by date */}
+            {displayMessages?.length > 0 && (
+              <div className="flex justify-center mb-2">
+                <div className="bg-muted px-3 py-1 rounded-full">
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(displayMessages[0].sentAt), "MMMM d, yyyy")}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {displayMessages?.map((message, index) => {
+              // Check if this is a new day compared to previous message
+              const showDateSeparator = index > 0 && 
+                new Date(message.sentAt).toDateString() !== 
+                new Date(displayMessages[index-1].sentAt).toDateString();
+              
+              // Determine if this message is part of a sequence from the same sender
+              const isSequence = index > 0 && 
+                message.isInbound === displayMessages[index-1].isInbound;
+                
+              return (
+                <React.Fragment key={message.id}>
+                  {/* Show date separator if needed */}
+                  {showDateSeparator && (
+                    <div className="flex justify-center my-4">
+                      <div className="bg-muted px-3 py-1 rounded-full">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(message.sentAt), "MMMM d, yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div
-                    key={message.id}
-                    className={`flex ${message.isInbound ? "justify-start" : "justify-end"}`}
+                    className={`flex ${message.isInbound ? "justify-start" : "justify-end"} ${
+                      isSequence ? "mt-1" : "mt-4"
+                    }`}
                   >
                     <div
-                      className={`rounded-lg px-4 py-3 max-w-[80%] shadow-sm ${
+                      className={`px-3.5 py-2.5 max-w-[80%] ${
                         message.isInbound
-                          ? "bg-muted text-foreground"
-                          : "bg-primary text-primary-foreground"
+                          ? "bg-muted rounded-t-xl rounded-br-xl rounded-bl-sm text-foreground"
+                          : "bg-primary rounded-t-xl rounded-bl-xl rounded-br-sm text-primary-foreground"
                         }`}
                     >
-                      {/* Channel and status in a more subtle tag format */}
-                      <div className="flex justify-between items-center mb-1.5">
-                        <Badge 
-                          variant="outline" 
-                          className="text-[10px] px-1.5 py-0 h-auto font-normal capitalize"
-                        >
-                          {message.channel}
-                        </Badge>
-                        <Badge 
-                          variant={
-                            message.status === 'delivered' ? 'default' : 
-                            message.status === 'read' ? 'secondary' :
-                            message.status === 'failed' ? 'destructive' : 
-                            'outline'
-                          }
-                          className="text-[10px] px-1.5 py-0 h-auto font-normal ml-1.5"
-                        >
-                          {message.status}
-                        </Badge>
-                      </div>
+                      {/* Channel as a small label above iPhone-style */}
+                      {!isSequence && (
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] uppercase tracking-wide opacity-60">
+                            {message.channel}
+                          </span>
+                          <span className={`text-[10px] ml-2 opacity-60 ${
+                            message.status === 'delivered' ? 'text-green-500' : 
+                            message.status === 'read' ? 'text-blue-500' :
+                            message.status === 'failed' ? 'text-red-500' : 
+                            ''
+                          }`}>
+                            {message.status}
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Message content with better typography */}
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm leading-relaxed">{message.content}</p>
                       
-                      {/* Message timestamp more subtle */}
-                      <p className="text-[10px] opacity-60 mt-1.5 text-right">
-                        {format(new Date(message.sentAt), "PPp")}
+                      {/* Message timestamp iPhone-style */}
+                      <p className="text-[9px] opacity-60 mt-1 text-right">
+                        {format(new Date(message.sentAt), "h:mm a")}
                       </p>
                     </div>
                   </div>
-                ))}
-                
-                {/* Loading state */}
-                {(messagesLoading || contactMessagesLoading) && (
-                  <div className="flex justify-center py-8">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                      <p>Loading messages...</p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Empty state */}
-                {!messagesLoading && !contactMessagesLoading && 
-                 (!displayMessages || displayMessages.length === 0) && (
-                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                    <p className="text-muted-foreground mb-1">No messages found</p>
-                    <p className="text-sm text-muted-foreground/60">
-                      {selectedContact ? "Start a conversation" : "Select a contact to begin messaging"}
-                    </p>
-                  </div>
-                )}
+                </React.Fragment>
+              );
+            })}
+            
+            {/* Loading state */}
+            {(messagesLoading || contactMessagesLoading) && (
+              <div className="flex justify-center py-8">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                  <p>Loading messages...</p>
+                </div>
               </div>
+            )}
+            
+            {/* Empty state */}
+            {!messagesLoading && !contactMessagesLoading && 
+             (!displayMessages || displayMessages.length === 0) && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <MessageSquare className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                <p className="text-muted-foreground mb-1">No messages found</p>
+                <p className="text-sm text-muted-foreground/60">
+                  {selectedContact ? "Start a conversation" : "Select a contact to begin messaging"}
+                </p>
+              </div>
+            )}
+          </div>
 
-              {(user?.userType === "survivor" || selectedContact) && (
-                <div className="p-4 border-t border-border">
-                  {/* Channel selector as a segmented control */}
-                  <div className="flex gap-1.5 mb-4 bg-muted rounded-md p-1">
-                    <button 
-                      className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
-                        channel === "email" 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setChannel("email")}
-                    >
-                      <Mail className="h-3.5 w-3.5" />
-                      <span>Email</span>
-                    </button>
-                    <button 
-                      className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
-                        channel === "sms" 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setChannel("sms")}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      <span>SMS</span>
-                    </button>
-                    <button 
-                      className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
-                        channel === "call" 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setChannel("call")}
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      <span>Call</span>
-                    </button>
-                    <button 
-                      className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
-                        channel === "system" 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setChannel("system")}
-                    >
-                      <BellRing className="h-3.5 w-3.5" />
-                      <span>System</span>
-                    </button>
+          {(user?.userType === "survivor" || selectedContact) && (
+            <div className="p-4 border-t border-border">
+              {/* Channel selector as a segmented control */}
+              <div className="flex gap-1.5 mb-4 bg-muted rounded-md p-1">
+                <button 
+                  className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
+                    channel === "email" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setChannel("email")}
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Email</span>
+                </button>
+                <button 
+                  className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
+                    channel === "sms" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setChannel("sms")}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>SMS</span>
+                </button>
+                <button 
+                  className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
+                    channel === "call" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setChannel("call")}
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span>Call</span>
+                </button>
+                <button 
+                  className={`flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm flex-1 transition-colors ${
+                    channel === "system" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setChannel("system")}
+                >
+                  <BellRing className="h-3.5 w-3.5" />
+                  <span>System</span>
+                </button>
+              </div>
+              
+              {/* Adaptive message input based on channel */}
+              {channel === "email" && (
+                <div className="border rounded-md bg-card overflow-hidden">
+                  <div className="px-3 py-2 bg-muted/50 border-b">
+                    <div className="flex items-center mb-1.5">
+                      <span className="text-xs font-medium w-14">To:</span>
+                      <span className="text-xs">
+                        {selectedContact 
+                          ? contacts?.find(c => c.id === selectedContact)?.name
+                          : user?.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-xs font-medium w-14">Subject:</span>
+                      <span className="text-xs text-muted-foreground">Message regarding your case</span>
+                    </div>
                   </div>
-                  
-                  {/* Adaptive message input based on channel */}
-                  {channel === "email" && (
-                    <div className="border rounded-md bg-card overflow-hidden">
-                      <div className="px-3 py-2 bg-muted/50 border-b">
-                        <div className="flex items-center mb-1.5">
-                          <span className="text-xs font-medium w-14">To:</span>
-                          <span className="text-xs">
-                            {selectedContact 
-                              ? contacts?.find(c => c.id === selectedContact)?.name
-                              : user?.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium w-14">Subject:</span>
-                          <span className="text-xs text-muted-foreground">Message regarding your case</span>
-                        </div>
-                      </div>
-                      <div className="p-3">
-                        <Textarea
-                          value={messageContent}
-                          onChange={(e) => setMessageContent(e.target.value)}
-                          placeholder="Type your email message..."
-                          className="min-h-[120px] border-0 focus-visible:ring-0 shadow-none resize-none"
-                        />
-                        <div className="flex justify-end mt-3">
-                          <Button 
-                            onClick={sendMessage}
-                            disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                            className="gap-2"
-                            size="sm"
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                            {sendMessageMutation.isPending ? "Sending..." : "Send Email"}
-                          </Button>
-                        </div>
-                      </div>
+                  <div className="p-3">
+                    <Textarea
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                      placeholder="Write your email message..."
+                      className="min-h-[120px] border-0 focus-visible:ring-0 shadow-none resize-none"
+                    />
+                    <div className="flex justify-end mt-3">
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                        size="sm"
+                      >
+                        {sendMessageMutation.isPending ? "Sending..." : "Send Email"}
+                      </Button>
                     </div>
-                  )}
-                  
-                  {channel === "sms" && (
-                    <div className="border rounded-md bg-card">
-                      <div className="px-3 py-2 bg-muted/50 border-b flex items-center gap-2">
-                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs">
-                          To: {selectedContact 
-                            ? contacts?.find(c => c.id === selectedContact)?.name
-                            : user?.name}
-                        </span>
-                      </div>
-                      <div className="p-3 rounded-md flex gap-2 items-end">
-                        <Textarea
-                          value={messageContent}
-                          onChange={(e) => setMessageContent(e.target.value)}
-                          placeholder="Type your text message..."
-                          className="bg-muted resize-none border-0 focus-visible:ring-0 shadow-none min-h-0 h-[80px]"
-                        />
-                        <Button 
-                          onClick={sendMessage}
-                          disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                          className="rounded-full aspect-square p-2 h-10 w-10"
-                          size="icon"
-                        >
-                          <Send className="h-4 w-4" />
-                          <span className="sr-only">Send Text</span>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {channel === "call" && (
-                    <div className="border rounded-md bg-card">
-                      <div className="px-3 py-2 bg-muted/50 border-b flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs">
-                            Call to: {selectedContact 
-                              ? contacts?.find(c => c.id === selectedContact)?.name
-                              : user?.name}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] py-0 h-4">Demo</Badge>
-                      </div>
-                      <div className="p-3">
-                        <div className="bg-muted rounded-md p-3 mb-3">
-                          <p className="text-xs text-muted-foreground mb-2">Call Notes:</p>
-                          <Textarea
-                            value={messageContent}
-                            onChange={(e) => setMessageContent(e.target.value)}
-                            placeholder="Enter call notes for this conversation..."
-                            className="border-none bg-background resize-none focus-visible:ring-0 shadow-none text-sm h-[80px]"
-                          />
-                        </div>
-                        <div className="flex justify-center gap-3">
-                          <Button 
-                            variant="outline" 
-                            className="rounded-full h-9 w-9 p-0"
-                            size="icon"
-                          >
-                            <Mic className="h-3.5 w-3.5" />
-                            <span className="sr-only">Mic</span>
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            className="rounded-full h-9 w-9 p-0"
-                            size="icon"
-                          >
-                            <PhoneOff className="h-3.5 w-3.5" />
-                            <span className="sr-only">End Call</span>
-                          </Button>
-                          <Button 
-                            onClick={sendMessage}
-                            disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                            className="rounded-full h-9 w-9 p-0"
-                            variant="default"
-                            size="icon"
-                          >
-                            <Save className="h-3.5 w-3.5" />
-                            <span className="sr-only">Save Call Notes</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {channel === "system" && (
-                    <div className="border rounded-md bg-card">
-                      <div className="px-3 py-2 bg-muted/50 border-b flex items-center gap-2">
-                        <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium">System Notification</span>
-                      </div>
-                      <div className="p-3">
-                        <Textarea
-                          value={messageContent}
-                          onChange={(e) => setMessageContent(e.target.value)}
-                          placeholder="Enter system notification message..."
-                          className="min-h-[80px] border-0 focus-visible:ring-0 shadow-none resize-none bg-muted"
-                        />
-                        <div className="flex justify-end mt-3">
-                          <Button 
-                            onClick={sendMessage}
-                            disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                            size="sm"
-                          >
-                            {sendMessageMutation.isPending ? "Sending..." : "Send Notification"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              
+              {channel === "sms" && (
+                <div className="border rounded-md bg-card">
+                  <div className="p-3">
+                    <Textarea
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                      placeholder="Type your SMS message..."
+                      className="min-h-[80px] border-0 focus-visible:ring-0 shadow-none resize-none"
+                    />
+                    <div className="flex justify-between items-center mt-3">
+                      <div className="text-xs text-muted-foreground">
+                        {messageContent.length} / 160 characters
+                      </div>
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                        size="sm"
+                        className="rounded-full"
+                      >
+                        <Send className="h-3.5 w-3.5 mr-1" />
+                        {sendMessageMutation.isPending ? "Sending..." : "Send SMS"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {channel === "call" && (
+                <div className="border rounded-md bg-card">
+                  <div className="px-3 py-2 bg-muted/50 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">Call Log</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">In Progress</Badge>
+                  </div>
+                  <div className="p-3">
+                    <div className="bg-muted rounded-md p-3 mb-3">
+                      <p className="text-xs text-muted-foreground mb-2">Call Notes:</p>
+                      <Textarea
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        placeholder="Enter call notes for this conversation..."
+                        className="border-none bg-background resize-none focus-visible:ring-0 shadow-none text-sm h-[80px]"
+                      />
+                    </div>
+                    <div className="flex justify-center gap-3">
+                      <Button 
+                        className="rounded-full h-9 w-9 p-0"
+                        variant="destructive"
+                        size="icon"
+                      >
+                        <PhoneOff className="h-3.5 w-3.5" />
+                        <span className="sr-only">End Call</span>
+                      </Button>
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                        className="rounded-full h-9 w-9 p-0"
+                        variant="default"
+                        size="icon"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        <span className="sr-only">Save Call Notes</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {channel === "system" && (
+                <div className="border rounded-md bg-card">
+                  <div className="px-3 py-2 bg-muted/50 border-b flex items-center gap-2">
+                    <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium">System Notification</span>
+                  </div>
+                  <div className="p-3">
+                    <Textarea
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                      placeholder="Enter system notification message..."
+                      className="min-h-[80px] border-0 focus-visible:ring-0 shadow-none resize-none bg-muted"
+                    />
+                    <div className="flex justify-end mt-3">
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                        size="sm"
+                      >
+                        {sendMessageMutation.isPending ? "Sending..." : "Send Notification"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
