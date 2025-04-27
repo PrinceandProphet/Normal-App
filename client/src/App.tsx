@@ -16,6 +16,7 @@ import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
 import FundingOpportunities from "@/pages/funding-opportunities";
+import OpportunityMatches from "@/pages/opportunity-matches";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/hooks/use-client-context";
@@ -136,6 +137,13 @@ function Router() {
                   <AuthCheck noLoading>
                     <LoadingWrapper delay={50}>
                       <FundingOpportunities />
+                    </LoadingWrapper>
+                  </AuthCheck>
+                </Route>
+                <Route path="/opportunity-matches">
+                  <AuthCheck noLoading>
+                    <LoadingWrapper delay={50}>
+                      <OpportunityMatches />
                     </LoadingWrapper>
                   </AuthCheck>
                 </Route>

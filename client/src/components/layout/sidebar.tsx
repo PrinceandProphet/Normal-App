@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link as RouterLink, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { 
   FileText, 
@@ -14,7 +14,9 @@ import {
   ChevronUp,
   Building2,
   LogOut,
-  ServerCog
+  ServerCog,
+  Link as LinkIcon,
+  Handshake
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ const adminNavigation = [
   
   // Shared Admin Features
   { name: "Funding Opportunities", href: "/funding-opportunities", icon: DollarSign, roles: ["super_admin", "admin"] },
+  { name: "Opportunity Matches", href: "/opportunity-matches", icon: Handshake, roles: ["super_admin", "admin"] },
 ];
 
 // User navigation - can be collapsed
@@ -64,7 +67,7 @@ export default function Sidebar() {
   const renderNavItem = (item: any, isCollapsed: boolean = false) => {
     const Icon = item.icon;
     return (
-      <Link 
+      <RouterLink 
         href={item.href}
         className={cn(
           "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg mb-1.5 transition-colors",
@@ -77,7 +80,7 @@ export default function Sidebar() {
       >
         <Icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
         {!isCollapsed && item.name}
-      </Link>
+      </RouterLink>
     );
   };
 
