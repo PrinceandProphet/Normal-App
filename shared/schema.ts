@@ -11,6 +11,15 @@ export const organizations = pgTable("organizations", {
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
+  // Email configuration fields
+  emailDomain: text("email_domain"),
+  emailDomainVerified: boolean("email_domain_verified").default(false),
+  emailProvider: text("email_provider").default("system"),
+  emailSenderName: text("email_sender_name"),
+  emailSenderAddress: text("email_sender_address"),
+  emailDkimKey: text("email_dkim_key"),
+  emailSpfRecord: text("email_spf_record"),
+  emailDmarcRecord: text("email_dmarc_record"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
