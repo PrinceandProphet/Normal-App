@@ -135,6 +135,7 @@ export default function Household() {
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
+      zipCode: "",
       type: "single_family",
       ownershipStatus: "owned",
       primaryResidence: false,
