@@ -27,15 +27,15 @@ interface OpportunityMatchWithDetails {
   matchScore: string;
   matchCriteria: any;
   notes: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  lastCheckedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  lastCheckedAt: string | Date;
   
   // Additional properties from joined tables
   opportunityName: string;
   survivorName: string;
   awardAmount: number | null;
-  applicationEndDate: Date | null;
+  applicationEndDate: string | Date | null;
 }
 
 export default function OpportunityMatches() {

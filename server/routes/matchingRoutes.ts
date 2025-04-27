@@ -39,6 +39,17 @@ matchingRouter.get("/survivors/:survivorId/matches", async (req, res) => {
   }
 });
 
+// Get all matches (for admin dashboard)
+matchingRouter.get("/matches", async (req, res) => {
+  try {
+    const matches = await storage.getOpportunityMatches();
+    res.json(matches);
+  } catch (error) {
+    console.error("Error fetching all matches:", error);
+    res.status(500).json({ message: "Failed to fetch matches" });
+  }
+});
+
 // Get a specific match between an opportunity and survivor
 matchingRouter.get("/opportunities/:opportunityId/survivors/:survivorId/match", async (req, res) => {
   try {

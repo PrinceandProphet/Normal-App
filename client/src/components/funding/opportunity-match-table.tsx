@@ -110,7 +110,7 @@ export default function OpportunityMatchTable({
   });
   
   // Format the date for display
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "No deadline";
     return new Date(date).toLocaleDateString();
   };
