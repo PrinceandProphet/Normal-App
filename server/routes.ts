@@ -28,6 +28,7 @@ import organizationRoutes from "./routes/organizations";
 import survivorRoutes from "./routes/survivors";
 import userRoutes from "./routes/users";
 import fundingRoutes from "./routes/funding";
+import matchingRoutes from "./routes/matchingRoutes";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -63,6 +64,7 @@ export async function registerRoutes(app: Express) {
   app.use("/api/survivors", survivorRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/funding", fundingRoutes);
+  app.use("/api/matching", matchingRoutes);
 
   // Documents
   app.get("/api/documents", async (req, res) => {
