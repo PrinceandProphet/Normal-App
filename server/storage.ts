@@ -16,12 +16,13 @@ import {
   type OrganizationSurvivor, type InsertOrganizationSurvivor, organizationSurvivors,
   type Task, type InsertTask, tasks,
   type FundingOpportunity, type InsertFundingOpportunity, fundingOpportunities,
+  type OpportunityMatch, type InsertOpportunityMatch, opportunityMatches,
 } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Session Store (for authentication)
@@ -934,6 +935,331 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(fundingOpportunities)
       .where(eq(fundingOpportunities.isPublic, true));
+  }
+
+  // Opportunity Matches
+  async getOpportunityMatches(opportunityId?: number, survivorId?: number): Promise<OpportunityMatch[]> {
+    let query = db.select().from(opportunityMatches);
+    
+    if (opportunityId) {
+      query = query.where(eq(opportunityMatches.opportunityId, opportunityId));
+    }
+    
+    if (survivorId) {
+      query = query.where(eq(opportunityMatches.survivorId, survivorId));
+    }
+    
+    return await query.orderBy(desc(opportunityMatches.matchScore));
+  }
+  
+  async getOpportunityMatch(opportunityId: number, survivorId: number): Promise<OpportunityMatch | undefined> {
+    const [match] = await db
+      .select()
+      .from(opportunityMatches)
+      .where(
+        and(
+          eq(opportunityMatches.opportunityId, opportunityId),
+          eq(opportunityMatches.survivorId, survivorId)
+        )
+      );
+    return match;
+  }
+  
+  async createOpportunityMatch(match: InsertOpportunityMatch): Promise<OpportunityMatch> {
+    const [created] = await db
+      .insert(opportunityMatches)
+      .values({
+        ...match,
+        lastCheckedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return created;
+  }
+  
+  async updateOpportunityMatch(opportunityId: number, survivorId: number, match: Partial<InsertOpportunityMatch>): Promise<OpportunityMatch> {
+    const [updated] = await db
+      .update(opportunityMatches)
+      .set({
+        ...match,
+        lastCheckedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(opportunityMatches.opportunityId, opportunityId),
+          eq(opportunityMatches.survivorId, survivorId)
+        )
+      )
+      .returning();
+    
+    if (!updated) throw new Error("Opportunity match not found");
+    return updated;
+  }
+  
+  async deleteOpportunityMatch(opportunityId: number, survivorId: number): Promise<void> {
+    await db
+      .delete(opportunityMatches)
+      .where(
+        and(
+          eq(opportunityMatches.opportunityId, opportunityId),
+          eq(opportunityMatches.survivorId, survivorId)
+        )
+      );
+  }
+  
+  async runMatchingEngine(): Promise<number> {
+    try {
+      // 1. Get all active funding opportunities
+      const opportunities = await db
+        .select()
+        .from(fundingOpportunities)
+        .where(eq(fundingOpportunities.status, "active"));
+      
+      if (opportunities.length === 0) return 0;
+      
+      // 2. Get all survivors (clients) who are users
+      const survivors = await db
+        .select()
+        .from(users)
+        .where(eq(users.userType, "survivor"));
+      
+      if (survivors.length === 0) return 0;
+      
+      let newMatchesCount = 0;
+      
+      // 3. For each opportunity, check if each survivor matches the criteria
+      for (const opportunity of opportunities) {
+        // Skip if no eligibility criteria defined
+        if (!opportunity.eligibilityCriteria || 
+            typeof opportunity.eligibilityCriteria !== 'object' || 
+            Array.isArray(opportunity.eligibilityCriteria) && opportunity.eligibilityCriteria.length === 0) {
+          continue;
+        }
+        
+        const eligibilityCriteria = Array.isArray(opportunity.eligibilityCriteria) 
+          ? opportunity.eligibilityCriteria 
+          : [];
+        
+        for (const survivor of survivors) {
+          // Skip if already matched with this opportunity
+          const existingMatch = await this.getOpportunityMatch(opportunity.id, survivor.id);
+          if (existingMatch) {
+            // Update last checked timestamp but don't count as a new match
+            await this.updateOpportunityMatch(opportunity.id, survivor.id, {
+              matchScore: existingMatch.matchScore,
+              matchCriteria: existingMatch.matchCriteria
+            });
+            continue;
+          }
+          
+          // Evaluate criteria
+          const { matches, matchScore, matchDetails } = await this.evaluateSurvivorEligibility(
+            survivor.id,
+            eligibilityCriteria
+          );
+          
+          // If matches, create a new match record
+          if (matches) {
+            await this.createOpportunityMatch({
+              opportunityId: opportunity.id,
+              survivorId: survivor.id,
+              matchScore,
+              matchCriteria: matchDetails,
+              status: "pending"
+            });
+            newMatchesCount++;
+          }
+        }
+      }
+      
+      return newMatchesCount;
+    } catch (error) {
+      console.error("Error running matching engine:", error);
+      return 0;
+    }
+  }
+  
+  // Helper method to evaluate if a survivor matches criteria
+  private async evaluateSurvivorEligibility(
+    survivorId: number, 
+    criteria: any[]
+  ): Promise<{ matches: boolean; matchScore: number; matchDetails: Record<string, any> }> {
+    // Get survivor user
+    const survivor = await this.getUser(survivorId);
+    if (!survivor) {
+      return { matches: false, matchScore: 0, matchDetails: {} };
+    }
+    
+    // Get survivor's property details (for zip code)
+    const properties = await this.getProperties();
+    const survivorProperty = properties.find(p => p.survivorId === survivorId);
+    
+    // Get survivor's household members for household size and income data
+    const householdGroups = await this.getHouseholdGroups();
+    const survivorGroups = householdGroups.filter(g => 
+      g.propertyId && properties.some(p => p.id === g.propertyId && p.survivorId === survivorId)
+    );
+    
+    const survivorHouseholdMembers: HouseholdMember[] = [];
+    for (const group of survivorGroups) {
+      const members = await this.getHouseholdMembers(group.id);
+      survivorHouseholdMembers.push(...members);
+    }
+    
+    // Calculate total income
+    const totalHouseholdIncome = survivorHouseholdMembers.reduce((sum, member) => {
+      return sum + (Number(member.annualIncome) || 0);
+    }, 0);
+    
+    // Initialize matching results
+    let matchCount = 0;
+    let evaluatedCount = 0;
+    const matchDetails: Record<string, any> = {};
+    
+    // Evaluate each criteria
+    for (const criterion of criteria) {
+      evaluatedCount++;
+      
+      switch(criterion.type) {
+        case 'zipCode':
+          if (survivorProperty && survivorProperty.zipCode) {
+            const zipCodeMatches = criterion.ranges.some((range: any) => {
+              // Convert to numbers for comparison
+              const min = parseInt(range.min, 10);
+              const max = parseInt(range.max, 10);
+              const zip = parseInt(survivorProperty.zipCode, 10);
+              
+              return zip >= min && zip <= max;
+            });
+            
+            if (zipCodeMatches) {
+              matchCount++;
+              matchDetails.zipCode = {
+                matches: true,
+                value: survivorProperty.zipCode
+              };
+            } else {
+              matchDetails.zipCode = {
+                matches: false,
+                value: survivorProperty.zipCode
+              };
+            }
+          } else {
+            matchDetails.zipCode = {
+              matches: false,
+              reason: "No property or zip code found"
+            };
+          }
+          break;
+          
+        case 'income':
+          const incomeMatches = criterion.ranges.some((range: any) => {
+            return totalHouseholdIncome >= range.min && totalHouseholdIncome <= range.max;
+          });
+          
+          if (incomeMatches) {
+            matchCount++;
+            matchDetails.income = {
+              matches: true,
+              value: totalHouseholdIncome
+            };
+          } else {
+            matchDetails.income = {
+              matches: false,
+              value: totalHouseholdIncome
+            };
+          }
+          break;
+          
+        case 'householdSize':
+          const householdSize = survivorHouseholdMembers.length;
+          const householdSizeMatches = criterion.ranges.some((range: any) => {
+            return householdSize >= range.min && householdSize <= range.max;
+          });
+          
+          if (householdSizeMatches) {
+            matchCount++;
+            matchDetails.householdSize = {
+              matches: true,
+              value: householdSize
+            };
+          } else {
+            matchDetails.householdSize = {
+              matches: false,
+              value: householdSize
+            };
+          }
+          break;
+          
+        case 'disasterEvent':
+          // This would require more complex logic connecting disasters to survivors
+          // For now, we'll implement a simple approach
+          const survivorDisasterEvents = survivorHouseholdMembers.flatMap(m => 
+            m.qualifyingTags || []
+          ).filter(tag => tag.startsWith('disaster:'));
+          
+          const disasterMatches = criterion.events.some((event: string) => 
+            survivorDisasterEvents.includes(`disaster:${event}`)
+          );
+          
+          if (disasterMatches) {
+            matchCount++;
+            matchDetails.disasterEvent = {
+              matches: true,
+              events: survivorDisasterEvents
+            };
+          } else {
+            matchDetails.disasterEvent = {
+              matches: false,
+              events: survivorDisasterEvents
+            };
+          }
+          break;
+          
+        case 'custom':
+          // Custom criteria would require specific implementation based on user needs
+          // For now we'll match against qualifyingTags
+          const survivorTags = survivorHouseholdMembers.flatMap(m => 
+            m.qualifyingTags || []
+          );
+          
+          const tagMatches = criterion.values.some((value: string) => 
+            survivorTags.includes(`${criterion.key}:${value}`)
+          );
+          
+          if (tagMatches) {
+            matchCount++;
+            matchDetails.custom = {
+              matches: true,
+              key: criterion.key,
+              tags: survivorTags
+            };
+          } else {
+            matchDetails.custom = {
+              matches: false,
+              key: criterion.key,
+              tags: survivorTags
+            };
+          }
+          break;
+      }
+    }
+    
+    // Calculate match score (percentage of criteria matched)
+    const matchScore = evaluatedCount > 0 
+      ? Math.round((matchCount / evaluatedCount) * 100) 
+      : 0;
+    
+    // A match requires at least one criterion to match
+    const matches = matchCount > 0;
+    
+    return { 
+      matches, 
+      matchScore, 
+      matchDetails 
+    };
   }
 }
 
