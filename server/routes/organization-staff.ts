@@ -2,7 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { staffSchema, insertStaffSchema } from "@shared/schema";
 import { z } from "zod";
-import { emailService } from "../services/email";
+import { emailService } from "../services/email-simplified";
 
 const router = Router();
 
