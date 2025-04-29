@@ -18,8 +18,13 @@ import {
   Send, 
   Save, 
   Mic, 
-  BellRing 
+  BellRing,
+  Tag,
+  X,
+  Filter
 } from "lucide-react";
+import { TagFilter } from "@/components/messages/message-tags";
+import { parseTags, formatTags } from "@/utils/message-tagging";
 
 export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);

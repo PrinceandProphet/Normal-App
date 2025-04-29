@@ -23,7 +23,7 @@ import connectPg from "connect-pg-simple";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, like, or, gte, lte } from "drizzle-orm";
 import { encrypt, decrypt, isEncrypted } from "./utils/encryption";
 
 export interface IStorage {
@@ -105,6 +105,8 @@ export interface IStorage {
     endDate?: Date;
     limit?: number;
     offset?: number;
+    tags?: string[]; // New: filter by tags
+    organizationId?: number; // New: filter by organization
   }): Promise<Message[]>;
   // Get a specific message by id
   getMessage(id: number): Promise<Message | undefined>;
@@ -535,6 +537,8 @@ export class DatabaseStorage implements IStorage {
     endDate?: Date;
     limit?: number;
     offset?: number;
+    tags?: string[]; // New: filter by tags
+    organizationId?: number; // New: filter by organization
   }): Promise<Message[]> {
     // Start with a basic query
     let query = db.select().from(messages);
@@ -560,13 +564,39 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(messages.parentId, filters.parentId));
     }
     
+    if (filters.organizationId !== undefined) {
+      query = query.where(eq(messages.organizationId, filters.organizationId));
+    }
+    
+    // Tag filtering using LIKE queries for each tag
+    if (filters.tags && filters.tags.length > 0) {
+      // Use SQL LIKE for each tag with OR conditions
+      query = query.where(
+        or(
+          ...filters.tags.map(tag => 
+            // Match exact tag or tag as part of comma-separated list
+            or(
+              eq(messages.tags, tag),
+              like(messages.tags, `${tag},%`),
+              like(messages.tags, `%,${tag},%`),
+              like(messages.tags, `%,${tag}`)
+            )
+          )
+        )
+      );
+    }
+    
     // Date range filtering
     if (filters.startDate) {
-      query = query.where(messages.sentAt, '>=', filters.startDate);
+      query = query.where(
+        gte(messages.sentAt, filters.startDate)
+      );
     }
     
     if (filters.endDate) {
-      query = query.where(messages.sentAt, '<=', filters.endDate);
+      query = query.where(
+        lte(messages.sentAt, filters.endDate)
+      );
     }
     
     // Order by sent date descending (newest first)
@@ -604,6 +634,15 @@ export class DatabaseStorage implements IStorage {
    * Create a new message with encryption
    */
   async createMessage(message: InsertMessage): Promise<Message> {
+    // Auto-tag the message based on content if no tags are provided
+    if (!message.tags) {
+      const { autoTagMessage, formatTags } = await import('./utils/message-tagging');
+      const detectedTags = autoTagMessage(message.content);
+      if (detectedTags.length > 0) {
+        message.tags = formatTags(detectedTags);
+      }
+    }
+
     // Encrypt the message content
     const encryptedMessage = {
       ...message,

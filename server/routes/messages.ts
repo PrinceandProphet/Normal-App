@@ -106,7 +106,7 @@ router.post("/", authenticateUser, async (req, res) => {
     const messageData = {
       ...validatedData,
       sentAt: new Date()
-    };
+    } as InsertMessage;
     
     const message = await storage.createMessage(messageData);
     res.status(201).json(message);
@@ -186,7 +186,9 @@ router.get("/filter", authenticateUser, async (req, res) => {
       startDate, 
       endDate,
       limit,
-      offset
+      offset,
+      tags, // New: Filter by tags
+      organizationId // New: Filter by organization
     } = req.query;
     
     // Create filter object with optional parameters
@@ -218,6 +220,17 @@ router.get("/filter", authenticateUser, async (req, res) => {
     
     if (startDate) filter.startDate = new Date(startDate as string);
     if (endDate) filter.endDate = new Date(endDate as string);
+    
+    // Handle tag filtering
+    if (tags) {
+      filter.tags = (tags as string).split(',');
+    }
+    
+    // Handle organization filtering
+    if (organizationId) {
+      const id = safeParseInt(organizationId as string);
+      if (id !== undefined) filter.organizationId = id;
+    }
     
     if (limit) {
       const limitVal = safeParseInt(limit as string);
