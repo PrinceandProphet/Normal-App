@@ -19,6 +19,17 @@ export const organizations = pgTable("organizations", {
   emailDkimSelector: text("email_dkim_selector"),
   emailDkimKey: text("email_dkim_key"),
   emailSpfRecord: text("email_spf_record"),
+  // System settings fields
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color").default("#0070F3"),
+  defaultSmsName: text("default_sms_name"),
+  // Feature toggles
+  enableMessaging: boolean("enable_messaging").default(true),
+  enableCalendar: boolean("enable_calendar").default(true),
+  enableActionPlan: boolean("enable_action_plan").default(true),
+  enableDocuments: boolean("enable_documents").default(true),
+  enableHouseholdManagement: boolean("enable_household_management").default(true),
+  enableFundingOpportunities: boolean("enable_funding_opportunities").default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
