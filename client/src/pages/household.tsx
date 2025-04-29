@@ -398,28 +398,14 @@ export default function Household() {
 
   return (
     <div className="space-y-6">
-      {selectedClient && (
-        <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 flex items-center">
-          <UserCircle className="h-6 w-6 mr-2 text-primary" />
-          <div>
-            <p className="font-medium">
-              Viewing household data for: <span className="text-primary">{selectedClient.firstName} {selectedClient.lastName}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              This view shows only properties and household data for the selected client.
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Household & Properties</h1>
+          <h1 className="text-3xl font-bold tracking-tight">My Household & Properties</h1>
           <p className="text-muted-foreground">
             Manage your properties and household arrangements
           </p>
         </div>
-        {selectedClient && (
+        {(
           <Dialog open={addPropertyOpen} onOpenChange={setAddPropertyOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -495,28 +481,16 @@ export default function Household() {
       </div>
 
       {/* Properties Grid */}
-      {!selectedClient ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium mb-2">No Client Selected</h3>
-              <p className="text-muted-foreground max-w-md mb-4">
-                Please select a client from the client selector to view and manage their household information and properties.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
+      {(
         <div className="grid gap-6">
           {properties.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Home className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-medium mb-2">No Properties</h3>
+                  <h3 className="text-xl font-medium mb-2">No Properties Added</h3>
                   <p className="text-muted-foreground max-w-md mb-4">
-                    This client doesn't have any properties yet. Add a property to get started.
+                    You haven't added any properties yet. Add your property to get started with household tracking.
                   </p>
                 </div>
               </CardContent>
