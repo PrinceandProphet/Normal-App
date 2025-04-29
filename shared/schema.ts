@@ -346,6 +346,29 @@ export const opportunityMatches = pgTable("opportunity_matches", {
   uniqueMatchIndex: primaryKey({ columns: [t.opportunityId, t.survivorId] }),
 }));
 
+// Staff member schema (for organization staff management)
+export const staffSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email" }),
+  phone: z.string().min(10, { message: "Please enter a valid phone number" }).optional(),
+  role: z.enum(["admin", "case_manager", "intake_specialist", "data_analyst", "volunteer"]),
+  title: z.string().optional(),
+  status: z.enum(["active", "inactive", "pending"]).default("pending"),
+  avatarUrl: z.string().optional(),
+  lastActive: z.string().optional(),
+  permissions: z.object({
+    canManageClients: z.boolean().default(true),
+    canManageStaff: z.boolean().default(false),
+    canViewReports: z.boolean().default(true),
+    canEditOrganizationSettings: z.boolean().default(false),
+    canManageDocuments: z.boolean().default(true),
+    canSendMessages: z.boolean().default(true),
+  }),
+});
+
+export const insertStaffSchema = staffSchema.omit({ id: true, status: true, avatarUrl: true, lastActive: true });
+
 // Insert schemas
 export const insertCapitalSourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
