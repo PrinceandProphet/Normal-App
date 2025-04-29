@@ -18,7 +18,7 @@ import {
   Link as LinkIcon,
   Handshake,
   BarChart4,
-  UserCog,
+
   AlarmClock,
   Clipboard,
   BookOpen
@@ -41,7 +41,6 @@ const navigationConfig = {
   orgAdminNav: [
     { name: "Org Dashboard", href: "/org-admin", icon: BarChart4 },
     { name: "Organization Settings", href: "/organizations/:id/settings", icon: Building2, dynamicParam: true },
-    { name: "Staff Management", href: "/org-admin/staff", icon: UserCog },
   ],
   
   // Case Manager navigation
