@@ -1,4 +1,3 @@
-import sgMail from '@sendgrid/mail';
 import { db } from '../db';
 import { organizations } from '@shared/schema';
 import { eq } from 'drizzle-orm';
@@ -9,24 +8,22 @@ interface SenderIdentity {
   name?: string;
 }
 
-// Create a mock email service that logs instead of sending if no API key
+// Create an email service using MailSlurp
 class EmailService {
   private apiKeyAvailable: boolean;
   private defaultSender: SenderIdentity;
   
   constructor() {
-    const apiKey = process.env.SENDGRID_API_KEY;
+    const apiKey = process.env.MAILSLURP_API_KEY;
     this.apiKeyAvailable = !!apiKey;
     
     this.defaultSender = {
-      email: process.env.FROM_EMAIL || 'noreply@disasterrecovery.app',
-      name: process.env.FROM_NAME || 'Disaster Recovery Platform',
+      email: process.env.FROM_EMAIL || 'noreply@normal-restored.org',
+      name: process.env.FROM_NAME || 'Normal Restored',
     };
     
-    if (this.apiKeyAvailable) {
-      sgMail.setApiKey(apiKey!);
-    } else {
-      console.warn('No SendGrid API key found. Emails will be logged but not sent.');
+    if (!this.apiKeyAvailable) {
+      console.warn('No MailSlurp API key found. Emails will be logged but not sent.');
     }
   }
 
@@ -72,8 +69,27 @@ class EmailService {
 
     try {
       if (this.apiKeyAvailable) {
-        await sgMail.send(msg);
-        console.log(`Email sent to ${to} from ${sender.email}`);
+        // Using fetch to send the email via MailSlurp API
+        const response = await fetch('https://api.mailslurp.com/sendEmail', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.MAILSLURP_API_KEY!
+          },
+          body: JSON.stringify({
+            to: [to],
+            subject,
+            body: html || text,
+            isHtml: !!html
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`MailSlurp API error: ${errorData.message || response.statusText}`);
+        }
+
+        console.log(`Email sent to ${to} from ${sender.name} <${sender.email}>`);
         return true;
       } else {
         // Log the email instead of sending
@@ -180,6 +196,50 @@ class EmailService {
       dkimRecord: `em._domainkey.${domain}. IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXvW9fJQkmcbewKgYd5yN/tGG48HNe2qqhyQ8sJ/OlrGf6qcfiCVOX3UR6/sjsEuL/r+CrjGsVv8bjN8LYRWqeU5i4Z8wWYBT3vvkMh/qpz+7RJe2EepaIEGZm21a6SRwYLN7If7KI39/XP4fLYY7vGKywG7PZpKfKI/6iJJSDaQIDAQAB"`,
       dmarcRecord: `_dmarc.${domain}. IN TXT "v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmarc-reports@${domain}; aspf=r; adkim=r; fo=1:d:s"`
     };
+  }
+
+  /**
+   * Send welcome email to a newly created organization
+   */
+  async sendNewOrganizationWelcome(organizationName: string, adminEmail: string): Promise<boolean> {
+    const subject = "Welcome to Normal Restored";
+    const text = `
+Your organization, ${organizationName}, has been successfully created in the Normal platform. You can now start adding your team members and clients.
+
+Thank you,
+The Normal Restored Team
+    `;
+    
+    const html = `
+<h2>Welcome to Normal Restored</h2>
+<p>Your organization, <strong>${organizationName}</strong>, has been successfully created in the Normal platform.</p>
+<p>You can now start adding your team members and clients.</p>
+<p>Thank you,<br>The Normal Restored Team</p>
+    `;
+    
+    return this.sendEmail(adminEmail, subject, text, html);
+  }
+
+  /**
+   * Send welcome email to a newly added staff member
+   */
+  async sendNewStaffWelcome(organizationName: string, staffEmail: string, organizationId?: number): Promise<boolean> {
+    const subject = "You've Been Added to Normal";
+    const text = `
+You have been added as a staff member to ${organizationName} on the Normal platform. Please log in using your email address to access your dashboard.
+
+Thank you,
+The Normal Restored Team
+    `;
+    
+    const html = `
+<h2>Welcome to Normal</h2>
+<p>You have been added as a staff member to <strong>${organizationName}</strong> on the Normal platform.</p>
+<p>Please log in using your email address to access your dashboard.</p>
+<p>Thank you,<br>The Normal Restored Team</p>
+    `;
+    
+    return this.sendEmail(staffEmail, subject, text, html, organizationId);
   }
 }
 
