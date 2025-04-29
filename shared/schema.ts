@@ -581,7 +581,7 @@ export const insertOrganizationSchema = createInsertSchema(organizations)
     emailDkimKey: z.string().optional(),
     emailSpfRecord: z.string().optional(),
     // System settings fields
-    logoUrl: z.string().url("Please enter a valid URL").optional(),
+    logoUrl: z.string().url("Please enter a valid URL").optional().nullable(),
     primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Please enter a valid hex color").default("#0070F3"),
     defaultSmsName: z.string().optional(),
     // Feature toggles
