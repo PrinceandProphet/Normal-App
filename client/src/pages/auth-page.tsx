@@ -332,7 +332,7 @@ export default function AuthPage() {
           <div className="mb-6">
             <Logo size="lg" variant="white" />
           </div>
-          <h1 className="text-4xl font-bold mb-6 text-white">Your Next Steps to Recovery</h1>
+          <h1 className="text-4xl font-bold mb-6 text-white">Nü Recovery Platform</h1>
           <p className="text-lg mb-8 text-white/90">
             A comprehensive tool for managing recovery processes, tracking assistance, 
             and organizing resources for affected households.

@@ -604,9 +604,12 @@ export default function ActionPlan() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">My Recovery Action Plan™</h1>
+          <div className="flex items-center gap-3">
+            <Logo size="sm" />
+            <h1 className="text-3xl font-bold tracking-tight">My Recovery Plan</h1>
+          </div>
           <p className="text-muted-foreground">
-            Track your progress through the S.T.A.R.T.™ framework for disaster recovery.
+            Track your progress through the S.T.A.R.T. framework for recovery.
           </p>
           
           {!selectedClient && (
