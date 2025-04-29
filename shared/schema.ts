@@ -538,8 +538,32 @@ export const insertOrganizationSchema = createInsertSchema(organizations)
     emailDkimSelector: z.string().optional(),
     emailDkimKey: z.string().optional(),
     emailSpfRecord: z.string().optional(),
+    // System settings fields
+    logoUrl: z.string().url("Please enter a valid URL").optional(),
+    primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Please enter a valid hex color").default("#0070F3"),
+    defaultSmsName: z.string().optional(),
+    // Feature toggles
+    enableMessaging: z.boolean().default(true),
+    enableCalendar: z.boolean().default(true),
+    enableActionPlan: z.boolean().default(true),
+    enableDocuments: z.boolean().default(true),
+    enableHouseholdManagement: z.boolean().default(true),
+    enableFundingOpportunities: z.boolean().default(true),
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
+
+// Schema for updating an organization's system settings
+export const updateOrganizationSettingsSchema = z.object({
+  logoUrl: z.string().url("Please enter a valid URL").optional().nullable(),
+  primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Please enter a valid hex color").optional(),
+  defaultSmsName: z.string().optional().nullable(),
+  enableMessaging: z.boolean().optional(),
+  enableCalendar: z.boolean().optional(),
+  enableActionPlan: z.boolean().optional(),
+  enableDocuments: z.boolean().optional(),
+  enableHouseholdManagement: z.boolean().optional(),
+  enableFundingOpportunities: z.boolean().optional(),
+});
 
 export const insertOrganizationMemberSchema = createInsertSchema(organizationMembers)
   .extend({
@@ -676,3 +700,4 @@ export const insertOpportunityMatchSchema = createInsertSchema(opportunityMatche
 
 export type OpportunityMatch = typeof opportunityMatches.$inferSelect;
 export type InsertOpportunityMatch = z.infer<typeof insertOpportunityMatchSchema>;
+export type UpdateOrganizationSettings = z.infer<typeof updateOrganizationSettingsSchema>;
