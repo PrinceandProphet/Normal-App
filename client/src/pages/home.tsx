@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
 import { FileText, DollarSign, CheckSquare, Shield, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Task, Document, CapitalSource, SystemConfig } from "@shared/schema";
 
@@ -36,6 +37,12 @@ export default function Home() {
   const [currentMessage] = useState(getRandomMessage());
   const [timestamp, setTimestamp] = useState(new Date().getTime());
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Redirect case manager (practitioner) users to the appropriate dashboard
+  if (user?.role === "case_manager") {
+    return <Redirect to="/practitioner-dashboard" />;
+  }
   
   // Function to force refresh the task data
   const refreshTaskData = useCallback(() => {

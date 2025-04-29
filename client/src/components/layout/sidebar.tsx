@@ -46,9 +46,9 @@ const navigationConfig = {
   
   // Case Manager navigation
   caseManagerNav: [
-    { name: "Case Dashboard", href: "/case-manager", icon: Clipboard },
-    { name: "Assigned Clients", href: "/case-manager/clients", icon: Users },
-    { name: "Task Reminders", href: "/case-manager/tasks", icon: AlarmClock },
+    { name: "Practitioner Dashboard", href: "/practitioner-dashboard", icon: Clipboard },
+    { name: "My Clients", href: "/practitioner/clients", icon: Users },
+    { name: "My Tasks", href: "/action-plan", icon: AlarmClock },
   ],
   
   // Shared admin features (for super_admin and admin)
