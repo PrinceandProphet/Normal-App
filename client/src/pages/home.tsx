@@ -179,9 +179,11 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
-          Disaster Planning Dashboard
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
+            Welcome to NextSteps
+          </h1>
+        </div>
         <p className="text-muted-foreground max-w-2xl">
           Manage your checklists, explore funding opportunities, and organize important documents all in one place.
         </p>
