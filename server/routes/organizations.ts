@@ -4,11 +4,15 @@ import { z } from "zod";
 import { 
   insertOrganizationSchema, 
   insertOrganizationSurvivorSchema,
-  updateOrganizationSettingsSchema 
+  updateOrganizationSettingsSchema,
+  users,
+  organizationMembers
 } from "@shared/schema";
 import { canAccessSurvivor } from "../middleware/survivorAccess";
 import { accessControlService } from "../services/accessControl";
 import { emailService } from "../services/email";
+import { db } from "../db";
+import { and, eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -563,6 +567,47 @@ router.post("/:id/email/verify-domain", async (req, res) => {
     }
   } catch (error) {
     console.error("Error verifying domain:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get organization practitioners (for org admin dashboard)
+router.get("/practitioners", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  // Only organization admins can access their organization's practitioners
+  if (!req.user.organizationId) {
+    return res.status(400).json({ message: "Invalid organization" });
+  }
+
+  const orgId = req.user.organizationId;
+
+  try {
+    // Query for practitioners that belong to this organization
+    const practitioners = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: organizationMembers.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      })
+      .from(users)
+      .innerJoin(
+        organizationMembers,
+        and(
+          eq(users.id, organizationMembers.userId),
+          eq(organizationMembers.organizationId, orgId)
+        )
+      )
+      .where(eq(users.userType, "practitioner"));
+
+    return res.json(practitioners);
+  } catch (error) {
+    console.error("Error getting organization practitioners:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
