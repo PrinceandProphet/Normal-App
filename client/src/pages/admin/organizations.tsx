@@ -124,7 +124,7 @@ export default function OrganizationsPage() {
         zipCode: addressParts.zipCode,
         country: addressParts.country,
         description: org.description || "",
-        type: org.type || "nonprofit",
+        type: org.type || "non_profit",
       });
       setEditingOrganization(org);
     } else {
@@ -140,7 +140,7 @@ export default function OrganizationsPage() {
         zipCode: "",
         country: "United States",
         description: "",
-        type: "nonprofit",
+        type: "non_profit",
       });
       setEditingOrganization(null);
     }
@@ -545,7 +545,7 @@ export default function OrganizationsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="non_profit">Nonprofit</SelectItem>
+                          <SelectItem value="non_profit">Non-Profit</SelectItem>
                           <SelectItem value="government">Government</SelectItem>
                           <SelectItem value="private">Private</SelectItem>
                           <SelectItem value="other">Other</SelectItem>

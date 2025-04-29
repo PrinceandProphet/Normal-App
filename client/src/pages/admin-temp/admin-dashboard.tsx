@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     defaultValues: {
       organization: {
         name: "",
-        type: "non-profit",
+        type: "non_profit",
         address1: "",
         address2: "",
         city: "",
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="non-profit">Non-Profit</SelectItem>
+                                  <SelectItem value="non_profit">Non-Profit</SelectItem>
                                   <SelectItem value="government">Government</SelectItem>
                                   <SelectItem value="private">Private</SelectItem>
                                   <SelectItem value="other">Other</SelectItem>
