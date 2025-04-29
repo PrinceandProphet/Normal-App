@@ -30,6 +30,9 @@ export default function Messages() {
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
   const [channel, setChannel] = useState<string>("email");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -86,6 +89,8 @@ export default function Messages() {
       content: string;
       channel: string;
       isInbound: boolean;
+      tags?: string;
+      organizationId?: number;
     }) => {
       const response = await apiRequest("POST", "/api/messages", messageData);
       return response.json();
@@ -118,29 +123,69 @@ export default function Messages() {
     }
   });
 
-  // Mock sending a message for demonstration purposes
+  // Get user's organization if they are a practitioner
+  const { data: userOrgs } = useQuery({
+    queryKey: ["/api/practitioners/organizations", { userId: user?.id }],
+    enabled: user?.userType === "practitioner",
+  });
+
+  // Select organization to send as (first one by default)
+  const [selectedOrg, setSelectedOrg] = useState<number | null>(null);
+  
+  // Set the selected organization when data is loaded
+  useEffect(() => {
+    if (userOrgs && userOrgs.length > 0 && !selectedOrg) {
+      setSelectedOrg(userOrgs[0].id);
+    }
+  }, [userOrgs, selectedOrg]);
+
+  // Function to add/remove tags
+  const handleTagSelect = (tag: string) => {
+    if (!selectedTags.includes(tag)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleTagRemove = (tag: string) => {
+    setSelectedTags(selectedTags.filter(t => t !== tag));
+  };
+  
+  // Add tag filter functions
+  const handleFilterTagSelect = (tag: string) => {
+    if (!filterTags.includes(tag)) {
+      setFilterTags([...filterTags, tag]);
+    }
+  };
+
+  const handleFilterTagRemove = (tag: string) => {
+    setFilterTags(filterTags.filter(t => t !== tag));
+  };
+
+  // Send a message
   async function sendMessage() {
     if (!messageContent.trim()) return;
 
-    // Instead of sending to the server, we'll just simulate success
-    toast({
-      title: "Demo Message",
-      description: "In a full implementation, your message would be sent now.",
-    });
+    // Format the tags as a comma-separated string
+    const formattedTags = selectedTags.length > 0 ? formatTags(selectedTags) : undefined;
     
-    // Clear the message content
-    setMessageContent("");
-    
-    // In a real implementation, the following would happen:
-    // const messageData = {
-    //   survivorId: user?.userType === "survivor" ? user.id : selectedContact as number,
-    //   contactId: selectedContact || undefined,
-    //   content: messageContent,
-    //   channel: channel,
-    //   isInbound: false,
-    //   // sentAt is handled by the server
-    // };
-    // sendMessageMutation.mutate(messageData);
+    const messageData = {
+      survivorId: user?.userType === "survivor" ? user.id : selectedContact as number,
+      contactId: selectedContact || undefined,
+      content: messageContent,
+      channel: channel,
+      isInbound: false,
+      tags: formattedTags,
+      organizationId: user?.userType === "practitioner" ? selectedOrg : undefined,
+    };
+
+    try {
+      await sendMessageMutation.mutateAsync(messageData);
+      
+      // Reset tags after sending
+      setSelectedTags([]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   }
 
   // Add helper functions for communication
@@ -204,28 +249,57 @@ export default function Messages() {
       <Card className="shadow-sm overflow-hidden max-w-3xl mx-auto">
         {/* "To:" field at the top to replace contacts sidebar */}
         <div className="bg-muted/40 px-4 py-3 border-b">
-          <div className="flex items-center">
-            <span className="text-sm font-medium mr-2 w-8">To:</span>
-            <Select
-              value={selectedContact ? selectedContact.toString() : ""}
-              onValueChange={(value) => setSelectedContact(Number(value))}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-sm font-medium mr-2 w-8">To:</span>
+              <Select
+                value={selectedContact ? selectedContact.toString() : ""}
+                onValueChange={(value) => setSelectedContact(Number(value))}
+              >
+                <SelectTrigger className="border-0 bg-transparent hover:bg-muted focus:ring-0 shadow-none h-8 font-normal focus:text-foreground">
+                  <SelectValue placeholder="Select a contact" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contacts?.map(contact => (
+                    <SelectItem 
+                      key={contact.id} 
+                      value={contact.id.toString()}
+                      className="font-normal"
+                    >
+                      {contact.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Filter toggle button */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground"
+              onClick={() => setShowFilters(!showFilters)}
             >
-              <SelectTrigger className="border-0 bg-transparent hover:bg-muted focus:ring-0 shadow-none h-8 font-normal focus:text-foreground">
-                <SelectValue placeholder="Select a contact" />
-              </SelectTrigger>
-              <SelectContent>
-                {contacts?.map(contact => (
-                  <SelectItem 
-                    key={contact.id} 
-                    value={contact.id.toString()}
-                    className="font-normal"
-                  >
-                    {contact.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Filter size={16} className="mr-1" />
+              Filter
+            </Button>
           </div>
+          
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="mt-3 pt-3 border-t">
+              <h3 className="text-sm font-medium mb-2">Filter Messages By:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <TagFilter
+                    selectedTags={filterTags}
+                    onTagSelect={handleFilterTagSelect}
+                    onTagRemove={handleFilterTagRemove}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <CardContent className="flex-1 flex flex-col p-0">
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
@@ -292,8 +366,29 @@ export default function Messages() {
                         </div>
                       )}
                       
+                      {/* Organization sender info for outbound messages */}
+                      {!message.isInbound && message.organizationId && (
+                        <div className="flex items-center gap-1 text-xs mb-1 opacity-70">
+                          <Building2 size={12} />
+                          <span>
+                            {userOrgs?.find(org => org.id === message.organizationId)?.name || 'Organization'}
+                          </span>
+                        </div>
+                      )}
+                      
                       {/* Message content with better typography */}
                       <p className="text-sm leading-relaxed">{message.content}</p>
+                      
+                      {/* Tags */}
+                      {message.tags && (
+                        <div className="mt-1.5">
+                          <TagFilter 
+                            selectedTags={parseTags(message.tags)} 
+                            onTagSelect={() => {}} 
+                            onTagRemove={() => {}}
+                          />
+                        </div>
+                      )}
                       
                       {/* Message timestamp iPhone-style */}
                       <p className="text-[9px] opacity-60 mt-1 text-right">
@@ -402,7 +497,41 @@ export default function Messages() {
                       placeholder="Write your email message..."
                       className="min-h-[120px] border-0 focus-visible:ring-0 shadow-none resize-none"
                     />
-                    <div className="flex justify-end mt-3">
+                    <div className="flex justify-between items-center mt-3">
+                      {/* Organization selector for practitioners */}
+                      {user?.userType === "practitioner" && userOrgs && userOrgs.length > 0 && (
+                        <Select
+                          value={selectedOrg?.toString() || ""}
+                          onValueChange={(value) => setSelectedOrg(Number(value))}
+                        >
+                          <SelectTrigger className="h-8 text-xs border-dashed">
+                            <Building2 className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                            <SelectValue placeholder="Send as..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userOrgs.map(org => (
+                              <SelectItem 
+                                key={org.id} 
+                                value={org.id.toString()}
+                                className="text-xs"
+                              >
+                                Send as {org.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      
+                      {/* Tag selector */}
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                        <TagFilter
+                          selectedTags={selectedTags}
+                          onTagSelect={handleTagSelect}
+                          onTagRemove={handleTagRemove}
+                        />
+                      </div>
+                      
                       <Button 
                         onClick={sendMessage}
                         disabled={!messageContent.trim() || sendMessageMutation.isPending}
