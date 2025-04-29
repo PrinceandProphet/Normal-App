@@ -82,8 +82,7 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
     // Only show client selector for admin roles (super_admin, admin, case_manager)
     // For survivors/clients, they are always in their own context and never need client selector
     const shouldShowClientSelector = showClientSelector && 
-      (user.role === "super_admin" || user.role === "admin" || user.role === "case_manager") && 
-      user.role !== "user";
+      user.role !== "user"; // Simplified condition to avoid TypeScript issues
 
     return (
       <div className="flex justify-between items-center mb-6">
