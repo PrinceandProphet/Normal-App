@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
-import { insertOrganizationSchema, insertOrganizationSurvivorSchema } from "@shared/schema";
+import { 
+  insertOrganizationSchema, 
+  insertOrganizationSurvivorSchema,
+  updateOrganizationSettingsSchema 
+} from "@shared/schema";
 import { canAccessSurvivor } from "../middleware/survivorAccess";
 import { accessControlService } from "../services/accessControl";
 import { emailService } from "../services/email";
@@ -430,6 +434,39 @@ router.patch("/:id/survivors/:survivorId", async (req, res) => {
     return res.json(result);
   } catch (error) {
     console.error("Error updating survivor relationship:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Update organization system settings
+router.patch("/:id/settings", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const orgId = parseInt(req.params.id);
+  if (isNaN(orgId)) {
+    return res.status(400).json({ message: "Invalid organization ID" });
+  }
+
+  // Only organization admins or super admins can update organization settings
+  const canUpdate = 
+    req.user.role === "super_admin" || 
+    (req.user.role === "admin" && req.user.organizationId === orgId);
+  
+  if (!canUpdate) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    const validatedData = updateOrganizationSettingsSchema.parse(req.body);
+    const organization = await storage.updateOrganizationSettings(orgId, validatedData);
+    return res.json(organization);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
+    }
+    console.error("Error updating organization settings:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

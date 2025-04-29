@@ -17,6 +17,7 @@ import {
   type Task, type InsertTask, tasks,
   type FundingOpportunity, type InsertFundingOpportunity, fundingOpportunities,
   type OpportunityMatch, type InsertOpportunityMatch, opportunityMatches,
+  type UpdateOrganizationSettings,
 } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
