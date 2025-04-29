@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { staffSchema, insertStaffSchema } from "@shared/schema";
 import { z } from "zod";
+import { emailService } from "../services/email";
 
 const router = Router();
 
@@ -87,11 +88,30 @@ router.post("/organizations/:id/staff", async (req, res) => {
     // Validate request body
     const validatedData = insertStaffSchema.parse(req.body);
     
+    // Get the organization name for the email
+    const organization = await storage.getOrganization(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
     // Add the staff member
     const newStaffMember = await storage.addOrganizationStaff({
       ...validatedData,
       organizationId
     });
+    
+    // Send welcome email to the new staff member
+    try {
+      await emailService.sendNewStaffWelcome(
+        organization.name,
+        newStaffMember.email,
+        organizationId
+      );
+      console.log(`Welcome email sent to new staff member: ${newStaffMember.email}`);
+    } catch (emailError) {
+      // Log the error but don't fail the request
+      console.error("Error sending staff welcome email:", emailError);
+    }
     
     return res.status(201).json(newStaffMember);
   } catch (error) {

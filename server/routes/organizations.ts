@@ -84,6 +84,21 @@ router.post("/", async (req, res) => {
   try {
     const validatedData = insertOrganizationSchema.parse(req.body);
     const organization = await storage.createOrganization(validatedData);
+    
+    // Send welcome email notification to the organization's admin email
+    if (organization.email) {
+      try {
+        await emailService.sendNewOrganizationWelcome(
+          organization.name,
+          organization.email
+        );
+        console.log(`Welcome email sent to organization admin: ${organization.email}`);
+      } catch (emailError) {
+        // Log the error but don't fail the request
+        console.error("Error sending organization welcome email:", emailError);
+      }
+    }
+    
     return res.status(201).json(organization);
   } catch (error) {
     if (error instanceof z.ZodError) {
