@@ -18,7 +18,9 @@ import {
   type FundingOpportunity, type InsertFundingOpportunity, fundingOpportunities,
   type OpportunityMatch, type InsertOpportunityMatch, opportunityMatches,
   type UpdateOrganizationSettings,
+  insertStaffSchema, staffSchema,
 } from "@shared/schema";
+import { z } from "zod";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -52,6 +54,13 @@ export interface IStorage {
   addOrganizationMember(member: InsertOrganizationMember): Promise<OrganizationMember>;
   removeOrganizationMember(userId: number, orgId: number): Promise<void>;
   updateOrganizationMember(userId: number, orgId: number, role: string): Promise<OrganizationMember>;
+  
+  // Organization Staff Management
+  getOrganizationStaff(orgId: number): Promise<z.infer<typeof staffSchema>[]>;
+  getStaffMember(staffId: number, orgId: number): Promise<z.infer<typeof staffSchema> | undefined>;
+  addOrganizationStaff(staff: z.infer<typeof insertStaffSchema> & { organizationId: number }): Promise<z.infer<typeof staffSchema>>;
+  updateOrganizationStaff(staff: z.infer<typeof staffSchema>, orgId: number): Promise<z.infer<typeof staffSchema>>;
+  removeOrganizationStaff(staffId: number, orgId: number): Promise<void>;
   
   // Organization-Survivor Relationships
   getOrganizationSurvivors(orgId: number): Promise<OrganizationSurvivor[]>;
@@ -327,6 +336,167 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!updated) throw new Error("Organization member not found");
     return updated;
+  }
+  
+  // Organization Staff Management Methods
+  async getOrganizationStaff(orgId: number): Promise<z.infer<typeof staffSchema>[]> {
+    // This is a mock implementation since we don't have a dedicated staff table yet
+    // In a production environment, we would fetch from a staff table or join users with organization data
+    
+    // Get all organization members with user data
+    const orgMembers = await db
+      .select({
+        userId: organizationMembers.userId,
+        organizationId: organizationMembers.organizationId,
+        role: organizationMembers.role,
+      })
+      .from(organizationMembers)
+      .where(eq(organizationMembers.organizationId, orgId));
+      
+    // Get the full user data for each member
+    const staffMembers = await Promise.all(
+      orgMembers.map(async (member) => {
+        const user = await this.getUser(member.userId);
+        if (!user) {
+          return null;
+        }
+        
+        // Map user data to staff schema
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || "",
+          role: user.role as any, // Map from user role
+          title: user.jobTitle || "",
+          status: "active", // Default all existing members to active
+          lastActive: user.updatedAt?.toISOString(),
+          avatarUrl: undefined,
+          permissions: {
+            canManageClients: true, // Default permissions
+            canManageStaff: user.role === "admin",
+            canViewReports: true,
+            canEditOrganizationSettings: user.role === "admin",
+            canManageDocuments: true,
+            canSendMessages: true,
+          }
+        };
+      })
+    );
+    
+    // Filter out null entries (in case any users were not found)
+    return staffMembers.filter(Boolean) as z.infer<typeof staffSchema>[];
+  }
+  
+  async getStaffMember(staffId: number, orgId: number): Promise<z.infer<typeof staffSchema> | undefined> {
+    // Check if this user is part of the organization
+    const [orgMember] = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, staffId),
+          eq(organizationMembers.organizationId, orgId)
+        )
+      );
+      
+    if (!orgMember) {
+      return undefined;
+    }
+    
+    // Get the user data
+    const user = await this.getUser(staffId);
+    if (!user) {
+      return undefined;
+    }
+    
+    // Map user data to staff schema
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      role: user.role as any, // Map from user role
+      title: user.jobTitle || "",
+      status: "active", // Default to active
+      lastActive: user.updatedAt?.toISOString(),
+      avatarUrl: undefined,
+      permissions: {
+        canManageClients: true, // Default permissions
+        canManageStaff: user.role === "admin",
+        canViewReports: true,
+        canEditOrganizationSettings: user.role === "admin",
+        canManageDocuments: true,
+        canSendMessages: true,
+      }
+    };
+  }
+  
+  async addOrganizationStaff(staff: z.infer<typeof insertStaffSchema> & { organizationId: number }): Promise<z.infer<typeof staffSchema>> {
+    // Create a new user with the staff info
+    const newUser = await this.createUser({
+      name: staff.name,
+      username: staff.email.split('@')[0], // Create a username from email
+      email: staff.email,
+      password: Math.random().toString(36).substring(2, 10), // Generate random temporary password
+      firstName: staff.name.split(' ')[0],
+      lastName: staff.name.split(' ').slice(1).join(' '),
+      userType: "practitioner",
+      role: staff.role,
+      jobTitle: staff.title,
+      organizationId: staff.organizationId,
+    });
+    
+    // Add the user as an organization member
+    await this.addOrganizationMember({
+      userId: newUser.id,
+      organizationId: staff.organizationId,
+      role: staff.role === "admin" ? "admin" : "member",
+    });
+    
+    // Return the staff member info
+    return {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: staff.phone || "",
+      role: staff.role,
+      title: staff.title || "",
+      status: "pending", // New staff member starts as pending
+      permissions: staff.permissions,
+    };
+  }
+  
+  async updateOrganizationStaff(staff: z.infer<typeof staffSchema>, orgId: number): Promise<z.infer<typeof staffSchema>> {
+    // Update the user information
+    const userUpdate = await this.updateUser(staff.id, {
+      name: staff.name,
+      email: staff.email,
+      phone: staff.phone,
+      role: staff.role,
+      jobTitle: staff.title,
+    });
+    
+    // Update organization member role if needed
+    await this.updateOrganizationMember(
+      staff.id,
+      orgId,
+      staff.role === "admin" ? "admin" : "member"
+    );
+    
+    // Return the updated staff member
+    return {
+      ...staff,
+      lastActive: userUpdate.updatedAt?.toISOString(),
+    };
+  }
+  
+  async removeOrganizationStaff(staffId: number, orgId: number): Promise<void> {
+    // Remove the organization membership
+    await this.removeOrganizationMember(staffId, orgId);
+    
+    // Optionally, we could also delete the user entirely or just update their status
+    // For now, we'll just remove the organization relationship
   }
 
   // Organization-Survivor Relationships

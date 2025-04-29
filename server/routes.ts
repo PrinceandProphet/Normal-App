@@ -25,6 +25,7 @@ import express from 'express';
 import { mailslurpService } from "./services/mailslurp";
 import { setupAuth } from "./auth";
 import organizationRoutes from "./routes/organizations";
+import organizationStaffRoutes from "./routes/organization-staff";
 import survivorRoutes from "./routes/survivors";
 import userRoutes from "./routes/users";
 import fundingRoutes from "./routes/funding";
@@ -63,6 +64,7 @@ export async function registerRoutes(app: Express) {
 
   // Register modular routes
   app.use("/api/organizations", organizationRoutes);
+  app.use("/api", organizationStaffRoutes); // This route includes "/organizations/:id/staff" paths
   app.use("/api/survivors", survivorRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/funding", fundingRoutes);
