@@ -95,7 +95,7 @@ export default function OrganizationsPage() {
       zipCode: "",
       country: "United States",
       description: "",
-      type: "nonprofit",
+      type: "non_profit",
     },
   });
 
@@ -545,12 +545,9 @@ export default function OrganizationsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                          <SelectItem value="non_profit">Nonprofit</SelectItem>
                           <SelectItem value="government">Government</SelectItem>
-                          <SelectItem value="educational">Educational</SelectItem>
-                          <SelectItem value="healthcare">Healthcare</SelectItem>
-                          <SelectItem value="religious">Religious</SelectItem>
-                          <SelectItem value="community">Community</SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
