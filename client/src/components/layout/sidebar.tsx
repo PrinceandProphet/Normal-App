@@ -21,8 +21,7 @@ import {
   UserCog,
   AlarmClock,
   Clipboard,
-  BookOpen,
-  Calendar
+  BookOpen
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -40,13 +39,9 @@ const navigationConfig = {
   
   // Organization Admin navigation
   orgAdminNav: [
-    { name: "Dashboard", href: "/org-admin", icon: Home },
-    { name: "Clients", href: "/survivors", icon: Users },
-    { name: "Practitioners", href: "/practitioners", icon: UserCog },
-    { name: "Tasks", href: "/action-plan", icon: Clipboard },
-    { name: "Calendar", href: "/calendar", icon: Calendar },
-    { name: "Messaging", href: "/messages", icon: MessageSquare },
-    { name: "System Settings", href: "/organizations/:id/settings", icon: Settings, dynamicParam: true },
+    { name: "Org Dashboard", href: "/org-admin", icon: BarChart4 },
+    { name: "Organization Settings", href: "/organizations/:id/settings", icon: Building2, dynamicParam: true },
+    { name: "Staff Management", href: "/org-admin/staff", icon: UserCog },
   ],
   
   // Case Manager navigation
@@ -105,6 +100,7 @@ export default function Sidebar() {
         }
         return item;
       }));
+      navItems.push(...navigationConfig.sharedAdminNav);
       // Admins can see client sections but they're collapsible
     } else if (role === "case_manager") {
       navItems.push(...navigationConfig.caseManagerNav);
@@ -119,8 +115,7 @@ export default function Sidebar() {
   };
 
   // Determine if user should see the client sections separately
-  // Only Super Admins should see the collapsible client sections
-  const showClientSectionCollapsible = user.role === "super_admin";
+  const showClientSectionCollapsible = user.role === "super_admin" || user.role === "admin";
   
   // Get the appropriate navigation items
   const navItems = getNavItems();
