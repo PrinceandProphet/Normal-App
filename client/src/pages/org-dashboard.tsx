@@ -64,6 +64,20 @@ export default function OrgDashboard() {
     phoneNumber: string;
     email: string;
   };
+  
+  type Appointment = {
+    id: number;
+    title: string;
+    date: Date;
+    time: string;
+    clientId: number;
+    clientName: string;
+    practitionerId: number;
+    practitionerName: string;
+    type: string;
+    status: string;
+    notes?: string;
+  };
 
   // Get organization members (practitioners)
   const { data: practitioners = [], isLoading: practitionersLoading } = useQuery<Practitioner[]>({
@@ -86,6 +100,12 @@ export default function OrgDashboard() {
   // Get current organization
   const { data: organization } = useQuery<Organization>({
     queryKey: ["/api/organizations/current", { organizationId: user?.organizationId }],
+    enabled: !!user?.organizationId,
+  });
+  
+  // Get appointments for the organization
+  const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments/organization", { organizationId: user?.organizationId }],
     enabled: !!user?.organizationId,
   });
 
