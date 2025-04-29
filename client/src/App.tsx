@@ -14,6 +14,7 @@ import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
+import PractitionerDashboard from "@/pages/practitioner-dashboard";
 import FundingOpportunities from "@/pages/funding-opportunities";
 import OpportunityMatches from "@/pages/opportunity-matches";
 import { lazy, Suspense } from "react";
@@ -84,10 +85,9 @@ function Router() {
       <RoleBasedRoute path="/funding-opportunities" component={FundingOpportunities} allowedRoles={["super_admin", "admin"]} />
       <RoleBasedRoute path="/opportunity-matches" component={OpportunityMatches} allowedRoles={["super_admin", "admin"]} />
       
-      {/* Case Manager Specific Routes - These would be implemented as needed */}
-      <RoleBasedRoute path="/case-manager" component={Home} allowedRoles={["case_manager"]} />
-      <RoleBasedRoute path="/case-manager/clients" component={Home} allowedRoles={["case_manager"]} />
-      <RoleBasedRoute path="/case-manager/tasks" component={Home} allowedRoles={["case_manager"]} />
+      {/* Case Manager/Practitioner Routes */}
+      <RoleBasedRoute path="/practitioner-dashboard" component={PractitionerDashboard} allowedRoles={["case_manager"]} />
+      <RoleBasedRoute path="/practitioner/clients" component={PractitionerDashboard} allowedRoles={["case_manager"]} />
       
       {/* 404 Page - Needs special handling for layout */}
       <Route>
