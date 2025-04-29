@@ -34,7 +34,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarCheck2,
-  Plus
+  Plus,
+  Settings
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -219,14 +220,10 @@ export default function OrgDashboard() {
       </div>
       
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">
             <CheckSquare className="mr-2 h-4 w-4" />
             Overview
-          </TabsTrigger>
-          <TabsTrigger value="practitioners">
-            <BuildingIcon className="mr-2 h-4 w-4" />
-            Practitioners
           </TabsTrigger>
           <TabsTrigger value="clients">
             <Users className="mr-2 h-4 w-4" />
@@ -378,60 +375,16 @@ export default function OrgDashboard() {
           </div>
         </TabsContent>
         
-        <TabsContent value="practitioners" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Organization Practitioners</CardTitle>
-                <Button size="sm">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Practitioner
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {practitionersLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              ) : practitioners && practitioners.length > 0 ? (
-                <div className="space-y-4">
-                  {practitioners.map(practitioner => (
-                    <div key={practitioner.id} className="flex items-center gap-4 rounded-md border p-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src="" alt={practitioner.name} />
-                        <AvatarFallback>{practitioner.name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-1">
-                        <p className="font-medium">{practitioner.name}</p>
-                        <p className="text-sm text-muted-foreground">{practitioner.email}</p>
-                      </div>
-                      <Badge variant="outline">{practitioner.role || "Practitioner"}</Badge>
-                      <Button variant="ghost" size="icon">
-                        <ArrowUpRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                  <p className="text-muted-foreground mb-6">No practitioners found</p>
-                  <Button>Add Your First Practitioner</Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
         <TabsContent value="clients" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Clients</CardTitle>
-                <Button size="sm">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Client
+                <Button asChild size="sm">
+                  <Link href="/survivors/new">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Client
+                  </Link>
                 </Button>
               </div>
             </CardHeader>
@@ -467,7 +420,9 @@ export default function OrgDashboard() {
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground mb-6">No clients found</p>
-                  <Button>Add Your First Client</Button>
+                  <Button asChild>
+                    <Link href="/survivors/new">Add Your First Client</Link>
+                  </Button>
                 </div>
               )}
             </CardContent>
