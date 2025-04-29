@@ -603,7 +603,7 @@ export default function ActionPlan() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Recovery Action Plan™</h1>
+          <h1 className="text-3xl font-bold tracking-tight">My Recovery Action Plan™</h1>
           <p className="text-muted-foreground">
             Track your progress through the S.T.A.R.T.™ framework for disaster recovery.
           </p>
@@ -612,15 +612,6 @@ export default function ActionPlan() {
             <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-dashed flex items-center gap-3 text-muted-foreground">
               <UserCircle className="h-5 w-5" />
               <p>Select a client from the dropdown above to view their specific action plan.</p>
-            </div>
-          )}
-          
-          {selectedClient && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-primary">
-              <UserCircle className="h-4 w-4" />
-              <p>Viewing plan for: <span className="font-medium">
-                {selectedClient.firstName || ''} {selectedClient.lastName || selectedClient.name || 'Client'}
-              </span></p>
             </div>
           )}
         </div>
@@ -648,18 +639,16 @@ export default function ActionPlan() {
               {stageMutation.isPending && <span className="text-sm text-muted-foreground animate-pulse">Updating...</span>}
             </div>
             
-            {selectedClient && (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleSharePlan}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Plan
-                </Button>
-                <Button variant="outline" onClick={handleExportPDF}>
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export PDF
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleSharePlan}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Plan
+              </Button>
+              <Button variant="outline" onClick={handleExportPDF}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
           </div>
         )}
       </div>
