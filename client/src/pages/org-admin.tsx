@@ -5,15 +5,18 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Plus, Calendar, Users, ClipboardCheck, ArrowRight, CalendarClock, ListChecks, Settings, Mail } from "lucide-react";
 import SystemSettings from "@/components/system-settings";
+import { EmailConfiguration } from "@/components/email-configuration";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Organization } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +40,36 @@ const addClientSchema = z.object({
 
 type AddClientFormValues = z.infer<typeof addClientSchema>;
 
+// Component to fetch organization data for email configuration
+function FetchOrganizationData({ organizationId }: { organizationId: number }) {
+  const { data: organization, isLoading } = useQuery<Organization>({
+    queryKey: [`/api/organizations/${organizationId}`],
+    enabled: !!organizationId,
+  });
+  
+  const handleUpdate = (updatedOrg: Organization) => {
+    queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}`] });
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!organization) {
+    return (
+      <div className="text-center p-6">
+        <p>Unable to load organization data. Please try again later.</p>
+      </div>
+    );
+  }
+  
+  return <EmailConfiguration organization={organization} onUpdate={handleUpdate} />;
+}
+
 export default function OrgAdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -45,19 +78,19 @@ export default function OrgAdminPage() {
   const [, navigate] = useLocation();
 
   // Fetch clients (survivors) for the organization
-  const { data: clients, isLoading: clientsLoading } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery<any[]>({
     queryKey: ["/api/survivors"],
     enabled: user?.role === "admin" && !!user?.organizationId,
   });
 
   // Fetch practitioners for the organization
-  const { data: practitioners, isLoading: practitionersLoading } = useQuery({
+  const { data: practitioners = [], isLoading: practitionersLoading } = useQuery<any[]>({
     queryKey: ["/api/organizations/practitioners"],
     enabled: user?.role === "admin" && !!user?.organizationId,
   });
   
   // Fetch tasks for the organization
-  const { data: tasks, isLoading: tasksLoading } = useQuery({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery<any[]>({
     queryKey: ["/api/action-plan/tasks/organization"],
     enabled: user?.role === "admin" && !!user?.organizationId,
   });
@@ -195,7 +228,21 @@ export default function OrgAdminPage() {
           </div>
           
           {user?.organizationId && (
-            <SystemSettings organizationId={user.organizationId} />
+            <Tabs defaultValue="system" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="system">System Settings</TabsTrigger>
+                <TabsTrigger value="email">Email Configuration</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="system">
+                <SystemSettings organizationId={user.organizationId} />
+              </TabsContent>
+              
+              <TabsContent value="email">
+                {/* Fetch organization data for email configuration */}
+                <FetchOrganizationData organizationId={user.organizationId} />
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       )}
