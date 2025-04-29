@@ -612,4 +612,29 @@ router.get("/practitioners", async (req, res) => {
   }
 });
 
+// Get current user's organization
+router.get("/current", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  // User must be in an organization
+  const orgId = req.user.organizationId;
+  if (!orgId) {
+    return res.status(404).json({ message: "No organization found for current user" });
+  }
+
+  try {
+    const organization = await storage.getOrganization(orgId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    return res.json(organization);
+  } catch (error) {
+    console.error("Error getting current organization:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default router;
