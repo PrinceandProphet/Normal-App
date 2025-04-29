@@ -32,6 +32,7 @@ import fundingRoutes from "./routes/funding";
 import matchingRoutes from "./routes/matchingRoutes";
 import messageRoutes from "./routes/messages";
 import practitionerRoutes from "./routes/practitioners";
+import testEmailRoutes from "./routes/test-email";
 
 // Configure multer for file uploads
 const upload = multer({
