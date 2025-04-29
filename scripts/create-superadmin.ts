@@ -43,12 +43,8 @@ async function createSuperAdmin() {
     console.error('Error creating super admin:', error);
     throw error;
   } finally {
-    // End the pool connection - use proper method depending on the DB client
-    try {
-      await db.client.end?.();
-    } catch (err) {
-      console.log('Note: DB connection already managed by the pool');
-    }
+    // The pool is managed by the server, no need to explicitly end it
+    console.log('Note: DB connection managed by the pool');
   }
 }
 

@@ -86,7 +86,7 @@ class EmailService {
               to: [
                 {
                   email: to,
-                  name: ''
+                  name: to.split('@')[0] // Use part before @ as name if no name provided
                 }
               ],
               subject: subject,
