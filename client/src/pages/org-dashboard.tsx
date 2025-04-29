@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -182,45 +182,58 @@ export default function OrgDashboard() {
   );
 
   return (
-    <div className="container py-6">
-      <header className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Organization Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              {organization?.name || "Your Organization"} | Welcome, {user?.name}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/messages">
-                <Inbox className="h-4 w-4 mr-2" />
-                View Messages
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/survivors">
-                <Users className="h-4 w-4 mr-2" />
-                Manage Clients
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/survivors/new">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Client
-              </Link>
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Organization Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            {organization?.name || "Your Organization"} | Welcome, {user?.name}
+          </p>
         </div>
-      </header>
+        <div className="flex gap-3">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/messages">
+              <Inbox className="h-4 w-4 mr-2" />
+              View Messages
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/survivors">
+              <Users className="h-4 w-4 mr-2" />
+              Manage Clients
+            </Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/survivors/new">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Client
+            </Link>
+          </Button>
+        </div>
+      </div>
       
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="practitioners">Practitioners</TabsTrigger>
-          <TabsTrigger value="clients">Clients</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="practitioners">
+            <BuildingIcon className="mr-2 h-4 w-4" />
+            Practitioners
+          </TabsTrigger>
+          <TabsTrigger value="clients">
+            <Users className="mr-2 h-4 w-4" />
+            Clients
+          </TabsTrigger>
+          <TabsTrigger value="calendar">
+            <Calendar className="mr-2 h-4 w-4" />
+            Calendar
+          </TabsTrigger>
+          <TabsTrigger value="tasks">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Tasks
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
@@ -455,153 +468,104 @@ export default function OrgDashboard() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="calendar" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            {/* Calendar Card */}
-            <Card className="md:col-span-5">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle>Calendar</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="icon">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-medium">
-                    {format(startOfToday(), "MMMM yyyy")}
-                  </span>
-                  <Button variant="outline" size="icon">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+        <TabsContent value="calendar" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Appointment Calendar</CardTitle>
+              <CardDescription>Organization scheduled appointments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {appointmentsLoading ? (
+                <div className="flex justify-center p-4">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Calendar Grid Headers (Days of Week) */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                    <div key={day} className="text-center text-sm font-medium text-muted-foreground">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Calendar Grid (Days of Month) */}
-                <div className="grid grid-cols-7 gap-1">
-                  {Array(35).fill(null).map((_, index) => {
-                    const date = new Date(new Date().setDate(index - new Date().getDay() + 1));
-                    const isCurrentMonth = isSameMonth(date, startOfToday());
-                    const isCurrentDay = isSameDay(date, startOfToday());
-                    const isWeekendDay = isWeekend(date);
-                    
-                    // Find appointments for this day
-                    const dayAppointments = appointmentData.filter(
-                      appointment => isSameDay(new Date(appointment.date), date)
-                    );
-                    
-                    return (
-                      <div
-                        key={index}
-                        className={`
-                          p-2 h-24 overflow-hidden border rounded-sm
-                          ${isCurrentMonth ? "bg-card" : "bg-muted/20 text-muted-foreground"}
-                          ${isCurrentDay ? "border-primary" : "border-border"}
-                          ${isWeekendDay ? "bg-muted/10" : ""}
-                        `}
-                      >
-                        <div className="text-xs font-medium mb-1">
-                          {format(date, "d")}
+              ) : (
+                <div className="border rounded-md p-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    {appointmentData && appointmentData.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="font-medium">Upcoming Appointments</h3>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {/* Schedule Appointment */}}
+                          >
+                            <CalendarCheck2 className="h-4 w-4 mr-2" />
+                            Schedule New
+                          </Button>
                         </div>
-                        {dayAppointments.length > 0 && (
-                          <div className="space-y-1">
-                            {dayAppointments.slice(0, 2).map((appointment) => (
-                              <div 
-                                key={appointment.id} 
-                                className="text-xs truncate bg-primary/10 rounded-sm px-1 py-0.5 text-primary"
-                              >
-                                {appointment.time} - {appointment.title}
+                        {appointmentData.map((appointment: any) => (
+                          <div key={appointment.id} className="flex items-center justify-between border-b pb-3">
+                            <div className="flex items-start gap-2">
+                              <Calendar className="h-4 w-4 mt-0.5 text-primary" />
+                              <div>
+                                <p className="font-medium">{appointment.title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(appointment.date).toLocaleDateString()} at {appointment.time}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Client: {appointment.clientName}
+                                </p>
                               </div>
-                            ))}
-                            {dayAppointments.length > 2 && (
-                              <div className="text-xs text-muted-foreground">
-                                +{dayAppointments.length - 2} more
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" size="sm">
-                  <CalendarCheck2 className="h-4 w-4 mr-2" />
-                  Schedule Appointment
-                </Button>
-                <Button variant="outline" size="sm">
-                  Today
-                </Button>
-              </CardFooter>
-            </Card>
-          
-            {/* Upcoming Appointments List */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>Upcoming</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-medium">Today</h3>
-                    <Separator className="my-2" />
-                    {todayAppointments.length > 0 ? (
-                      <div className="space-y-2">
-                        {todayAppointments.map(appointment => (
-                          <div key={appointment.id} className="flex justify-between items-center border-l-4 border-primary pl-3 py-2">
-                            <div>
-                              <p className="font-medium text-sm">{appointment.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {appointment.time} with {appointment.clientName}
-                              </p>
                             </div>
+                            <Badge variant={appointment.status === 'scheduled' ? "default" : "outline"}>
+                              {appointment.status}
+                            </Badge>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No appointments today.</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">This Week</h3>
-                    <Separator className="my-2" />
-                    {thisWeekAppointments.length > 0 ? (
-                      <div className="space-y-2">
-                        {thisWeekAppointments
-                          .filter(appointment => !isToday(appointment.date))
-                          .slice(0, 3)
-                          .map(appointment => (
-                            <div key={appointment.id} className="flex justify-between items-center border-l-4 border-muted pl-3 py-2">
-                              <div>
-                                <p className="font-medium text-sm">{appointment.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {format(appointment.date, "EEE")} at {appointment.time}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        {thisWeekAppointments.filter(appointment => !isToday(appointment.date)).length > 3 && (
-                          <Button variant="ghost" size="sm" className="w-full justify-center text-xs">
-                            View All ({thisWeekAppointments.filter(appointment => !isToday(appointment.date)).length})
-                          </Button>
-                        )}
+                      <div>
+                        <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p>No upcoming appointments</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-4"
+                          onClick={() => {/* Schedule Appointment */}}
+                        >
+                          Schedule New Appointment
+                        </Button>
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No appointments this week.</p>
                     )}
                   </div>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Today's Appointments */}
+          {todayAppointments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Today's Appointments</CardTitle>
+                <CardDescription>Appointments scheduled for today</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {todayAppointments.map(appointment => (
+                    <div key={appointment.id} className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <Clock className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {appointment.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {appointment.time} with {appointment.clientName}
+                        </p>
+                      </div>
+                      <Badge className="ml-auto" variant="outline">
+                        {appointment.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </div>
+          )}
         </TabsContent>
         
         <TabsContent value="tasks" className="space-y-4">
@@ -654,9 +618,15 @@ export default function OrgDashboard() {
                             <div className="text-xs text-muted-foreground flex items-center gap-1">
                               {task.urgent && <span className="text-red-600 dark:text-red-400 font-medium">Urgent</span>}
                               {task.urgent && <span>•</span>}
-                              <span>Stage: {task.stage}</span>
+                              <span>Stage: {String(task.stage || "Unknown")}</span>
                               <span>•</span>
-                              <span>Assigned to: {"assignedToName" in task ? task.assignedToName : "Unassigned"}</span>
+                              <span>
+                                Assigned to: {
+                                  "assignedToName" in task 
+                                    ? String(task.assignedToName || "Unassigned") 
+                                    : "Unassigned"
+                                }
+                              </span>
                             </div>
                           </div>
                         </div>
