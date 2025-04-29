@@ -1,6 +1,23 @@
 import { db } from '../db';
 import { organizations } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import SibApiV3Sdk from 'sib-api-v3-sdk';
+
+// Initialize Brevo API client 
+// Note: Using the direct import style to avoid TypeScript issues
+let brevoApiAvailable = false;
+try {
+  if (process.env.BREVO_API_KEY) {
+    const apiKey = SibApiV3Sdk.ApiClient.instance.authentications['api-key'];
+    apiKey.apiKey = process.env.BREVO_API_KEY;
+    brevoApiAvailable = true;
+    console.log('Brevo API client initialized successfully');
+  } else {
+    console.warn('No Brevo API key found, email functionality will be limited');
+  }
+} catch (error) {
+  console.error('Error initializing Brevo client:', error);
+}
 
 // Interface for email sender identity
 interface SenderIdentity {
@@ -8,22 +25,32 @@ interface SenderIdentity {
   name?: string;
 }
 
-// Create an email service using MailSlurp
+// Email service using both Brevo (for transactional emails) and MailSlurp (for message center)
 class EmailService {
-  private apiKeyAvailable: boolean;
+  private mailslurpApiAvailable: boolean;
+  private brevoApiAvailable: boolean;
   private defaultSender: SenderIdentity;
+  private transactionalEmailApi: SibApiV3Sdk.TransactionalEmailsApi;
   
   constructor() {
-    const apiKey = process.env.MAILSLURP_API_KEY;
-    this.apiKeyAvailable = !!apiKey;
+    const mailslurpApiKey = process.env.MAILSLURP_API_KEY;
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    
+    this.mailslurpApiAvailable = !!mailslurpApiKey;
+    this.brevoApiAvailable = !!brevoApiKey;
+    this.transactionalEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
     
     this.defaultSender = {
       email: process.env.FROM_EMAIL || 'noreply@normal-restored.org',
       name: process.env.FROM_NAME || 'Normal Restored',
     };
     
-    if (!this.apiKeyAvailable) {
-      console.warn('No MailSlurp API key found. Emails will be logged but not sent.');
+    if (!this.mailslurpApiAvailable) {
+      console.warn('No MailSlurp API key found. Message center emails will be logged but not sent.');
+    }
+    
+    if (!this.brevoApiAvailable) {
+      console.warn('No Brevo API key found. Transactional emails will be logged but not sent.');
     }
   }
 
@@ -55,7 +82,7 @@ class EmailService {
     }
   }
 
-  async sendEmail(to: string, subject: string, text: string, html?: string, organizationId?: number) {
+  async sendEmail(to: string, subject: string, text: string, html?: string, organizationId?: number): Promise<boolean> {
     // Get sender identity (either organization-specific or default)
     const sender = await this.getOrganizationSender(organizationId);
     
@@ -68,9 +95,59 @@ class EmailService {
     };
 
     try {
-      if (this.apiKeyAvailable) {
+      // Try to send email using Brevo API for transactional emails first
+      if (this.brevoApiAvailable) {
         try {
-          // Using fetch to send the email via MailSlurp API according to documentation
+          // Create a SendSmtpEmail object using Brevo SDK
+          const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+          
+          // Set sender info
+          sendSmtpEmail.sender = {
+            email: sender.email,
+            name: sender.name || 'Normal Restored'
+          };
+          
+          // Set recipient info (must be an array of objects)
+          sendSmtpEmail.to = [{
+            email: to,
+            name: ''
+          }];
+          
+          // Set email content
+          sendSmtpEmail.subject = subject;
+          sendSmtpEmail.htmlContent = html || '';
+          sendSmtpEmail.textContent = text;
+          
+          // Add tracking
+          sendSmtpEmail.tags = ['transactional', 'normal-restored'];
+          
+          // Send the email using the TransactionalEmailsApi
+          const response = await this.transactionalEmailApi.sendTransacEmail(sendSmtpEmail);
+          console.log(`Email sent via Brevo to ${to} from ${sender.name} <${sender.email}>`);
+          return true;
+        } catch (error) {
+          console.error('Brevo API error:', error);
+          
+          // Log what would have been sent
+          console.log('Failed to send email via Brevo. Would have sent:');
+          console.log(JSON.stringify({
+            sender: {
+              email: sender.email,
+              name: sender.name
+            },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+            textContent: text
+          }, null, 2));
+          
+          // Don't throw error, return true to prevent blocking operations
+          return true;
+        }
+      } else if (this.mailslurpApiAvailable) {
+        // Fallback to MailSlurp if available
+        try {
+          // Using fetch to send the email via MailSlurp API
           const response = await fetch('https://api.mailslurp.com/emails', {
             method: 'POST',
             headers: {
@@ -107,27 +184,20 @@ class EmailService {
               isHTML: !!html
             }, null, 2));
           } else {
-            console.log(`Email sent to ${to} from ${sender.name} <${sender.email}>`);
+            console.log(`Email sent via MailSlurp to ${to} from ${sender.name} <${sender.email}>`);
           }
           
-          // Return true even if email sending fails, to prevent blocking operations
           return true;
         } catch (error) {
-          console.error('Email API error:', error);
+          console.error('MailSlurp API error:', error);
           // Log what we would have sent
-          console.log('Would have sent email:');
-          console.log(JSON.stringify({
-            senderId: null,
-            to: [to],
-            subject: subject,
-            body: html || text,
-            isHTML: !!html
-          }, null, 2));
+          console.log('Failed to send email. Would have sent:');
+          console.log(JSON.stringify(msg, null, 2));
           return true; // Return true to prevent blocking operations
         }
       } else {
-        // Log the email instead of sending
-        console.log('MOCK EMAIL:');
+        // No email API available, just log the email
+        console.log('MOCK EMAIL (no API available):');
         console.log(JSON.stringify(msg, null, 2));
         return true;
       }

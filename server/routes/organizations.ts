@@ -10,7 +10,7 @@ import {
 } from "@shared/schema";
 import { canAccessSurvivor } from "../middleware/survivorAccess";
 import { accessControlService } from "../services/accessControl";
-import { emailService } from "../services/email";
+import { emailService } from "../services/email-simplified";
 import { db } from "../db";
 import { and, eq } from "drizzle-orm";
 
