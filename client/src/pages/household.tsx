@@ -164,6 +164,7 @@ export default function Household() {
       
       // 1. Personal Identification
       dateOfBirth: undefined,
+      age: undefined, // Auto-calculated based on date of birth
       gender: "",
       pronouns: "",
       ssn: "",
@@ -179,7 +180,7 @@ export default function Household() {
       // 2. Contact Info
       phone: "",
       email: "",
-      preferredContactMethod: "",
+      preferredContactMethod: "phone", // Default to phone
       alternateContactName: "",
       alternateContactRelationship: "",
       alternateContactPhone: "",
@@ -187,10 +188,10 @@ export default function Household() {
       // 3. Residency Info
       currentAddress: "",
       moveInDate: "",
-      residenceType: "",
+      residenceType: "renter", // Default to renter
       previousAddress: "",
       lengthOfResidency: "",
-      housingStatus: "",
+      housingStatus: "permanent", // Default to permanent
       femaCaseNumber: "",
       
       // 4. Education & Employment
@@ -289,19 +290,35 @@ export default function Household() {
 
   const addOrUpdateMember = async (values: any) => {
     try {
+      // Calculate age from date of birth if provided
+      let age = undefined;
+      if (values.dateOfBirth) {
+        const dob = new Date(values.dateOfBirth);
+        const today = new Date();
+        age = today.getFullYear() - dob.getFullYear();
+        
+        // Adjust age if birthday hasn't occurred yet this year
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--;
+        }
+      }
+      
       const formattedValues = selectedClient
         ? {
             ...values,
             name: values.name.trim(),
             type: values.type || "adult",
             groupId: selectedGroupId,
-            survivorId: selectedClient.id
+            survivorId: selectedClient.id,
+            age: age
           }
         : {
             ...values,
             name: values.name.trim(),
             type: values.type || "adult",
-            groupId: selectedGroupId
+            groupId: selectedGroupId,
+            age: age
           };
 
       let response;
@@ -783,9 +800,9 @@ export default function Household() {
                                                   name="name"
                                                   render={({ field }) => (
                                                     <FormItem>
-                                                      <FormLabel>Full Name</FormLabel>
+                                                      <FormLabel>Full Legal Name</FormLabel>
                                                       <FormControl>
-                                                        <Input {...field} placeholder="Enter full name" />
+                                                        <Input {...field} placeholder="Enter full legal name" />
                                                       </FormControl>
                                                       <FormMessage />
                                                     </FormItem>
@@ -850,8 +867,47 @@ export default function Household() {
                                                           type="date" 
                                                           {...field} 
                                                           placeholder="YYYY-MM-DD" 
+                                                          onChange={(e) => {
+                                                            field.onChange(e);
+                                                            // Calculate age when date of birth changes
+                                                            if (e.target.value) {
+                                                              const dob = new Date(e.target.value);
+                                                              const today = new Date();
+                                                              let age = today.getFullYear() - dob.getFullYear();
+                                                              
+                                                              // Adjust age if birthday hasn't occurred yet this year
+                                                              const monthDiff = today.getMonth() - dob.getMonth();
+                                                              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                                                                age--;
+                                                              }
+                                                              
+                                                              memberForm.setValue('age', age);
+                                                            }
+                                                          }}
                                                         />
                                                       </FormControl>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+                                                <FormField
+                                                  control={memberForm.control}
+                                                  name="age"
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Age (Auto-calculated)</FormLabel>
+                                                      <FormControl>
+                                                        <Input 
+                                                          type="number" 
+                                                          {...field} 
+                                                          value={field.value || ''}
+                                                          disabled 
+                                                          placeholder="Age calculated from DOB" 
+                                                        />
+                                                      </FormControl>
+                                                      <FormDescription>
+                                                        This field is automatically calculated when date of birth is entered
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
