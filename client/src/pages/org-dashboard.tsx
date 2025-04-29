@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { format, isToday, isThisWeek, parseISO } from "date-fns";
+import { 
+  format, 
+  isToday, 
+  isThisWeek, 
+  parseISO, 
+  startOfToday, 
+  isSameMonth, 
+  isSameDay, 
+  isWeekend 
+} from "date-fns";
 import { 
   Calendar, 
   Users, 
@@ -21,16 +30,19 @@ import {
   AlertCircle,
   BellRing,
   Tag as TagIcon,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  CalendarCheck2,
+  Plus
 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function OrgDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
-  const { toast } = useToast();
-
-  // Define types for our data
+  
+  // Type definitions
   type Practitioner = {
     id: number;
     name: string;
@@ -153,17 +165,20 @@ export default function OrgDashboard() {
   const activeClients = survivors?.length || 0;
   const openTasks = tasks?.filter(task => !task.completed)?.length || 0;
   const completedTasks = tasks?.filter(task => task.completed)?.length || 0;
-  const pendingAppointments = PLACEHOLDER_APPOINTMENTS.length || 0;
+  
+  // Use real appointments data if available, otherwise fallback to placeholder data
+  const appointmentData = appointments?.length > 0 ? appointments : PLACEHOLDER_APPOINTMENTS;
+  const pendingAppointments = appointmentData.length || 0;
   const practitionerCount = practitioners?.length || 0;
 
   // Filter today's appointments
-  const todayAppointments = PLACEHOLDER_APPOINTMENTS.filter(appointment => 
-    isToday(appointment.date)
+  const todayAppointments = appointmentData.filter(appointment => 
+    isToday(new Date(appointment.date))
   );
 
   // Filter this week's appointments
-  const thisWeekAppointments = PLACEHOLDER_APPOINTMENTS.filter(appointment => 
-    isThisWeek(appointment.date)
+  const thisWeekAppointments = appointmentData.filter(appointment => 
+    isThisWeek(new Date(appointment.date))
   );
 
   return (
@@ -441,73 +456,152 @@ export default function OrgDashboard() {
         </TabsContent>
         
         <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Appointments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium">Today</h3>
-                  <Separator className="my-2" />
-                  {todayAppointments.length > 0 ? (
-                    <div className="space-y-4 mt-3">
-                      {todayAppointments.map(appointment => (
-                        <div key={appointment.id} className="flex items-start gap-3">
-                          <div className="w-14 text-right">
-                            <p className="text-xs font-medium">{appointment.time}</p>
-                          </div>
-                          <div className="flex-1 rounded-md border p-3">
-                            <p className="font-medium">{appointment.title}</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <p className="text-xs text-muted-foreground">with {appointment.clientName}</p>
-                              <Badge variant="outline" className="ml-auto text-xs">
-                                {appointment.type}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+            {/* Calendar Card */}
+            <Card className="md:col-span-5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle>Calendar</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="icon">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">
+                    {format(startOfToday(), "MMMM yyyy")}
+                  </span>
+                  <Button variant="outline" size="icon">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Calendar Grid Headers (Days of Week) */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="text-center text-sm font-medium text-muted-foreground">
+                      {day}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-16 text-center">
-                      <p className="text-sm text-muted-foreground">No appointments today</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
                 
-                <div>
-                  <h3 className="text-sm font-medium">This Week</h3>
-                  <Separator className="my-2" />
-                  {thisWeekAppointments.length > 0 ? (
-                    <div className="space-y-4 mt-3">
-                      {thisWeekAppointments.map(appointment => (
-                        <div key={appointment.id} className="flex items-start gap-3">
-                          <div className="w-14 text-right">
-                            <p className="text-xs font-medium">{format(appointment.date, "EEE")}</p>
-                            <p className="text-[10px] text-muted-foreground">{appointment.time}</p>
+                {/* Calendar Grid (Days of Month) */}
+                <div className="grid grid-cols-7 gap-1">
+                  {Array(35).fill(null).map((_, index) => {
+                    const date = new Date(new Date().setDate(index - new Date().getDay() + 1));
+                    const isCurrentMonth = isSameMonth(date, startOfToday());
+                    const isCurrentDay = isSameDay(date, startOfToday());
+                    const isWeekendDay = isWeekend(date);
+                    
+                    // Find appointments for this day
+                    const dayAppointments = appointmentData.filter(
+                      appointment => isSameDay(new Date(appointment.date), date)
+                    );
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`
+                          p-2 h-24 overflow-hidden border rounded-sm
+                          ${isCurrentMonth ? "bg-card" : "bg-muted/20 text-muted-foreground"}
+                          ${isCurrentDay ? "border-primary" : "border-border"}
+                          ${isWeekendDay ? "bg-muted/10" : ""}
+                        `}
+                      >
+                        <div className="text-xs font-medium mb-1">
+                          {format(date, "d")}
+                        </div>
+                        {dayAppointments.length > 0 && (
+                          <div className="space-y-1">
+                            {dayAppointments.slice(0, 2).map((appointment) => (
+                              <div 
+                                key={appointment.id} 
+                                className="text-xs truncate bg-primary/10 rounded-sm px-1 py-0.5 text-primary"
+                              >
+                                {appointment.time} - {appointment.title}
+                              </div>
+                            ))}
+                            {dayAppointments.length > 2 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{dayAppointments.length - 2} more
+                              </div>
+                            )}
                           </div>
-                          <div className="flex-1 rounded-md border p-3">
-                            <p className="font-medium">{appointment.title}</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <p className="text-xs text-muted-foreground">with {appointment.clientName}</p>
-                              <Badge variant="outline" className="ml-auto text-xs">
-                                {appointment.type}
-                              </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" size="sm">
+                  <CalendarCheck2 className="h-4 w-4 mr-2" />
+                  Schedule Appointment
+                </Button>
+                <Button variant="outline" size="sm">
+                  Today
+                </Button>
+              </CardFooter>
+            </Card>
+          
+            {/* Upcoming Appointments List */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Upcoming</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-medium">Today</h3>
+                    <Separator className="my-2" />
+                    {todayAppointments.length > 0 ? (
+                      <div className="space-y-2">
+                        {todayAppointments.map(appointment => (
+                          <div key={appointment.id} className="flex justify-between items-center border-l-4 border-primary pl-3 py-2">
+                            <div>
+                              <p className="font-medium text-sm">{appointment.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {appointment.time} with {appointment.clientName}
+                              </p>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-16 text-center">
-                      <p className="text-sm text-muted-foreground">No appointments this week</p>
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No appointments today.</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">This Week</h3>
+                    <Separator className="my-2" />
+                    {thisWeekAppointments.length > 0 ? (
+                      <div className="space-y-2">
+                        {thisWeekAppointments
+                          .filter(appointment => !isToday(appointment.date))
+                          .slice(0, 3)
+                          .map(appointment => (
+                            <div key={appointment.id} className="flex justify-between items-center border-l-4 border-muted pl-3 py-2">
+                              <div>
+                                <p className="font-medium text-sm">{appointment.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(appointment.date, "EEE")} at {appointment.time}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        {thisWeekAppointments.filter(appointment => !isToday(appointment.date)).length > 3 && (
+                          <Button variant="ghost" size="sm" className="w-full justify-center text-xs">
+                            View All ({thisWeekAppointments.filter(appointment => !isToday(appointment.date)).length})
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No appointments this week.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="tasks" className="space-y-4">
@@ -522,42 +616,72 @@ export default function OrgDashboard() {
                 </div>
               ) : tasks && tasks.length > 0 ? (
                 <div className="space-y-4">
-                  {tasks.map(task => (
-                    <div key={task.id} className="flex items-start gap-3 rounded-md border p-3">
-                      <div className={`mt-0.5 h-5 w-5 rounded-full border ${
-                        task.completed ? 'bg-primary border-primary' : 'border-muted-foreground/30'
-                      }`}>
-                        {task.completed && (
-                          <CheckSquare className="h-4 w-4 text-primary-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.text}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <Badge variant="secondary">
-                            {task.stage.replace('_', ' ')}
-                          </Badge>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="relative flex-1">
+                      <input 
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        placeholder="Search tasks..."
+                      />
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter
+                    </Button>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Task
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {tasks.map(task => (
+                      <div 
+                        key={task.id} 
+                        className={`flex items-center justify-between gap-2 rounded-md border p-3 ${
+                          task.urgent ? 'border-red-200 bg-red-50 dark:bg-red-950/20' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <input 
+                            type="checkbox" 
+                            checked={task.completed} 
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <div>
+                            <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                              {task.text}
+                            </p>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              {task.urgent && <span className="text-red-600 dark:text-red-400 font-medium">Urgent</span>}
+                              {task.urgent && <span>•</span>}
+                              <span>Stage: {task.stage}</span>
+                              <span>•</span>
+                              <span>Assigned to: {"assignedToName" in task ? task.assignedToName : "Unassigned"}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
                           {task.urgent && (
-                            <Badge variant="destructive" className="text-xs">
-                              <AlertCircle className="h-3 w-3 mr-1" />
+                            <Badge variant="outline" className="bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 border-red-200">
                               Urgent
                             </Badge>
                           )}
-                          <p className="text-xs text-muted-foreground ml-auto">
-                            Assigned to {task.assignedToName || 'Unknown'}
-                          </p>
+                          <Badge variant="outline">
+                            {task.stage}
+                          </Badge>
+                          <Button variant="ghost" size="icon">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <CheckSquare className="h-12 w-12 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground mb-6">No tasks found</p>
-                  <Button>Create a New Task</Button>
+                  <Button>Add Your First Task</Button>
                 </div>
               )}
             </CardContent>
