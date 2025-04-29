@@ -1082,9 +1082,26 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Race</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="Enter race" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select race" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="american_indian_alaska_native">American Indian or Alaska Native</SelectItem>
+                                                          <SelectItem value="asian">Asian</SelectItem>
+                                                          <SelectItem value="black_african_american">Black or African American</SelectItem>
+                                                          <SelectItem value="native_hawaiian_pacific_islander">Native Hawaiian or Pacific Islander</SelectItem>
+                                                          <SelectItem value="white">White</SelectItem>
+                                                          <SelectItem value="multiple">Multiple Races</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Used for grant eligibility purposes only
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -1095,9 +1112,21 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Ethnicity</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="Enter ethnicity" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select ethnicity" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="hispanic_latino">Hispanic or Latino</SelectItem>
+                                                          <SelectItem value="not_hispanic_latino">Not Hispanic or Latino</SelectItem>
+                                                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Used for grant eligibility purposes only
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -1108,9 +1137,31 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Primary Language</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="e.g. English, Spanish" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select primary language" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="english">English</SelectItem>
+                                                          <SelectItem value="spanish">Spanish</SelectItem>
+                                                          <SelectItem value="mandarin">Mandarin Chinese</SelectItem>
+                                                          <SelectItem value="french">French</SelectItem>
+                                                          <SelectItem value="arabic">Arabic</SelectItem>
+                                                          <SelectItem value="hindi">Hindi</SelectItem>
+                                                          <SelectItem value="bengali">Bengali</SelectItem>
+                                                          <SelectItem value="portuguese">Portuguese</SelectItem>
+                                                          <SelectItem value="russian">Russian</SelectItem>
+                                                          <SelectItem value="japanese">Japanese</SelectItem>
+                                                          <SelectItem value="vietnamese">Vietnamese</SelectItem>
+                                                          <SelectItem value="korean">Korean</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Primary language used by this household member
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -1120,10 +1171,28 @@ export default function Household() {
                                                   name="citizenshipStatus"
                                                   render={({ field }) => (
                                                     <FormItem>
-                                                      <FormLabel>Citizenship Status</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="Enter citizenship status" />
-                                                      </FormControl>
+                                                      <FormLabel>Citizenship/Immigration Status</FormLabel>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select citizenship status" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="us_citizen">U.S. Citizen</SelectItem>
+                                                          <SelectItem value="permanent_resident">Permanent Resident (Green Card)</SelectItem>
+                                                          <SelectItem value="temporary_visa">Temporary Visa</SelectItem>
+                                                          <SelectItem value="asylum_refugee">Asylum/Refugee Status</SelectItem>
+                                                          <SelectItem value="daca_recipient">DACA Recipient</SelectItem>
+                                                          <SelectItem value="tps">Temporary Protected Status</SelectItem>
+                                                          <SelectItem value="undocumented">Undocumented</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Used for grant eligibility purposes only
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
