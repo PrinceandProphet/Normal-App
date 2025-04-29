@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Logo } from "@/components/ui/logo";
 import type { Task, Document, CapitalSource, SystemConfig } from "@shared/schema";
 
 // Sample encouraging messages
@@ -179,9 +180,10 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Logo size="lg" />
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
-            Welcome to NextSteps
+            Welcome
           </h1>
         </div>
         <p className="text-muted-foreground max-w-2xl">

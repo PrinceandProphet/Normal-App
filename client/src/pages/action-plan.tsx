@@ -16,6 +16,7 @@ import { jsPDF } from "jspdf";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useClientContext } from "@/hooks/use-client-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Logo } from "@/components/ui/logo";
 
 interface SubTask {
   text: string;
