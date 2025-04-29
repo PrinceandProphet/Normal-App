@@ -51,9 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
-          setLocation('/org-admin');
+          setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
+        } else if (user.role === 'case_manager') {
+          setLocation('/practitioner-dashboard');
         } else {
-          setLocation('/');
+          setLocation('/'); // Default for users/survivors
         }
         
         // Reset route changing flag once navigation is complete
@@ -90,9 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
-          setLocation('/org-admin');
+          setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
+        } else if (user.role === 'case_manager') {
+          setLocation('/practitioner-dashboard');
         } else {
-          setLocation('/');
+          setLocation('/'); // Default for users/survivors
         }
         
         // Reset route changing flag once navigation is complete
