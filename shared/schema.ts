@@ -34,8 +34,8 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   // userType: survivor (client) or practitioner (business user)
   userType: text("user_type").notNull().default("practitioner"),
-  // role: user (basic access), admin (org admin), super_admin (cross-org access)
-  role: text("role").default("user"),
+  // role: user (basic access), admin (org admin), super_admin (cross-org access), case_manager
+  role: text("role").notNull().default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
   organizationId: integer("organization_id").references(() => organizations.id),
