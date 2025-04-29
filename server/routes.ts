@@ -1229,6 +1229,43 @@ export async function registerRoutes(app: Express) {
   });
 
   // Action Plan Tasks
+  // Get organization-specific tasks for Organization Admin dashboard
+  app.get("/api/action-plan/tasks/organization", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    // Extract organization ID from the user
+    const organizationId = req.user.organizationId;
+    if (!organizationId) {
+      return res.status(400).json({ message: "Invalid organization ID" });
+    }
+
+    // Check if user has access to this organization's tasks
+    const canAccess =
+      req.user.role === "super_admin" ||
+      req.user.role === "admin" ||
+      req.user.organizationId === organizationId;
+
+    if (!canAccess) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    try {
+      // Get all tasks where assignedToId belongs to users in this organization
+      // or where survivorId is associated with this organization
+      const orgTasks = await db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.organizationId, organizationId));
+        
+      return res.json(orgTasks);
+    } catch (error) {
+      console.error("Error getting organization tasks:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/action-plan/tasks", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });

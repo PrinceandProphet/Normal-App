@@ -14,6 +14,7 @@ import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
+import OrgDashboard from "@/pages/org-dashboard";
 import PractitionerDashboard from "@/pages/practitioner-dashboard";
 import FundingOpportunities from "@/pages/funding-opportunities";
 import OpportunityMatches from "@/pages/opportunity-matches";
@@ -72,7 +73,9 @@ function Router() {
       />
       
       {/* Admin Only Routes */}
+      <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
       <RoleBasedRoute path="/org-admin" component={OrgAdminPage} allowedRoles={["admin"]} />
+      <RoleBasedRoute path="/org-dashboard" component={OrgDashboard} allowedRoles={["admin"]} />
       
       {/* Route accessible to both Super Admin and Admin */}
       <RoleBasedRoute 

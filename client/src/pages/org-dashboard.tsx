@@ -15,11 +15,13 @@ import {
   Inbox, 
   CheckSquare, 
   Clock, 
-  Building2, 
+  BuildingIcon, 
   ArrowUpRight, 
   UserPlus,
   AlertCircle,
-  BellRing 
+  BellRing,
+  Tag as TagIcon,
+  Filter
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -28,26 +30,61 @@ export default function OrgDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
 
+  // Define types for our data
+  type Practitioner = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+
+  type Survivor = {
+    id: number;
+    name: string;
+    email: string;
+    status: string;
+  };
+
+  type Task = {
+    id: number;
+    text: string;
+    completed: boolean;
+    urgent: boolean;
+    stage: string;
+    createdById: number;
+    createdByType: string;
+    assignedToId: number | null;
+    assignedToType: string | null;
+  };
+
+  type Organization = {
+    id: number;
+    name: string;
+    address: string;
+    phoneNumber: string;
+    email: string;
+  };
+
   // Get organization members (practitioners)
-  const { data: practitioners, isLoading: practitionersLoading } = useQuery({
+  const { data: practitioners = [], isLoading: practitionersLoading } = useQuery<Practitioner[]>({
     queryKey: ["/api/organizations/practitioners", { organizationId: user?.organizationId }],
     enabled: !!user?.organizationId,
   });
 
   // Get organization survivors/clients
-  const { data: survivors, isLoading: survivorsLoading } = useQuery({
+  const { data: survivors = [], isLoading: survivorsLoading } = useQuery<Survivor[]>({
     queryKey: ["/api/organizations/survivors", { organizationId: user?.organizationId }],
     enabled: !!user?.organizationId,
   });
 
   // Get tasks for organization
-  const { data: tasks, isLoading: tasksLoading } = useQuery({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/action-plan/tasks/organization", { organizationId: user?.organizationId }],
     enabled: !!user?.organizationId,
   });
 
   // Get current organization
-  const { data: organization } = useQuery({
+  const { data: organization } = useQuery<Organization>({
     queryKey: ["/api/organizations/current", { organizationId: user?.organizationId }],
     enabled: !!user?.organizationId,
   });
@@ -192,7 +229,7 @@ export default function OrgDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Practitioners</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <BuildingIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{practitionerCount}</div>
