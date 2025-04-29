@@ -35,7 +35,7 @@ import {
   ChevronRight,
   CalendarCheck2,
   Plus,
-  Settings
+
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -204,12 +204,7 @@ export default function OrgDashboard() {
               Manage Clients
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/organization-settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Organization Settings
-            </Link>
-          </Button>
+
           <Button asChild size="sm">
             <Link href="/survivors/new">
               <UserPlus className="h-4 w-4 mr-2" />
