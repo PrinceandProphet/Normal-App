@@ -58,15 +58,13 @@ const navigationConfig = {
     { name: "Knowledge Base", href: "/admin/resources", icon: BookOpen },
   ],
   
-  // Client/User navigation
+  // Client/User navigation - focused only on their recovery journey
   clientNav: [
     { name: "Home", href: "/", icon: Home },
-    { name: "Action Plan", href: "/action-plan", icon: Shield },
-    { name: "Household & Properties", href: "/household", icon: Building2 },
-    { name: "Capital Sources", href: "/capital-sources", icon: DollarSign },
-    { name: "Documents", href: "/documents", icon: FileText },
-    { name: "Messages", href: "/messages", icon: MessageSquare },
-    { name: "Contacts", href: "/contacts", icon: Users },
+    { name: "My Action Plan", href: "/action-plan", icon: Shield },
+    { name: "My Household", href: "/household", icon: Building2 },
+    { name: "My Documents", href: "/documents", icon: FileText },
+    { name: "My Messages", href: "/messages", icon: MessageSquare },
     { name: "Profile Settings", href: "/profile", icon: Settings },
   ]
 };

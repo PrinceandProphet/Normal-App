@@ -42,12 +42,21 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Clear selected client when logging out
+  // Clear selected client when logging out or auto-select client for user role
   useEffect(() => {
     if (!user) {
       setSelectedClient(null);
+    } else if (user.role === "user") {
+      // For survivors/clients, automatically select themselves
+      // This ensures they always see their own data
+      if (clients.length > 0) {
+        const ownClientData = clients.find(client => client.id === user.id);
+        if (ownClientData) {
+          setSelectedClient(ownClientData);
+        }
+      }
     }
-  }, [user]);
+  }, [user, clients]);
 
   return (
     <ClientContext.Provider
