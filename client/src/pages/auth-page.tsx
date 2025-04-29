@@ -26,7 +26,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Logo } from '@/components/ui/logo';
 
 // Login schema
 const loginSchema = z.object({
@@ -100,11 +99,8 @@ export default function AuthPage() {
       <div className="flex flex-1 items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <Logo size="lg" />
-            </div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-              NextSteps
+              Disaster Recovery Platform
             </h1>
             <p className="mt-3 text-gray-600">
               {isLogin ? 'Sign in to your account' : 'Create a new account'}
@@ -329,12 +325,9 @@ export default function AuthPage() {
       {/* Right side - Hero Section */}
       <div className="hidden md:flex md:flex-1 bg-gradient-to-br from-primary/90 to-primary/50 items-center justify-center">
         <div className="max-w-md px-8">
-          <div className="mb-6">
-            <Logo size="lg" variant="white" />
-          </div>
-          <h1 className="text-4xl font-bold mb-6 text-white">Nü Recovery Platform</h1>
+          <h1 className="text-4xl font-bold mb-6 text-white">Disaster Recovery Platform</h1>
           <p className="text-lg mb-8 text-white/90">
-            A comprehensive tool for managing recovery processes, tracking assistance, 
+            A comprehensive tool for managing recovery processes after disasters, tracking assistance, 
             and organizing resources for affected households.
           </p>
           <ul className="space-y-4">

@@ -16,7 +16,6 @@ import { jsPDF } from "jspdf";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useClientContext } from "@/hooks/use-client-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Logo } from "@/components/ui/logo";
 
 interface SubTask {
   text: string;
@@ -604,12 +603,9 @@ export default function ActionPlan() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <Logo size="sm" />
-            <h1 className="text-3xl font-bold tracking-tight">My Recovery Plan</h1>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">My Recovery Action Plan™</h1>
           <p className="text-muted-foreground">
-            Track your progress through the S.T.A.R.T. framework for recovery.
+            Track your progress through the S.T.A.R.T.™ framework for disaster recovery.
           </p>
           
           {!selectedClient && (
