@@ -82,6 +82,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    console.log("Creating organization with data:", JSON.stringify(req.body, null, 2));
     const validatedData = insertOrganizationSchema.parse(req.body);
     const organization = await storage.createOrganization(validatedData);
     
@@ -102,6 +103,7 @@ router.post("/", async (req, res) => {
     return res.status(201).json(organization);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error details:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
     console.error("Error creating organization:", error);

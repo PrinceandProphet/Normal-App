@@ -85,35 +85,45 @@ router.post("/organizations/:id/staff", async (req, res) => {
       return res.status(403).json({ message: "Not authorized to add staff to this organization" });
     }
 
-    // Validate request body
-    const validatedData = insertStaffSchema.parse(req.body);
+    // Log the request body for debugging
+    console.log("Creating staff member with data:", JSON.stringify(req.body, null, 2));
     
-    // Get the organization name for the email
-    const organization = await storage.getOrganization(organizationId);
-    if (!organization) {
-      return res.status(404).json({ message: "Organization not found" });
-    }
-
-    // Add the staff member
-    const newStaffMember = await storage.addOrganizationStaff({
-      ...validatedData,
-      organizationId
-    });
-    
-    // Send welcome email to the new staff member
     try {
-      await emailService.sendNewStaffWelcome(
-        organization.name,
-        newStaffMember.email,
+      // Validate request body
+      const validatedData = insertStaffSchema.parse(req.body);
+      
+      // Get the organization name for the email
+      const organization = await storage.getOrganization(organizationId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+
+      // Add the staff member
+      const newStaffMember = await storage.addOrganizationStaff({
+        ...validatedData,
         organizationId
-      );
-      console.log(`Welcome email sent to new staff member: ${newStaffMember.email}`);
-    } catch (emailError) {
-      // Log the error but don't fail the request
-      console.error("Error sending staff welcome email:", emailError);
+      });
+      
+      // Send welcome email to the new staff member
+      try {
+        await emailService.sendNewStaffWelcome(
+          organization.name,
+          newStaffMember.email,
+          organizationId
+        );
+        console.log(`Welcome email sent to new staff member: ${newStaffMember.email}`);
+      } catch (emailError) {
+        // Log the error but don't fail the request
+        console.error("Error sending staff welcome email:", emailError);
+      }
+      
+      return res.status(201).json(newStaffMember);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Staff validation error details:", JSON.stringify(error.errors, null, 2));
+      }
+      throw error;
     }
-    
-    return res.status(201).json(newStaffMember);
   } catch (error) {
     console.error("Error adding staff member:", error);
     
