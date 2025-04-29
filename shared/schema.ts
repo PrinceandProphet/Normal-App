@@ -118,6 +118,7 @@ export const householdMembers = pgTable("household_members", {
 
   // 1. Personal Identification
   dateOfBirth: text("date_of_birth"),
+  age: integer("age"),
   gender: text("gender"),
   pronouns: text("pronouns"),
   ssn: text("ssn"),
@@ -442,6 +443,7 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
     
     // 1. Personal Identification
     dateOfBirth: z.string().optional(),
+    age: z.number().optional(),
     relationship: z.enum([
       'head',
       'spouse',
