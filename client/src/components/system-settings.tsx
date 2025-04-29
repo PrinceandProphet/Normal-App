@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { UpdateOrganizationSettings } from "@shared/schema";
+import { UpdateOrganizationSettings, updateOrganizationSettingsSchema } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ export default function SystemSettings({ organizationId }: SystemSettingsProps) 
     setValue,
     watch,
   } = useForm<UpdateOrganizationSettings>({
-    resolver: zodResolver(undefined), // No resolver needed as we're using simple validations
+    resolver: zodResolver(updateOrganizationSettingsSchema), // Use the zod resolver with our schema
     defaultValues: {
       logoUrl: "",
       primaryColor: "#0070F3",

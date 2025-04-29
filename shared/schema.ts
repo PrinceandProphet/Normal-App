@@ -653,6 +653,8 @@ export const insertFundingOpportunitySchema = createInsertSchema(fundingOpportun
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+// The organization settings schema is already defined above
+
 // Export types
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -670,6 +672,7 @@ export type Organization = typeof organizations.$inferSelect;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type OrganizationSurvivor = typeof organizationSurvivors.$inferSelect;
 export type FundingOpportunity = typeof fundingOpportunities.$inferSelect;
+export type UpdateOrganizationSettings = z.infer<typeof updateOrganizationSettingsSchema>;
 
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -700,4 +703,3 @@ export const insertOpportunityMatchSchema = createInsertSchema(opportunityMatche
 
 export type OpportunityMatch = typeof opportunityMatches.$inferSelect;
 export type InsertOpportunityMatch = z.infer<typeof insertOpportunityMatchSchema>;
-export type UpdateOrganizationSettings = z.infer<typeof updateOrganizationSettingsSchema>;
