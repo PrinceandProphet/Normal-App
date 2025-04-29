@@ -1316,9 +1316,24 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Preferred Contact Method</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="e.g. Phone, Email, Text" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select preferred contact method" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="phone_call">Phone Call</SelectItem>
+                                                          <SelectItem value="text_message">Text Message</SelectItem>
+                                                          <SelectItem value="email">Email</SelectItem>
+                                                          <SelectItem value="mail">Postal Mail</SelectItem>
+                                                          <SelectItem value="in_person">In Person</SelectItem>
+                                                          <SelectItem value="video_call">Video Call</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        How would this person prefer to be contacted?
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -1360,9 +1375,30 @@ export default function Household() {
                                                     render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Relationship to Member</FormLabel>
-                                                        <FormControl>
-                                                          <Input {...field} placeholder="e.g. Parent, Sibling, Friend" />
-                                                        </FormControl>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                          <FormControl>
+                                                            <SelectTrigger>
+                                                              <SelectValue placeholder="Select relationship" />
+                                                            </SelectTrigger>
+                                                          </FormControl>
+                                                          <SelectContent>
+                                                            <SelectItem value="parent">Parent</SelectItem>
+                                                            <SelectItem value="child">Child</SelectItem>
+                                                            <SelectItem value="spouse">Spouse</SelectItem>
+                                                            <SelectItem value="sibling">Sibling</SelectItem>
+                                                            <SelectItem value="grandparent">Grandparent</SelectItem>
+                                                            <SelectItem value="aunt_uncle">Aunt/Uncle</SelectItem>
+                                                            <SelectItem value="cousin">Cousin</SelectItem>
+                                                            <SelectItem value="friend">Friend</SelectItem>
+                                                            <SelectItem value="neighbor">Neighbor</SelectItem>
+                                                            <SelectItem value="caregiver">Caregiver</SelectItem>
+                                                            <SelectItem value="guardian">Legal Guardian</SelectItem>
+                                                            <SelectItem value="other">Other</SelectItem>
+                                                          </SelectContent>
+                                                        </Select>
+                                                        <FormDescription>
+                                                          How is this person related to the household member?
+                                                        </FormDescription>
                                                         <FormMessage />
                                                       </FormItem>
                                                     )}
@@ -1411,9 +1447,29 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Residence Type</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="e.g. Apartment, House, Shelter" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select residence type" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="single_family">Single Family Home</SelectItem>
+                                                          <SelectItem value="apartment">Apartment</SelectItem>
+                                                          <SelectItem value="condo">Condominium</SelectItem>
+                                                          <SelectItem value="mobile_home">Mobile Home</SelectItem>
+                                                          <SelectItem value="shelter">Shelter</SelectItem>
+                                                          <SelectItem value="group_home">Group Home</SelectItem>
+                                                          <SelectItem value="hotel">Hotel/Motel</SelectItem>
+                                                          <SelectItem value="transitional">Transitional Housing</SelectItem>
+                                                          <SelectItem value="assisted_living">Assisted Living</SelectItem>
+                                                          <SelectItem value="homeless">Homeless/Unhoused</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Type of residence where this person lives
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -1424,9 +1480,27 @@ export default function Household() {
                                                   render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Housing Status</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="e.g. Own, Rent, Temporary" />
-                                                      </FormControl>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select housing status" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="own">Own</SelectItem>
+                                                          <SelectItem value="rent">Rent</SelectItem>
+                                                          <SelectItem value="temporary">Temporary</SelectItem>
+                                                          <SelectItem value="subsidized">Subsidized</SelectItem>
+                                                          <SelectItem value="public_housing">Public Housing</SelectItem>
+                                                          <SelectItem value="staying_with_family">Staying with Family/Friends</SelectItem>
+                                                          <SelectItem value="disaster_housing">Disaster Housing Assistance</SelectItem>
+                                                          <SelectItem value="unhoused">Unhoused</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormDescription>
+                                                        Current housing situation/tenure
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
