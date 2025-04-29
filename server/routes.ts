@@ -72,6 +72,7 @@ export async function registerRoutes(app: Express) {
   app.use("/api/matching", matchingRoutes);
   app.use("/api/messages", messageRoutes);
   app.use("/api", practitionerRoutes);
+  app.use("/api", testEmailRoutes);
 
   // Documents
   app.get("/api/documents", async (req, res) => {

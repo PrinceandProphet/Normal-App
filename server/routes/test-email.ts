@@ -30,7 +30,7 @@ router.post("/test-email", async (req, res) => {
         body: JSON.stringify({
           sender: {
             name: 'Normal Restored Test',
-            email: 'noreply@normal-restored.org',
+            email: 'noreply@normalrestored.com',
           },
           to: [
             {
@@ -66,7 +66,7 @@ router.post("/test-email", async (req, res) => {
       return res.status(500).json({ 
         success: false, 
         message: "Error sending test email", 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   } catch (error) {

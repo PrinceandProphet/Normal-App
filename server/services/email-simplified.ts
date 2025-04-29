@@ -18,7 +18,7 @@ class EmailService {
     this.brevoApiAvailable = !!brevoApiKey;
     
     this.defaultSender = {
-      email: process.env.FROM_EMAIL || 'noreply@normal-restored.org',
+      email: process.env.FROM_EMAIL || 'noreply@normalrestored.com',
       name: process.env.FROM_NAME || 'Normal Restored',
     };
     
