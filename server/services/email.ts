@@ -77,7 +77,7 @@ class EmailService {
             'x-api-key': process.env.MAILSLURP_API_KEY!
           },
           body: JSON.stringify({
-            to: [to],
+            to: to, // Change from array to string as expected by API
             subject,
             body: html || text,
             isHtml: !!html
