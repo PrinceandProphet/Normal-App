@@ -113,6 +113,9 @@ export const householdGroups = pgTable("household_groups", {
 export const householdMembers = pgTable("household_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  firstName: text("first_name"),
+  middleName: text("middle_name"),
+  lastName: text("last_name"),
   type: text("type").notNull(),
   groupId: integer("group_id").references(() => householdGroups.id, { onDelete: 'cascade' }),
 
@@ -439,6 +442,9 @@ export const insertHouseholdMemberSchema = createInsertSchema(householdMembers)
   .extend({
     // Basic Information
     name: z.string().min(1, "Name is required"),
+    firstName: z.string().optional(),
+    middleName: z.string().optional(),
+    lastName: z.string().optional(),
     type: z.enum(['adult', 'child', 'senior', 'dependent']),
     
     // 1. Personal Identification

@@ -795,6 +795,50 @@ export default function Household() {
                                               <TabsContent value="personal" className="mt-0">
                                                 <h3 className="font-semibold text-lg text-primary mb-4">Personal Identification</h3>
                                                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                                <div className="md:col-span-2">
+                                                  <h3 className="text-lg font-semibold mb-2 mt-2">Personal Identification</h3>
+                                                  <div className="grid md:grid-cols-3 gap-4">
+                                                    <FormField
+                                                      control={memberForm.control}
+                                                      name="firstName"
+                                                      render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>First Name</FormLabel>
+                                                          <FormControl>
+                                                            <Input {...field} placeholder="Enter first name" />
+                                                          </FormControl>
+                                                          <FormMessage />
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                    <FormField
+                                                      control={memberForm.control}
+                                                      name="middleName"
+                                                      render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>Middle Name</FormLabel>
+                                                          <FormControl>
+                                                            <Input {...field} placeholder="Enter middle name" />
+                                                          </FormControl>
+                                                          <FormMessage />
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                    <FormField
+                                                      control={memberForm.control}
+                                                      name="lastName"
+                                                      render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>Last Name</FormLabel>
+                                                          <FormControl>
+                                                            <Input {...field} placeholder="Enter last name" />
+                                                          </FormControl>
+                                                          <FormMessage />
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                  </div>
+                                                </div>
                                                 <FormField
                                                   control={memberForm.control}
                                                   name="name"
@@ -802,8 +846,37 @@ export default function Household() {
                                                     <FormItem>
                                                       <FormLabel>Full Legal Name</FormLabel>
                                                       <FormControl>
-                                                        <Input {...field} placeholder="Enter full legal name" />
+                                                        <Input 
+                                                          {...field} 
+                                                          placeholder="Enter full legal name" 
+                                                          onChange={(e) => {
+                                                            field.onChange(e);
+                                                            
+                                                            // If first/middle/last names are empty, try to split this full name
+                                                            const nameParts = e.target.value.trim().split(/\s+/);
+                                                            if (nameParts.length > 0) {
+                                                              // Set firstName to first part
+                                                              if (!memberForm.getValues('firstName')) {
+                                                                memberForm.setValue('firstName', nameParts[0]);
+                                                              }
+                                                              
+                                                              // Set lastName to last part if there are at least 2 parts
+                                                              if (nameParts.length > 1 && !memberForm.getValues('lastName')) {
+                                                                memberForm.setValue('lastName', nameParts[nameParts.length - 1]);
+                                                              }
+                                                              
+                                                              // Set middleName to everything in between
+                                                              if (nameParts.length > 2 && !memberForm.getValues('middleName')) {
+                                                                const middleParts = nameParts.slice(1, nameParts.length - 1);
+                                                                memberForm.setValue('middleName', middleParts.join(' '));
+                                                              }
+                                                            }
+                                                          }}
+                                                        />
                                                       </FormControl>
+                                                      <FormDescription>
+                                                        The main identifying name for this household member
+                                                      </FormDescription>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
@@ -914,44 +987,95 @@ export default function Household() {
                                                 />
                                                 <FormField
                                                   control={memberForm.control}
-                                                  name="ssn"
-                                                  render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Social Security Number</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="XXX-XX-XXXX" />
-                                                      </FormControl>
-                                                      <FormDescription>Format: XXX-XX-XXXX</FormDescription>
-                                                      <FormMessage />
-                                                    </FormItem>
-                                                  )}
-                                                />
-                                                <FormField
-                                                  control={memberForm.control}
                                                   name="gender"
                                                   render={({ field }) => (
                                                     <FormItem>
-                                                      <FormLabel>Gender</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="Enter gender" />
-                                                      </FormControl>
+                                                      <FormLabel>Gender Identity</FormLabel>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select gender identity" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="female">Female</SelectItem>
+                                                          <SelectItem value="male">Male</SelectItem>
+                                                          <SelectItem value="non-binary">Non-binary</SelectItem>
+                                                          <SelectItem value="transgender">Transgender</SelectItem>
+                                                          <SelectItem value="other">Other</SelectItem>
+                                                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
                                                 />
+                                                
                                                 <FormField
                                                   control={memberForm.control}
                                                   name="pronouns"
                                                   render={({ field }) => (
                                                     <FormItem>
-                                                      <FormLabel>Pronouns</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder="e.g. she/her, they/them" />
-                                                      </FormControl>
+                                                      <FormLabel>Preferred Pronouns</FormLabel>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select preferred pronouns" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="she/her">She/Her</SelectItem>
+                                                          <SelectItem value="he/him">He/Him</SelectItem>
+                                                          <SelectItem value="they/them">They/Them</SelectItem>
+                                                          <SelectItem value="custom">Custom (specify in notes)</SelectItem>
+                                                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
                                                       <FormMessage />
                                                     </FormItem>
                                                   )}
                                                 />
+                                                
+                                                <FormField
+                                                  control={memberForm.control}
+                                                  name="ssn"
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Social Security Number (Optional)</FormLabel>
+                                                      <FormControl>
+                                                        <Input {...field} placeholder="XXX-XX-XXXX" />
+                                                      </FormControl>
+                                                      <FormDescription>Format: XXX-XX-XXXX (masked for security)</FormDescription>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+                                                
+                                                <FormField
+                                                  control={memberForm.control}
+                                                  name="maritalStatus"
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Marital Status</FormLabel>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                          <SelectTrigger>
+                                                            <SelectValue placeholder="Select marital status" />
+                                                          </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                          <SelectItem value="single">Single</SelectItem>
+                                                          <SelectItem value="married">Married</SelectItem>
+                                                          <SelectItem value="divorced">Divorced</SelectItem>
+                                                          <SelectItem value="separated">Separated</SelectItem>
+                                                          <SelectItem value="widowed">Widowed</SelectItem>
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+
                                                 <FormField
                                                   control={memberForm.control}
                                                   name="race"
