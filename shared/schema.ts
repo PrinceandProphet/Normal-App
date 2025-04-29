@@ -248,6 +248,12 @@ export const messages = pgTable(messagesTable, {
   parentId: integer("parent_id").references(() => messages.id),
   // Unique external ID (for tracking in external systems)
   externalId: text("external_id").unique(),
+  // Message tags for categorization (comma-separated values: housing,insurance,documents,etc.)
+  tags: text("tags"),
+  // Optional organization ID for messages sent on behalf of an organization
+  organizationId: integer("organization_id").references(() => organizations.id),
+  // Optional sender ID (practitioner who sent the message on behalf of organization)
+  senderId: integer("sender_id").references(() => users.id),
   // Timestamps
   sentAt: timestamp("sent_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -365,7 +371,12 @@ export const insertMessageSchema = createInsertSchema(messages)
     // Optional fields
     subject: z.string().optional(),
     parentId: z.number().optional(),
-    externalId: z.string().optional()
+    externalId: z.string().optional(),
+    // Make organization and sender information optional
+    organizationId: z.number().optional(),
+    senderId: z.number().optional(),
+    // Tags for categorization
+    tags: z.string().optional()
   })
   .omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTemplateSchema = createInsertSchema(documentTemplates).omit({ id: true });
