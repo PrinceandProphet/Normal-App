@@ -212,6 +212,113 @@ The Disaster Recovery Platform Team
   }
 
   /**
+   * Grant application workflow emails
+   */
+
+  // Send confirmation email when a grant is applied for
+  async sendGrantApplicationConfirmation(
+    to: string, 
+    grantName: string, 
+    clientName: string,
+    organizationId?: number
+  ): Promise<boolean> {
+    const subject = "Your Grant Application Has Been Received";
+    const text = `
+Dear ${clientName},
+
+Your application for the "${grantName}" grant has been successfully received. Our team will review your application and you will be notified of any updates.
+
+Thank you for your application.
+
+Best regards,
+Normal Restored
+    `;
+    
+    const html = `
+<h2>Grant Application Received</h2>
+<p>Dear ${clientName},</p>
+<p>Your application for the <strong>${grantName}</strong> grant has been successfully received.</p>
+<p>Our team will review your application and you will be notified of any updates.</p>
+<p>Thank you for your application.</p>
+<p>Best regards,<br>Normal Restored</p>
+    `;
+    
+    return this.sendEmail(to, subject, text, html, organizationId);
+  }
+
+  // Send notification email when a grant is awarded
+  async sendGrantAwardNotification(
+    to: string, 
+    grantName: string, 
+    clientName: string,
+    amount: number,
+    organizationId?: number
+  ): Promise<boolean> {
+    const subject = "Congratulations! You've Been Awarded a Grant";
+    const formattedAmount = new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD' 
+    }).format(amount);
+
+    const text = `
+Dear ${clientName},
+
+Congratulations! We are pleased to inform you that you have been awarded the "${grantName}" grant in the amount of ${formattedAmount}.
+
+Our team will contact you with additional information about the next steps for receiving these funds.
+
+Best regards,
+Normal Restored
+    `;
+    
+    const html = `
+<h2>Grant Award Notification</h2>
+<p>Dear ${clientName},</p>
+<p>Congratulations! We are pleased to inform you that you have been awarded the <strong>${grantName}</strong> grant in the amount of <strong>${formattedAmount}</strong>.</p>
+<p>Our team will contact you with additional information about the next steps for receiving these funds.</p>
+<p>Best regards,<br>Normal Restored</p>
+    `;
+    
+    return this.sendEmail(to, subject, text, html, organizationId);
+  }
+
+  // Send notification email when grant funds are released
+  async sendGrantFundingNotification(
+    to: string, 
+    grantName: string, 
+    clientName: string,
+    amount: number,
+    organizationId?: number
+  ): Promise<boolean> {
+    const subject = "Your Grant Funds Have Been Released";
+    const formattedAmount = new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD' 
+    }).format(amount);
+
+    const text = `
+Dear ${clientName},
+
+We are pleased to inform you that the funds for your "${grantName}" grant in the amount of ${formattedAmount} have been released.
+
+If you have any questions about receiving these funds, please contact your case manager.
+
+Best regards,
+Normal Restored
+    `;
+    
+    const html = `
+<h2>Grant Funds Released</h2>
+<p>Dear ${clientName},</p>
+<p>We are pleased to inform you that the funds for your <strong>${grantName}</strong> grant in the amount of <strong>${formattedAmount}</strong> have been released.</p>
+<p>If you have any questions about receiving these funds, please contact your case manager.</p>
+<p>Best regards,<br>Normal Restored</p>
+    `;
+    
+    return this.sendEmail(to, subject, text, html, organizationId);
+  }
+
+  /**
    * Verify an organization's domain by validating DNS records
    * In a real implementation, this would check SPF, DKIM, and DMARC records
    * For this demo, we'll simulate success

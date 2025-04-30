@@ -206,6 +206,8 @@ export const capitalSources = pgTable("capital_sources", {
   amount: numeric("amount").notNull(),
   status: text("status").notNull(),
   description: text("description"),
+  survivorId: integer("survivor_id").references(() => users.id, { onDelete: 'cascade' }),
+  fundingCategory: text("funding_category").default("standard"), // standard, individual_assistance, etc.
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -391,6 +393,8 @@ export const insertCapitalSourceSchema = z.object({
   amount: z.number().min(0, "Amount must be non-negative"),
   status: z.enum(["current", "projected"]),
   description: z.string().optional(),
+  survivorId: z.number().optional(),
+  fundingCategory: z.enum(["standard", "individual_assistance"]).default("standard"),
 });
 
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
