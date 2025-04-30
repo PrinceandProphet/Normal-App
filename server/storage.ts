@@ -142,7 +142,7 @@ export interface IStorage {
   updateSystemConfig(config: InsertSystemConfig): Promise<SystemConfig>;
 
   // Capital Sources
-  getCapitalSources(): Promise<CapitalSource[]>;
+  getCapitalSources(survivorId?: number): Promise<CapitalSource[]>;
   createCapitalSource(source: InsertCapitalSource): Promise<CapitalSource>;
   updateCapitalSource(id: number, source: Partial<InsertCapitalSource>): Promise<CapitalSource>;
   deleteCapitalSource(id: number): Promise<void>;

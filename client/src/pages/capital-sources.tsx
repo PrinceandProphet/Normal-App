@@ -36,9 +36,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DollarSign, Plus, Trash2, InfoIcon } from "lucide-react";
+import { DollarSign, Plus, Trash2, InfoIcon, User } from "lucide-react";
 import { z } from "zod";
 import { Label } from "@/components/ui/label";
+import { useClient, useClients } from "@/contexts/client-context";
+import { useAuth } from "@/hooks/use-auth";
 
 const sourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -46,6 +48,8 @@ const sourceSchema = z.object({
   amount: z.string().min(1, "Amount is required"),
   status: z.enum(["current", "projected"]),
   description: z.string().optional(),
+  fundingCategory: z.enum(["standard", "individual_assistance"]).default("standard"),
+  survivorId: z.number().optional(),
 });
 
 type FormValues = z.infer<typeof sourceSchema>;
@@ -53,9 +57,22 @@ type FormValues = z.infer<typeof sourceSchema>;
 export default function CapitalSources() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isClientSelectOpen, setIsClientSelectOpen] = useState(false);
+  const { user } = useAuth();
+  const { currentClient, setCurrentClient, clearCurrentClient, viewingAsClient } = useClient();
+  const clients = useClients();
 
+  // Get capital sources based on client context if available
   const { data: sources = [] } = useQuery<any[]>({
-    queryKey: ["/api/capital-sources"],
+    queryKey: currentClient 
+      ? ["/api/capital-sources", { survivorId: currentClient.id }] 
+      : ["/api/capital-sources"],
+    queryFn: () => {
+      const url = currentClient 
+        ? `/api/capital-sources?survivorId=${currentClient.id}`
+        : "/api/capital-sources";
+      return apiRequest("GET", url);
+    }
   });
 
   const form = useForm<FormValues>({
@@ -66,8 +83,20 @@ export default function CapitalSources() {
       amount: "",
       status: "current",
       description: "",
+      fundingCategory: "standard",
     },
   });
+
+  // Update form when client changes
+  React.useEffect(() => {
+    if (currentClient) {
+      form.setValue('survivorId', currentClient.id);
+      form.setValue('fundingCategory', 'individual_assistance');
+    } else {
+      form.setValue('survivorId', undefined);
+      form.setValue('fundingCategory', 'standard');
+    }
+  }, [currentClient, form]);
 
   const getAllCurrentTotal = () => {
     return sources
@@ -90,6 +119,10 @@ export default function CapitalSources() {
       const source: any = await apiRequest("POST", "/api/capital-sources", {
         ...values,
         amount: Number(values.amount),
+        // Include survivor ID if in client context
+        survivorId: currentClient?.id,
+        // Set funding category based on context
+        fundingCategory: currentClient ? "individual_assistance" : "standard",
       });
 
       const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -110,7 +143,14 @@ export default function CapitalSources() {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      // Invalidate the correct query based on context
+      if (currentClient) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/capital-sources", { survivorId: currentClient.id }] 
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
 
       toast({
@@ -131,7 +171,16 @@ export default function CapitalSources() {
   async function deleteSource(id: number) {
     try {
       await apiRequest("DELETE", `/api/capital-sources/${id}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      
+      // Invalidate the correct query based on context
+      if (currentClient) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/capital-sources", { survivorId: currentClient.id }] 
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/capital-sources"] });
+      }
+      
       toast({
         title: "Success",
         description: "Capital source deleted successfully",

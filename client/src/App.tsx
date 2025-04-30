@@ -20,7 +20,7 @@ import FundingOpportunities from "@/pages/funding-opportunities";
 import OpportunityMatches from "@/pages/opportunity-matches";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ClientProvider } from "@/hooks/use-client-context";
+import { ClientProvider } from "@/contexts/client-context";
 import { Loader2 } from "lucide-react";
 import { RoleBasedRoute } from "@/components/layout/role-based-route";
 
