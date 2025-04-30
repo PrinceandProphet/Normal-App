@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -88,7 +89,7 @@ export default function CapitalSources() {
   });
 
   // Update form when client changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentClient) {
       form.setValue('survivorId', currentClient.id);
       form.setValue('fundingCategory', 'individual_assistance');
@@ -200,7 +201,69 @@ export default function CapitalSources() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Capital Sources</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Capital Sources</h1>
+          {user && (user.role === "admin" || user.role === "super_admin" || user.role === "case_manager") && (
+            <Dialog open={isClientSelectOpen} onOpenChange={setIsClientSelectOpen}>
+              <DialogTrigger asChild>
+                <Button variant={viewingAsClient ? "default" : "outline"} size="sm">
+                  <User className="h-4 w-4 mr-2" />
+                  {viewingAsClient ? currentClient?.name : "View As Client"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Select Client</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-2">
+                  {clients.length > 0 ? (
+                    <div className="grid gap-2">
+                      {clients.map((client) => (
+                        <Button
+                          key={client.id}
+                          variant="outline"
+                          className="justify-start h-auto py-3 px-4"
+                          onClick={() => {
+                            setCurrentClient(client);
+                            setIsClientSelectOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <div className="ml-2 text-left">
+                              <p className="font-medium">{client.name}</p>
+                              <p className="text-xs text-muted-foreground">{client.email}</p>
+                            </div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">No clients available</p>
+                    </div>
+                  )}
+                  {viewingAsClient && (
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        clearCurrentClient();
+                        setIsClientSelectOpen(false);
+                      }}
+                    >
+                      Clear client selection
+                    </Button>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          {viewingAsClient && (
+            <Badge variant="outline" className="ml-4">
+              Viewing as: {currentClient?.name}
+            </Badge>
+          )}
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -369,7 +432,11 @@ export default function CapitalSources() {
       {/* Capital Sources Section */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-semibold">Your Capital Sources</h2>
+          <h2 className="text-lg font-semibold">
+            {viewingAsClient 
+              ? `${currentClient?.name}'s Capital Sources`
+              : "Your Capital Sources"}
+          </h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
