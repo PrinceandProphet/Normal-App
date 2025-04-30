@@ -180,10 +180,10 @@ export default function Home() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="space-y-3">
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
-          Disaster Planning Dashboard
+          My Dashboard
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage your checklists, explore funding opportunities, and organize important documents all in one place.
+          Manage your recovery checklists, explore funding opportunities, and organize important documents all in one place.
         </p>
       </div>
 

@@ -54,7 +54,8 @@ const navigationConfig = {
   sharedAdminNav: [
     { name: "Funding Opportunities", href: "/funding-opportunities", icon: DollarSign },
     { name: "Opportunity Matches", href: "/opportunity-matches", icon: Handshake },
-    { name: "Knowledge Base", href: "/admin/resources", icon: BookOpen },
+    // Knowledge Base temporarily hidden
+    // { name: "Knowledge Base", href: "/admin/resources", icon: BookOpen },
   ],
   
   // Client/User navigation - focused only on their recovery journey
