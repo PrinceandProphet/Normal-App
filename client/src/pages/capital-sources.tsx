@@ -58,10 +58,8 @@ type FormValues = z.infer<typeof sourceSchema>;
 export default function CapitalSources() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isClientSelectOpen, setIsClientSelectOpen] = useState(false);
   const { user } = useAuth();
-  const { currentClient, setCurrentClient, clearCurrentClient, viewingAsClient } = useClient();
-  const clients = useClients();
+  const { selectedClient } = useClientContext();
 
   // Get capital sources based on client context if available
   const { data: sources = [] } = useQuery<any[]>({
