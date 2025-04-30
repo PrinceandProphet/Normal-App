@@ -42,6 +42,9 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     queryKey: ['/api/survivors'],
     // Enable for any logged-in user, not just admins
     enabled: !!user,
+    retry: 2,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // 30 seconds
   });
 
   // Clear selected client when logging out or auto-select client for user role
@@ -60,8 +63,17 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     }
   }, [user, clients]);
 
-  // Cast clients to SurvivorData[] to fix TypeScript issues
-  const typedClients = Array.isArray(clients) ? clients as SurvivorData[] : [];
+  // Process clients data to ensure it's properly formatted
+  const typedClients = Array.isArray(clients) 
+    ? clients.map((client: any) => ({
+        ...client,
+        // Ensure core properties exist
+        id: client.id,
+        name: client.name || `${client.firstName || ''} ${client.lastName || ''}`.trim() || 'Unknown',
+        role: client.role || 'user',
+        userType: client.userType || 'survivor',
+      })) as SurvivorData[] 
+    : [];
 
   return (
     <ClientContext.Provider

@@ -74,6 +74,9 @@ export function ClientSelector() {
     }
   };
 
+  // Debug the clients data
+  console.log("Client Selector - clients data:", clients);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -92,7 +95,7 @@ export function ClientSelector() {
           ) : (
             <span className="flex items-center">
               <Search className="mr-2 h-4 w-4" />
-              Search clients...
+              Search clients ({clients.length})...
             </span>
           )}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -107,7 +110,7 @@ export function ClientSelector() {
           />
           <CommandList>
             <CommandEmpty>No clients found.</CommandEmpty>
-            <CommandGroup>
+            <CommandGroup heading={`All Clients (${clients.length})`}>
               {clients && clients.length > 0 ? 
                 clients
                   .filter(client => {
