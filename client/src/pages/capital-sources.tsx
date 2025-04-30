@@ -49,8 +49,8 @@ import { DollarSign, Plus, Trash2, InfoIcon, User, UserCircle, Check } from "luc
 import { z } from "zod";
 import { Label } from "@/components/ui/label";
 import { useClient, useClients } from "@/contexts/client-context";
+import { useClientContext } from "@/hooks/use-client-context";
 import { useAuth } from "@/hooks/use-auth";
-// Import the newer ClientContext but don't use it directly yet
 import { ClientSelector } from "@/components/client-selector";
 
 const sourceSchema = z.object({
@@ -68,10 +68,10 @@ type FormValues = z.infer<typeof sourceSchema>;
 export default function CapitalSources() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isClientSelectOpen, setIsClientSelectOpen] = useState(false);
   const { user } = useAuth();
-  const { currentClient, setCurrentClient, clearCurrentClient, viewingAsClient } = useClient();
-  const clients = useClients();
+  // Use both contexts during transition period
+  const { currentClient, viewingAsClient } = useClient();
+  const { selectedClient } = useClientContext();
 
   // Get capital sources based on client context if available
   const { data: sources = [] } = useQuery<any[]>({
@@ -215,78 +215,9 @@ export default function CapitalSources() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Capital Sources</h1>
-          {/* Client selection with styled button until ClientSelector is fully integrated */}
+          {/* Use the standardized ClientSelector component */}
           {user && (user.role === "admin" || user.role === "super_admin" || user.role === "case_manager") && (
-            <Dialog open={isClientSelectOpen} onOpenChange={setIsClientSelectOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant={viewingAsClient ? "default" : "outline"} 
-                  size="sm"
-                  className="flex items-center"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  {viewingAsClient ? currentClient?.name : "View As Client"}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Select Client</DialogTitle>
-                </DialogHeader>
-                <Command shouldFilter={false}>
-                  <CommandInput 
-                    placeholder="Search clients..." 
-                    value=""
-                    className="border-none focus:ring-0"
-                  />
-                  <CommandList>
-                    <CommandEmpty>No clients found.</CommandEmpty>
-                    <CommandGroup>
-                      {clients.length > 0 ? 
-                        clients.map(client => (
-                          <CommandItem
-                            key={client.id}
-                            value={client.id.toString()}
-                            onSelect={() => {
-                              setCurrentClient(client);
-                              setIsClientSelectOpen(false);
-                            }}
-                            className="flex items-center"
-                          >
-                            <UserCircle className="mr-2 h-4 w-4" />
-                            <span className="truncate">
-                              {client.firstName && client.lastName 
-                                ? `${client.firstName} ${client.lastName}`
-                                : client.name
-                              }
-                            </span>
-                            {currentClient?.id === client.id && (
-                              <Check className="ml-auto h-4 w-4 text-primary" />
-                            )}
-                          </CommandItem>
-                        ))
-                        : (
-                          <div className="py-6 text-center text-sm text-muted-foreground">
-                            No clients available
-                          </div>
-                        )
-                      }
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-                {viewingAsClient && (
-                  <Button
-                    variant="ghost"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      clearCurrentClient();
-                      setIsClientSelectOpen(false);
-                    }}
-                  >
-                    Clear client selection
-                  </Button>
-                )}
-              </DialogContent>
-            </Dialog>
+            <ClientSelector />
           )}
           {viewingAsClient && (
             <Badge variant="outline" className="ml-4">
