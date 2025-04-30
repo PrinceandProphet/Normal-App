@@ -199,14 +199,14 @@ export default function OrgDashboard() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/survivors">
+            <Link href="/all-clients">
               <Users className="h-4 w-4 mr-2" />
-              Manage Clients
+              View All Clients
             </Link>
           </Button>
 
           <Button asChild size="sm">
-            <Link href="/survivors/new">
+            <Link href="/add-client">
               <UserPlus className="h-4 w-4 mr-2" />
               Add Client
             </Link>
@@ -376,7 +376,7 @@ export default function OrgDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle>Clients</CardTitle>
                 <Button asChild size="sm">
-                  <Link href="/survivors/new">
+                  <Link href="/add-client">
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add Client
                   </Link>
@@ -416,7 +416,7 @@ export default function OrgDashboard() {
                   <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground mb-6">No clients found</p>
                   <Button asChild>
-                    <Link href="/survivors/new">Add Your First Client</Link>
+                    <Link href="/add-client">Add Your First Client</Link>
                   </Button>
                 </div>
               )}
