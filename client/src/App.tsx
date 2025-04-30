@@ -18,6 +18,7 @@ import OrgDashboard from "@/pages/org-dashboard";
 import PractitionerDashboard from "@/pages/practitioner-dashboard";
 import FundingOpportunities from "@/pages/funding-opportunities";
 import OpportunityMatches from "@/pages/opportunity-matches";
+import AllClients from "@/pages/all-clients";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ClientProvider } from "@/contexts/client-context";
@@ -74,6 +75,7 @@ function Router() {
       {/* Admin Only Routes */}
       <RoleBasedRoute path="/org-admin" component={OrgAdminPage} allowedRoles={["admin"]} />
       <RoleBasedRoute path="/org-dashboard" component={OrgDashboard} allowedRoles={["admin"]} />
+      <RoleBasedRoute path="/all-clients" component={AllClients} allowedRoles={["admin"]} />
       
       {/* Home Routes - Role Specific */}
       <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
