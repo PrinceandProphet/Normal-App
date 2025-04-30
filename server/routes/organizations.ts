@@ -70,17 +70,16 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create a new organization (admin only) - authentication temporarily disabled for testing
+// Create a new organization (admin only)
 router.post("/", async (req, res) => {
-  // Temporarily disable authentication for testing
-  // if (!req.isAuthenticated()) {
-  //   return res.status(401).json({ message: "Not authenticated" });
-  // }
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
 
-  // // Only admins and super admins can create organizations
-  // if (req.user.role !== "admin" && req.user.role !== "super_admin") {
-  //   return res.status(403).json({ message: "Access denied" });
-  // }
+  // Only admins and super admins can create organizations
+  if (req.user.role !== "admin" && req.user.role !== "super_admin") {
+    return res.status(403).json({ message: "Access denied" });
+  }
 
   try {
     console.log("Creating organization with data:", JSON.stringify(req.body, null, 2));

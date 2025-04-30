@@ -1,0 +1,38 @@
+Update the Funding Opportunities workflow to support multi-role grant application and award handling with Brevo transactional emails.
+
+1. View As Logic:
+- Allow practitioners, org admins, and super admins to apply for grants on behalf of a client while using "View As" mode.
+- Store the ID of the acting user for internal tracking, but the grant application and emails should reflect the client as the applicant.
+
+2. Add “Grant Applications” Section:
+- At the bottom of the existing "Funding Opportunities" screen, add a section titled "Grant Applications".
+- For each available grant, display:
+   - An "Apply" button if the client has not yet applied
+   - A status tag that reflects the current status: **Applied**, **Awarded**, or **Funded**
+   - An "Award Grant" button visible only to practitioners and org admins when viewing as the client
+   - A "Mark as Funded" button that appears only after the grant is marked "Awarded"
+
+3. Status Logic:
+- Status should change as follows:
+   - "Applied" when a client (or someone acting on their behalf) applies
+   - "Awarded" when an org admin or practitioner marks it awarded
+   - "Funded" when the grant is manually marked as funded
+- Record timestamps for each transition and store the actor ID responsible for each step
+
+4. Transactional Emails via Brevo:
+- Use Brevo (not MailSlurp) to send the following emails to the client:
+   a) When a grant is applied for:
+      - Subject: "Your Grant Application Has Been Received"
+      - Body: Include grant name and confirmation message
+   b) When a grant is awarded:
+      - Subject: "Congratulations! You've Been Awarded a Grant"
+      - Body: Include grant name and amount
+   c) When a grant is marked as funded:
+      - Subject: "Your Grant Funds Have Been Released"
+      - Body: Confirmation that the funds have been delivered
+
+5. Capital Stack Update:
+- Add a new category to the client's capital stack labeled "Individual Assistance Grants"
+- List each grant and amount awarded
+- Show a running total labeled "Total Individual Assistance Received"
+- Do NOT include these grants in the capital stack’s current or projected recovery totals

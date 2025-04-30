@@ -338,8 +338,19 @@ export const opportunityMatches = pgTable("opportunity_matches", {
   matchScore: numeric("match_score").notNull(), // 0-100 score representing how well client matches criteria
   matchCriteria: json("match_criteria").notNull().default({}), // Detailed breakdown of what criteria matched
   
-  // Match status
-  status: text("status").notNull().default("pending"), // pending, notified, applied, approved, rejected
+  // Match status - expanded to include application workflow
+  status: text("status").notNull().default("pending"), // pending, notified, applied, awarded, funded, rejected
+  
+  // Application tracking with actors for audit trail
+  appliedAt: timestamp("applied_at"),
+  appliedById: integer("applied_by_id").references(() => users.id), // Track who applied (client or staff acting on behalf)
+  awardedAt: timestamp("awarded_at"),
+  awardedById: integer("awarded_by_id").references(() => users.id), // Track who awarded
+  fundedAt: timestamp("funded_at"), 
+  fundedById: integer("funded_by_id").references(() => users.id), // Track who marked as funded
+  
+  // Award amount (may differ from opportunity default amount)
+  awardAmount: numeric("award_amount"),
   
   // Additional data
   notes: text("notes"),
