@@ -19,14 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+
 import {
   Form,
   FormField,
@@ -45,13 +38,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DollarSign, Plus, Trash2, InfoIcon, User, UserCircle, Check } from "lucide-react";
+import { DollarSign, Plus, Trash2, InfoIcon } from "lucide-react";
 import { z } from "zod";
 import { Label } from "@/components/ui/label";
-import { useClient, useClients } from "@/contexts/client-context";
+import { useClient } from "@/contexts/client-context";
 import { useClientContext } from "@/hooks/use-client-context";
 import { useAuth } from "@/hooks/use-auth";
-import { ClientSelector } from "@/components/client-selector";
 
 const sourceSchema = z.object({
   type: z.enum(["FEMA", "Insurance", "Grant"]),
@@ -215,10 +207,7 @@ export default function CapitalSources() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Capital Sources</h1>
-          {/* Use the standardized ClientSelector component */}
-          {user && (user.role === "admin" || user.role === "super_admin" || user.role === "case_manager") && (
-            <ClientSelector />
-          )}
+          {/* Client indicator badge */}
           {viewingAsClient && (
             <Badge variant="outline" className="ml-4">
               Viewing as: {currentClient?.name}
