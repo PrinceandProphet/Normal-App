@@ -68,11 +68,13 @@ export default function CapitalSources() {
     queryKey: currentClient 
       ? ["/api/capital-sources", { survivorId: currentClient.id }] 
       : ["/api/capital-sources"],
-    queryFn: () => {
+    queryFn: async () => {
       const url = currentClient 
         ? `/api/capital-sources?survivorId=${currentClient.id}`
         : "/api/capital-sources";
-      return apiRequest("GET", url);
+      const response = await apiRequest("GET", url);
+      // Ensure we always return an array
+      return Array.isArray(response) ? response : [];
     }
   });
 
