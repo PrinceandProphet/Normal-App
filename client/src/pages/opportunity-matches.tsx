@@ -9,15 +9,18 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthCheck from "@/components/auth-check";
 import PageHeader from "@/components/page-header";
-import OpportunityMatchTable from "@/components/funding/opportunity-match-table";
+import EnhancedOpportunityMatchTable from "@/components/funding/enhanced-opportunity-match-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { RefreshCw, Loader2, Search, Filter } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useClientContext } from "@/hooks/use-client-context";
 
 interface OpportunityMatchWithDetails {
   id: number;
@@ -27,23 +30,40 @@ interface OpportunityMatchWithDetails {
   matchScore: string;
   matchCriteria: any;
   notes: string | null;
+  awardAmount: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
   lastCheckedAt: string | Date;
   
+  // Application tracking fields
+  appliedAt?: Date | null;
+  appliedById?: number | null;
+  awardedAt?: Date | null;
+  awardedById?: number | null;
+  fundedAt?: Date | null;
+  fundedById?: number | null;
+  
   // Additional properties from joined tables
   opportunityName: string;
   survivorName: string;
-  awardAmount: number | null;
   applicationEndDate: string | Date | null;
 }
 
 export default function OpportunityMatches() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { selectedClient } = useClientContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  const { data: matches, isLoading, error } = useQuery<OpportunityMatchWithDetails[]>({
-    queryKey: ["/api/matching/matches"],
+  // Function to trigger a refresh of data
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+  
+  const { data: matches, isLoading, error, refetch } = useQuery<OpportunityMatchWithDetails[]>({
+    queryKey: ["/api/matching/matches", refreshTrigger],
     queryFn: async () => {
       const res = await fetch("/api/matching/matches");
       if (!res.ok) {
@@ -52,6 +72,20 @@ export default function OpportunityMatches() {
       return res.json();
     },
   });
+  
+  // Data for client specific matches when using "View As" functionality
+  const { data: clientMatches, isLoading: clientMatchesLoading } = useQuery<OpportunityMatchWithDetails[]>({
+    queryKey: ["/api/matching/survivors", selectedClient?.id, "matches", refreshTrigger],
+    queryFn: async () => {
+      if (!selectedClient?.id) return [];
+      const res = await apiRequest("GET", `/api/matching/survivors/${selectedClient.id}/matches`);
+      return await res.json();
+    },
+    enabled: !!selectedClient?.id,
+  });
+  
+  // Decide which matches to use based on "View As" context
+  const displayMatches = selectedClient ? clientMatches || [] : matches || [];
   
   const runMatchingMutation = useMutation({
     mutationFn: async () => {
@@ -76,6 +110,7 @@ export default function OpportunityMatches() {
         description: `Found ${data.newMatchCount || 0} new potential matches.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/matching/matches"] });
+      refreshData();
     },
     onError: (error) => {
       toast({
@@ -86,53 +121,70 @@ export default function OpportunityMatches() {
     },
   });
   
-  // Filter matches based on search term
-  const filteredMatches = matches?.filter(match => {
-    if (!searchTerm) return true;
+  // Filter matches based on search term and status
+  const filteredMatches = displayMatches.filter(match => {
+    // First filter by search term
+    const searchMatch = !searchTerm || 
+      match.opportunityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      match.survivorName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      match.opportunityName.toLowerCase().includes(searchTermLower) ||
-      match.survivorName.toLowerCase().includes(searchTermLower) ||
-      match.status.toLowerCase().includes(searchTermLower)
-    );
-  }) || [];
+    // Then filter by status if not "all"
+    const statusMatch = statusFilter === "all" || match.status === statusFilter;
+    
+    // Hide archived matches unless specifically requested
+    const archivedMatch = statusFilter === "archived" || match.status !== "archived";
+    
+    return searchMatch && statusMatch && archivedMatch;
+  });
   
   // Group matches by status for tab display
   const pendingMatches = filteredMatches.filter(m => m.status === "pending");
-  const notifiedMatches = filteredMatches.filter(m => m.status === "notified");
   const appliedMatches = filteredMatches.filter(m => m.status === "applied");
-  const completedMatches = filteredMatches.filter(m => 
-    m.status === "approved" || m.status === "rejected"
+  const awardedMatches = filteredMatches.filter(m => m.status === "awarded");
+  const fundedMatches = filteredMatches.filter(m => m.status === "funded");
+  const archivedMatches = filteredMatches.filter(m => m.status === "archived");
+  
+  // Handle the "View As" badge display
+  const TitleWithBadge = () => (
+    <div className="flex flex-col">
+      <h1 className="text-2xl font-bold">Opportunity Matches</h1>
+      {selectedClient && (
+        <p className="text-sm text-primary font-medium mt-1">
+          Viewing matches for {selectedClient.name}
+        </p>
+      )}
+    </div>
   );
   
   return (
     <AuthCheck>
       <div className="container py-6 space-y-6 max-w-6xl">
         <PageHeader
-          title="Opportunity Matches"
-          description="Manage matches between clients and funding opportunities based on eligibility"
+          title={<TitleWithBadge />}
+          description="Manage client grant applications and funding opportunities"
         />
         
         <Card>
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <CardTitle>Match Management</CardTitle>
+                <CardTitle>Grant Applications</CardTitle>
                 <CardDescription>
-                  View and manage matches between clients and funding opportunities
+                  Track and manage applications through the approval process
                 </CardDescription>
               </div>
               
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => runMatchingMutation.mutate()}
-                  disabled={runMatchingMutation.isPending}
-                  className="whitespace-nowrap"
-                >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${runMatchingMutation.isPending ? 'animate-spin' : ''}`} />
-                  Run Matching Process
-                </Button>
+                {!selectedClient && (
+                  <Button
+                    onClick={() => runMatchingMutation.mutate()}
+                    disabled={runMatchingMutation.isPending}
+                    className="whitespace-nowrap"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${runMatchingMutation.isPending ? 'animate-spin' : ''}`} />
+                    Run Matching Process
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -140,26 +192,50 @@ export default function OpportunityMatches() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="w-full md:w-1/3">
-                  <Label htmlFor="search" className="sr-only">Search</Label>
+                <div className="w-full md:w-1/3 relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="search"
-                    placeholder="Search matches..."
+                    placeholder="Search by client or opportunity..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
                   />
                 </div>
                 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {matches && (
-                    <span>
-                      Found {matches.length} potential matches
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="w-[180px]">
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger className="h-9">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="applied">Applied</SelectItem>
+                        <SelectItem value="awarded">Awarded</SelectItem>
+                        <SelectItem value="funded">Funded</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    {displayMatches && (
+                      <span>
+                        {filteredMatches.length} of {displayMatches.length} matches
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              {isLoading ? (
+              {isLoading || clientMatchesLoading ? (
                 <div className="flex items-center justify-center min-h-[400px]">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
@@ -168,21 +244,21 @@ export default function OpportunityMatches() {
                   Error loading matches: {error instanceof Error ? error.message : "Unknown error"}
                 </div>
               ) : (
-                <Tabs defaultValue="pending" className="w-full">
-                  <TabsList className="mb-4 w-full grid grid-cols-4">
+                <Tabs defaultValue="all" className="w-full">
+                  <TabsList className="mb-4 w-full grid grid-cols-6">
+                    <TabsTrigger value="all" className="relative">
+                      All
+                      {filteredMatches.length > 0 && (
+                        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                          {filteredMatches.length}
+                        </span>
+                      )}
+                    </TabsTrigger>
                     <TabsTrigger value="pending" className="relative">
                       Pending
                       {pendingMatches.length > 0 && (
                         <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
                           {pendingMatches.length}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger value="notified" className="relative">
-                      Notified
-                      {notifiedMatches.length > 0 && (
-                        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                          {notifiedMatches.length}
                         </span>
                       )}
                     </TabsTrigger>
@@ -194,30 +270,78 @@ export default function OpportunityMatches() {
                         </span>
                       )}
                     </TabsTrigger>
-                    <TabsTrigger value="completed" className="relative">
-                      Completed
-                      {completedMatches.length > 0 && (
+                    <TabsTrigger value="awarded" className="relative">
+                      Awarded
+                      {awardedMatches.length > 0 && (
                         <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                          {completedMatches.length}
+                          {awardedMatches.length}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="funded" className="relative">
+                      Funded
+                      {fundedMatches.length > 0 && (
+                        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                          {fundedMatches.length}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="archived" className="relative">
+                      Archived
+                      {archivedMatches.length > 0 && (
+                        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                          {archivedMatches.length}
                         </span>
                       )}
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="pending">
-                    <OpportunityMatchTable matches={pendingMatches} />
+                  <TabsContent value="all">
+                    <EnhancedOpportunityMatchTable 
+                      matches={filteredMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
                   </TabsContent>
                   
-                  <TabsContent value="notified">
-                    <OpportunityMatchTable matches={notifiedMatches} />
+                  <TabsContent value="pending">
+                    <EnhancedOpportunityMatchTable 
+                      matches={pendingMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="applied">
-                    <OpportunityMatchTable matches={appliedMatches} />
+                    <EnhancedOpportunityMatchTable 
+                      matches={appliedMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
                   </TabsContent>
                   
-                  <TabsContent value="completed">
-                    <OpportunityMatchTable matches={completedMatches} />
+                  <TabsContent value="awarded">
+                    <EnhancedOpportunityMatchTable 
+                      matches={awardedMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="funded">
+                    <EnhancedOpportunityMatchTable 
+                      matches={fundedMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="archived">
+                    <EnhancedOpportunityMatchTable 
+                      matches={archivedMatches} 
+                      isSurvivorView={!!selectedClient}
+                      onRefresh={refreshData}
+                    />
                   </TabsContent>
                 </Tabs>
               )}
@@ -228,8 +352,10 @@ export default function OpportunityMatches() {
             <div className="flex flex-col w-full space-y-2">
               <div className="text-xs text-muted-foreground">
                 <p>
-                  Matching runs automatically every 30 minutes to check for new eligible matches.
-                  You can also manually run the matching process using the button above.
+                  {selectedClient 
+                    ? "View and manage grant applications for this client. Use the status tabs to filter applications."
+                    : "Matching runs automatically every 30 minutes to check for new eligible matches. You can also manually run the matching process using the button above."
+                  }
                 </p>
               </div>
             </div>
