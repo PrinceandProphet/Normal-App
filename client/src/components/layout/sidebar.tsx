@@ -64,6 +64,8 @@ const navigationConfig = {
     { name: "My Household", href: "/household", icon: Building2 },
     { name: "My Documents", href: "/documents", icon: FileText },
     { name: "My Messages", href: "/messages", icon: MessageSquare },
+    { name: "My Capital Sources", href: "/capital-sources", icon: DollarSign },
+    { name: "My Contacts", href: "/contacts", icon: Users },
     { name: "Profile Settings", href: "/profile", icon: Settings },
   ]
 };
@@ -87,7 +89,7 @@ export default function Sidebar() {
     if (role === "super_admin") {
       navItems.push(...navigationConfig.superAdminNav);
       navItems.push(...navigationConfig.sharedAdminNav);
-      // Super admins can see client sections but they're collapsible
+      // Super admins can see client sections but they're collapsible in a separate section
     } else if (role === "admin") {
       navItems.push(...navigationConfig.orgAdminNav.map(item => {
         // Replace dynamic parameters like :id with actual values
@@ -100,7 +102,7 @@ export default function Sidebar() {
         return item;
       }));
       navItems.push(...navigationConfig.sharedAdminNav);
-      // Admins can see client sections but they're collapsible
+      // Admins can see client sections but they're collapsible in a separate section
     } else if (role === "case_manager") {
       navItems.push(...navigationConfig.caseManagerNav);
       // Case managers directly see client sections (not collapsible)
@@ -212,7 +214,7 @@ export default function Sidebar() {
         {showClientSectionCollapsible && (
           <div className={cn(
             "transition-all duration-300 overflow-hidden",
-            !clientMenuCollapsed || collapsed ? "max-h-96" : "max-h-0"
+            collapsed || !clientMenuCollapsed ? "max-h-96" : "max-h-0"
           )}>
             {navigationConfig.clientNav.map((item) => (
               <div key={item.name}>
