@@ -243,7 +243,8 @@ export async function registerRoutes(app: Express) {
 
   // Capital Sources
   app.get("/api/capital-sources", async (req, res) => {
-    const sources = await storage.getCapitalSources();
+    const survivorId = req.query.survivorId ? parseInt(req.query.survivorId as string) : undefined;
+    const sources = await storage.getCapitalSources(survivorId);
     res.json(sources);
   });
 

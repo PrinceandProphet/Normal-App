@@ -932,7 +932,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Capital Sources
-  async getCapitalSources(): Promise<CapitalSource[]> {
+  async getCapitalSources(survivorId?: number): Promise<CapitalSource[]> {
+    if (survivorId) {
+      return await db.select().from(capitalSources).where(eq(capitalSources.survivorId, survivorId));
+    }
     return await db.select().from(capitalSources);
   }
 
