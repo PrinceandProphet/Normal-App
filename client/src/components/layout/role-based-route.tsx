@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { Route, Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -7,7 +7,7 @@ import LoadingWrapper from "@/components/loading-wrapper";
 
 interface RoleBasedRouteProps {
   path: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<any> | React.LazyExoticComponent<React.ComponentType<any>>;
   // Define which roles can access this route
   allowedRoles?: string[];
   // Whether to wrap the component in the RoleBasedLayout
@@ -15,6 +15,13 @@ interface RoleBasedRouteProps {
   // Whether to use loading wrapper
   useLoading?: boolean;
 }
+
+// Loading component to show while components are loading
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 export function RoleBasedRoute({
   path,
@@ -58,26 +65,37 @@ export function RoleBasedRoute({
       }
     }
 
+    // Determine if Component is lazy loaded
+    const isLazyComponent = Component.displayName === undefined && (Component as any)._payload !== undefined;
+
+    const ComponentWithFallback = isLazyComponent ? (
+      <Suspense fallback={<LoadingFallback />}>
+        <Component />
+      </Suspense>
+    ) : (
+      <Component />
+    );
+
     // Render the component with or without layout wrapper
     if (withLayout) {
       return (
         <RoleBasedLayout>
-          {useLoading ? (
+          {useLoading && !isLazyComponent ? (
             <LoadingWrapper delay={50}>
-              <Component />
+              {ComponentWithFallback}
             </LoadingWrapper>
           ) : (
-            <Component />
+            ComponentWithFallback
           )}
         </RoleBasedLayout>
       );
     } else {
-      return useLoading ? (
+      return useLoading && !isLazyComponent ? (
         <LoadingWrapper delay={50}>
-          <Component />
+          {ComponentWithFallback}
         </LoadingWrapper>
       ) : (
-        <Component />
+        ComponentWithFallback
       );
     }
   };

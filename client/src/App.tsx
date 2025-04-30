@@ -49,8 +49,7 @@ function Router() {
       {/* Public route - Auth page */}
       <Route path="/auth" component={AuthPage} />
       
-      {/* Client/Survivor Routes - accessible by all user types */}
-      <RoleBasedRoute path="/" component={Home} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
+      {/* Shared Routes for All Users */}
       <RoleBasedRoute path="/action-plan" component={ActionPlan} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
       <RoleBasedRoute path="/household" component={Household} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
       <RoleBasedRoute path="/documents" component={Documents} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
@@ -63,24 +62,27 @@ function Router() {
       <RoleBasedRoute path="/admin" component={AdminPage} allowedRoles={["super_admin"]} />
       <RoleBasedRoute 
         path="/admin/organizations" 
-        component={() => <LazyRouteComponent component={OrganizationsPage} />} 
+        component={lazy(() => import("@/pages/admin/organizations"))} 
         allowedRoles={["super_admin"]} 
       />
       <RoleBasedRoute 
         path="/admin/clients" 
-        component={() => <LazyRouteComponent component={AllClientsPage} />} 
+        component={lazy(() => import("@/pages/admin/clients"))} 
         allowedRoles={["super_admin"]} 
       />
       
       {/* Admin Only Routes */}
-      <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
       <RoleBasedRoute path="/org-admin" component={OrgAdminPage} allowedRoles={["admin"]} />
       <RoleBasedRoute path="/org-dashboard" component={OrgDashboard} allowedRoles={["admin"]} />
+      
+      {/* Home Routes - Role Specific */}
+      <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
+      <RoleBasedRoute path="/" component={Home} allowedRoles={["super_admin", "case_manager", "user"]} />
       
       {/* Route accessible to both Super Admin and Admin */}
       <RoleBasedRoute 
         path="/organizations/:id/settings" 
-        component={() => <LazyRouteComponent component={OrganizationSettingsPage} />} 
+        component={lazy(() => import("@/pages/organizations/settings"))} 
         allowedRoles={["super_admin", "admin"]} 
       />
       
