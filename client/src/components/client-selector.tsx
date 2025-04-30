@@ -74,8 +74,9 @@ export function ClientSelector() {
     }
   };
 
-  // Debug the clients data
+  // Debug the clients data and loading state
   console.log("Client Selector - clients data:", clients);
+  console.log("Client Selector - loading state:", isLoading);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -86,6 +87,7 @@ export function ClientSelector() {
           aria-expanded={open}
           size="sm" 
           className="w-[220px] justify-between"
+          disabled={isLoading}
         >
           {selectedClient ? (
             <span className="flex items-center truncate">
@@ -95,7 +97,7 @@ export function ClientSelector() {
           ) : (
             <span className="flex items-center">
               <Search className="mr-2 h-4 w-4" />
-              Search clients ({clients.length})...
+              {isLoading ? 'Loading clients...' : `Search clients (${clients.length || 0})...`}
             </span>
           )}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -110,40 +112,46 @@ export function ClientSelector() {
           />
           <CommandList>
             <CommandEmpty>No clients found.</CommandEmpty>
-            <CommandGroup heading={`All Clients (${clients.length})`}>
-              {clients && clients.length > 0 ? 
-                clients
-                  .filter(client => {
-                    if (!searchValue) return true;
-                    const fullName = getClientFullName(client).toLowerCase();
-                    return fullName.includes(searchValue.toLowerCase());
-                  })
-                  .map(client => (
-                    <CommandItem
-                      key={client.id}
-                      value={client.id.toString()}
-                      onSelect={() => handleSelectClient(client)}
-                      className="flex items-center"
-                    >
-                      <UserCircle className="mr-2 h-4 w-4" />
-                      <span className="truncate">{getClientFullName(client)}</span>
-                      {client.status && (
-                        <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-muted">
-                          {client.status}
-                        </span>
-                      )}
-                      {selectedClient?.id === client.id && (
-                        <Check className="ml-auto h-4 w-4 text-primary" />
-                      )}
-                    </CommandItem>
-                  ))
-                : (
-                  <div className="py-6 text-center text-sm text-muted-foreground">
-                    No clients available
-                  </div>
-                )
-              }
-            </CommandGroup>
+            {isLoading ? (
+              <div className="py-6 text-center text-sm">
+                Loading clients...
+              </div>
+            ) : (
+              <CommandGroup heading={`All Clients (${clients.length || 0})`}>
+                {clients && clients.length > 0 ? 
+                  clients
+                    .filter(client => {
+                      if (!searchValue) return true;
+                      const fullName = getClientFullName(client).toLowerCase();
+                      return fullName.includes(searchValue.toLowerCase());
+                    })
+                    .map(client => (
+                      <CommandItem
+                        key={client.id}
+                        value={client.id.toString()}
+                        onSelect={() => handleSelectClient(client)}
+                        className="flex items-center"
+                      >
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        <span className="truncate">{getClientFullName(client)}</span>
+                        {client.status && (
+                          <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-muted">
+                            {client.status}
+                          </span>
+                        )}
+                        {selectedClient?.id === client.id && (
+                          <Check className="ml-auto h-4 w-4 text-primary" />
+                        )}
+                      </CommandItem>
+                    ))
+                  : (
+                    <div className="py-6 text-center text-sm text-muted-foreground">
+                      No clients available. Please log in to view clients.
+                    </div>
+                  )
+                }
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

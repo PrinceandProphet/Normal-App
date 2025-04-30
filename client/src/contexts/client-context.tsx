@@ -51,9 +51,17 @@ export function useClient() {
 }
 
 export function useClients() {
+  // Add debugging to help identify any issues
+  console.log("Old useClients hook called");
+  
   const { data: survivors = [] } = useQuery<SurvivorData[]>({
     queryKey: ["/api/survivors"],
+    retry: 3,
+    refetchOnWindowFocus: true
   });
+  
+  // Additional debugging for the returned array
+  console.log("Survivors array length:", survivors?.length);
   
   return survivors;
 }

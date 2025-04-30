@@ -63,7 +63,12 @@ export default function CapitalSources() {
   const { user } = useAuth();
   // Use both contexts during transition period
   const { currentClient, viewingAsClient } = useClient();
-  const { selectedClient } = useClientContext();
+  const { selectedClient, clients } = useClientContext();
+  
+  // Debug client data
+  console.log("Capital Sources - Current client:", currentClient);
+  console.log("Capital Sources - Selected client:", selectedClient);
+  console.log("Capital Sources - Clients array length:", clients?.length);
 
   // Get capital sources based on client context if available
   const { data: sources = [] } = useQuery<any[]>({
