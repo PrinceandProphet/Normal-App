@@ -17,6 +17,9 @@ router.get("/", async (req, res) => {
   }
 
   try {
+    // Log current user accessing survivors list
+    console.log(`[Survivors API] User ${req.user.id} (${req.user.name}) with role ${req.user.role} accessing survivors list`);
+    
     // For admin, super_admin, and practitioner users, return all survivors
     if (
       req.user.role === "admin" || 
@@ -24,12 +27,16 @@ router.get("/", async (req, res) => {
       req.user.userType === "practitioner"
     ) {
       // Get all users with userType "survivor"
+      console.log(`[Survivors API] Querying all survivors from database`);
       const allSurvivors = await db.select().from(users).where(eq(users.userType, "survivor"));
+      console.log(`[Survivors API] Found ${allSurvivors.length} survivors in the database`);
       
       // For each survivor, get their organization relationships
       const survivorsWithOrgs = await Promise.all(
         allSurvivors.map(async (survivor) => {
           const relationships = await storage.getSurvivorOrganizations(survivor.id);
+          console.log(`[Survivors API] Survivor ID ${survivor.id} has ${relationships.length} organization relationships`);
+          
           const orgs = await Promise.all(
             relationships.map(async r => {
               const org = await storage.getOrganization(r.organizationId);
@@ -55,9 +62,11 @@ router.get("/", async (req, res) => {
     } 
     // For regular users, use access control filtering
     else {
+      console.log(`[Survivors API] Using access control filtering for user ${req.user.id}`);
       // Apply filtering middleware logic directly
       await filterAccessibleSurvivors(req, res, async () => {
         if (req.filteredSurvivorIds && req.filteredSurvivorIds.length > 0) {
+          console.log(`[Survivors API] User has access to ${req.filteredSurvivorIds.length} survivors: ${JSON.stringify(req.filteredSurvivorIds)}`);
           const survivors = await Promise.all(
             req.filteredSurvivorIds.map(id => storage.getUser(id))
           );
@@ -65,6 +74,7 @@ router.get("/", async (req, res) => {
         }
         
         // Otherwise return an empty array
+        console.log(`[Survivors API] No accessible survivors found for user ${req.user.id}`);
         return res.json([]);
       });
     }
