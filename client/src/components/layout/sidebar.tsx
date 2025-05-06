@@ -39,7 +39,8 @@ const navigationConfig = {
   
   // Organization Admin navigation
   orgAdminNav: [
-    { name: "Org Dashboard", href: "/org-admin", icon: BarChart4 },
+    { name: "Org Dashboard", href: "/org-dashboard", icon: BarChart4 },
+    { name: "All Clients", href: "/all-clients", icon: Users },
     { name: "Organization Settings", href: "/organizations/:id/settings", icon: Building2, dynamicParam: true },
   ],
   
