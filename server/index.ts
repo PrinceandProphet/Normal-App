@@ -2,6 +2,12 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { startMatchingService } from "./services/matchingService";
+import { loadEnvironment, getEnvironment } from "./config";
+
+// Load environment variables based on NODE_ENV
+loadEnvironment();
+const currentEnv = getEnvironment();
+console.log(`Starting server in ${currentEnv} environment`);
 
 const app = express();
 app.use(express.json());
