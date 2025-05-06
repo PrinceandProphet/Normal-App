@@ -35,9 +35,9 @@ SELECT * FROM dblink(:'neondb_connection', 'SELECT os.organization_id, os.surviv
 AS org_survivors(organization_id integer, survivor_id integer, is_primary boolean, status text, notes text, added_by_id integer, added_at timestamp, updated_at timestamp);
 
 -- 6. Migrate messages related to demetriusgray
-INSERT INTO messages (id, content, created_at, updated_at, organization_id, survivor_id, contact_id, subject, read, sender_id, sender_type, recipient_id, recipient_type, status, tags, sent_at)
-SELECT * FROM dblink(:'neondb_connection', 'SELECT m.id, m.content, m.created_at, m.updated_at, m.organization_id, m.survivor_id, m.contact_id, m.subject, m.read, m.sender_id, m.sender_type, m.recipient_id, m.recipient_type, m.status, m.tags, m.sent_at FROM messages m WHERE m.sender_id = 4 OR m.recipient_id = 4')
-AS msgs(id integer, content text, created_at timestamp, updated_at timestamp, organization_id integer, survivor_id integer, contact_id integer, subject text, read boolean, sender_id integer, sender_type text, recipient_id integer, recipient_type text, status text, tags text[], sent_at timestamp);
+INSERT INTO messages (id, content, created_at, updated_at, organization_id, survivor_id, contact_id, subject, is_read, sender_id, status, parent_id, external_id, tags, sent_at, channel, is_inbound)
+SELECT * FROM dblink(:'neondb_connection', 'SELECT m.id, m.content, m.created_at, m.updated_at, m.organization_id, m.survivor_id, m.contact_id, m.subject, m.is_read, m.sender_id, m.status, m.parent_id, m.external_id, m.tags, m.sent_at, m.channel, m.is_inbound FROM messages m WHERE m.sender_id = 4')
+AS msgs(id integer, content text, created_at timestamp, updated_at timestamp, organization_id integer, survivor_id integer, contact_id integer, subject text, is_read boolean, sender_id integer, status text, parent_id integer, external_id text, tags text, sent_at timestamp, channel text, is_inbound boolean);
 
 -- 7. Migrate household data
 INSERT INTO household_groups (id, name, created_at, updated_at, survivor_id, description, address, housing_type)
@@ -67,10 +67,10 @@ INSERT INTO documents (id, title, file_path, uploaded_at, updated_at, organizati
 SELECT * FROM dblink(:'neondb_connection', 'SELECT d.id, d.title, d.file_path, d.uploaded_at, d.updated_at, d.organization_id, d.survivor_id, d.type, d.description, d.metadata, d.size, d.filename, d.mimetype FROM documents d WHERE d.survivor_id IN (SELECT u.id FROM users u WHERE u.user_type = ''survivor'' AND EXISTS (SELECT 1 FROM organization_survivors os WHERE os.survivor_id = u.id AND os.organization_id IN (SELECT o.id FROM organizations o WHERE EXISTS (SELECT 1 FROM organization_members om WHERE om.organization_id = o.id AND om.user_id = 4))))')
 AS docs(id integer, title text, file_path text, uploaded_at timestamp, updated_at timestamp, organization_id integer, survivor_id integer, type text, description text, metadata jsonb, size integer, filename text, mimetype text);
 
--- 11. Migrate tasks
-INSERT INTO tasks (id, title, description, due_date, completed, created_at, updated_at, user_id, organization_id, survivor_id, assigned_by, priority, category, completion_date, status, reminder_sent)
-SELECT * FROM dblink(:'neondb_connection', 'SELECT t.id, t.title, t.description, t.due_date, t.completed, t.created_at, t.updated_at, t.user_id, t.organization_id, t.survivor_id, t.assigned_by, t.priority, t.category, t.completion_date, t.status, t.reminder_sent FROM tasks t WHERE t.user_id = 4 OR t.assigned_by = 4 OR t.survivor_id IN (SELECT u.id FROM users u WHERE u.user_type = ''survivor'' AND EXISTS (SELECT 1 FROM organization_survivors os WHERE os.survivor_id = u.id AND os.organization_id IN (SELECT o.id FROM organizations o WHERE EXISTS (SELECT 1 FROM organization_members om WHERE om.organization_id = o.id AND om.user_id = 4))))')
-AS tasks(id integer, title text, description text, due_date timestamp, completed boolean, created_at timestamp, updated_at timestamp, user_id integer, organization_id integer, survivor_id integer, assigned_by integer, priority text, category text, completion_date timestamp, status text, reminder_sent boolean);
+-- 11. Migrate tasks - with schema adjustments for the production database
+INSERT INTO tasks (id, text, completed, urgent, stage, created_at, created_by_id, created_by_type, assigned_to_id, assigned_to_type, subtasks)
+SELECT * FROM dblink(:'neondb_connection', 'SELECT t.id, t.text, t.completed, t.urgent, t.stage, t.created_at, t.created_by_id, t.created_by_type, t.assigned_to_id, t.assigned_to_type, t.subtasks FROM tasks t WHERE t.created_by_id = 4 OR t.assigned_to_id = 4')
+AS tasks(id integer, text text, completed boolean, urgent boolean, stage text, created_at timestamp, created_by_id integer, created_by_type text, assigned_to_id integer, assigned_to_type text, subtasks text);
 
 -- 12. Migrate capital sources
 INSERT INTO capital_sources (id, name, description, amount, source_type, created_at, updated_at, organization_id, survivor_id, application_url, contact_info, status, approval_date, expiration_date, application_deadline, notes, eligibility_criteria, grant_id, reference_number)
