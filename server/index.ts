@@ -4,6 +4,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import { startMatchingService } from "./services/matchingService";
 
 const app = express();
+// Trust proxy to ensure cookies work correctly behind load balancers
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
