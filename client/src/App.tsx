@@ -48,7 +48,9 @@ function Router() {
   return (
     <Switch>
       {/* Public route - Auth page */}
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
       
       {/* Shared Routes for All Users */}
       <RoleBasedRoute path="/action-plan" component={ActionPlan} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
