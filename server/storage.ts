@@ -281,7 +281,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteOrganization(id: number): Promise<void> {
-    await db.delete(organizations).where(eq(organizations.id, id));
+    // First, begin a transaction to ensure atomicity
+    await db.transaction(async (tx) => {
+      // 1. Get all users with this organization ID
+      const usersInOrg = await tx.select().from(users).where(eq(users.organizationId, id));
+      
+      // 2. Set organization ID to null for all users in this organization
+      if (usersInOrg.length > 0) {
+        await tx.update(users)
+          .set({ organizationId: null })
+          .where(eq(users.organizationId, id));
+      }
+
+      // Note: organizationMembers and organizationSurvivors have onDelete: 'cascade' 
+      // so they will be automatically deleted when the organization is deleted
+      
+      // 3. Finally delete the organization itself
+      await tx.delete(organizations).where(eq(organizations.id, id));
+    });
   }
   
   async updateOrganizationSettings(id: number, settings: UpdateOrganizationSettings): Promise<Organization> {
