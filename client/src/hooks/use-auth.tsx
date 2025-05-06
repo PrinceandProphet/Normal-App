@@ -48,18 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
-        console.log("Redirecting user with role:", user.role, "and type:", user.userType);
-        
         if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
           setLocation('/practitioner-dashboard');
-        } else if (user.userType === 'survivor') {
-          setLocation('/'); // Direct survivors to the home dashboard
         } else {
-          setLocation('/'); // Default for other users
+          setLocation('/'); // Default for users/survivors
         }
         
         // Reset route changing flag once navigation is complete
@@ -93,18 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
-        console.log("Redirecting user with role:", user.role, "and type:", user.userType);
-        
         if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
           setLocation('/practitioner-dashboard');
-        } else if (user.userType === 'survivor') {
-          setLocation('/'); // Direct survivors to the home dashboard
         } else {
-          setLocation('/'); // Default for other users
+          setLocation('/'); // Default for users/survivors
         }
         
         // Reset route changing flag once navigation is complete
