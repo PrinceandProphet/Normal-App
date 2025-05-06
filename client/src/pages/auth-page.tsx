@@ -48,7 +48,9 @@ export default function AuthPage() {
     // If user is already logged in, redirect based on role
     // We'll only handle the initial redirect here, not after login/register 
     // since those are handled in the mutations
-    if (user && !loginMutation.isPending && !registerMutation.isPending) {
+    if (user) {
+      console.log("Auth page: User is logged in, redirecting based on role", user);
+      
       // Super admins land on the Admin Dashboard
       if (user.role === 'super_admin') {
         navigate('/admin');
@@ -66,7 +68,7 @@ export default function AuthPage() {
         navigate('/');
       }
     }
-  }, [user, navigate, loginMutation.isPending, registerMutation.isPending]);
+  }, [user, navigate]);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({

@@ -38,10 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Update the query cache with the user data
       queryClient.setQueryData(["/api/user"], user);
       
-      // Update the query cache to trigger the useEffect in auth-page.tsx
-      // which will handle the navigation
+      // Log successful login
+      console.log("Login successful, user data:", user);
       
       toast({
         title: "Login successful",
@@ -63,10 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Update the query cache with the user data
       queryClient.setQueryData(["/api/user"], user);
       
-      // Update the query cache to trigger the useEffect in auth-page.tsx
-      // which will handle the navigation
+      // Log successful registration
+      console.log("Registration successful, user data:", user);
       
       toast({
         title: "Registration successful",
