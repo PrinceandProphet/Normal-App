@@ -46,17 +46,27 @@ export default function AuthPage() {
   // Use effect for navigation instead of during render
   useEffect(() => {
     // If user is already logged in, redirect based on role
-    if (user) {
+    // We'll only handle the initial redirect here, not after login/register 
+    // since those are handled in the mutations
+    if (user && !loginMutation.isPending && !registerMutation.isPending) {
       // Super admins land on the Admin Dashboard
       if (user.role === 'super_admin') {
         navigate('/admin');
       } 
+      // Organization admins go to org dashboard
+      else if (user.role === 'admin') {
+        navigate('/org-dashboard');
+      }
+      // Case managers go to practitioner dashboard
+      else if (user.role === 'case_manager') {
+        navigate('/practitioner-dashboard');
+      }
       // Regular users and others go to home
       else {
         navigate('/');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, loginMutation.isPending, registerMutation.isPending]);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({

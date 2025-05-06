@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { createContext, ReactNode, useContext } from "react";
 import {
   useQuery,
   useMutation,
@@ -7,7 +7,6 @@ import {
 import { User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -23,8 +22,6 @@ type LoginData = Pick<InsertUser, "username" | "password">;
 export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [isRouteChanging, setIsRouteChanging] = useState(false);
   
   const {
     data: user,
@@ -43,28 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       
-      // Set route changing flag to true to prevent flicker
-      setIsRouteChanging(true);
-      
-      // Use wouter's setLocation for smooth client-side navigation
-      setTimeout(() => {
-        if (user.role === 'super_admin') {
-          setLocation('/admin');
-        } else if (user.role === 'admin') {
-          setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
-        } else if (user.role === 'case_manager') {
-          setLocation('/practitioner-dashboard');
-        } else {
-          setLocation('/'); // Default for users/survivors
-        }
-        
-        // Reset route changing flag once navigation is complete
-        setIsRouteChanging(false);
-      }, 50);
+      // Update the query cache to trigger the useEffect in auth-page.tsx
+      // which will handle the navigation
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.username}!`,
+        description: `Welcome back, ${user.username || user.name}!`,
       });
     },
     onError: (error: Error) => {
@@ -84,28 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       
-      // Set route changing flag to true to prevent flicker
-      setIsRouteChanging(true);
-      
-      // Use wouter's setLocation for smooth client-side navigation
-      setTimeout(() => {
-        if (user.role === 'super_admin') {
-          setLocation('/admin');
-        } else if (user.role === 'admin') {
-          setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
-        } else if (user.role === 'case_manager') {
-          setLocation('/practitioner-dashboard');
-        } else {
-          setLocation('/'); // Default for users/survivors
-        }
-        
-        // Reset route changing flag once navigation is complete
-        setIsRouteChanging(false);
-      }, 50);
+      // Update the query cache to trigger the useEffect in auth-page.tsx
+      // which will handle the navigation
       
       toast({
         title: "Registration successful",
-        description: `Welcome, ${user.username}!`,
+        description: `Welcome, ${user.username || user.name}!`,
       });
     },
     onError: (error: Error) => {
