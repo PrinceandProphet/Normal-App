@@ -32,7 +32,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AddClientPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -76,7 +76,7 @@ export default function AddClientPage() {
       });
       
       // Redirect to all clients page
-      setLocation("/all-clients");
+      navigate("/all-clients");
     } catch (error) {
       console.error("Error adding client:", error);
       toast({
