@@ -198,8 +198,13 @@ export default function OrgDashboard() {
               View Messages
             </Link>
           </Button>
-          {/* Removed "View All Clients" button as requested */}
-          
+          <Button asChild variant="outline" size="sm">
+            <Link href="/all-clients">
+              <Users className="h-4 w-4 mr-2" />
+              View All Clients
+            </Link>
+          </Button>
+
           <Button asChild size="sm">
             <Link href="/add-client">
               <UserPlus className="h-4 w-4 mr-2" />

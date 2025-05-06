@@ -178,13 +178,10 @@ export class DatabaseStorage implements IStorage {
   public sessionStore: session.Store;
 
   constructor() {
-    // Initialize PostgreSQL session store for persistent sessions
-    const PostgresStore = connectPg(session);
-    this.sessionStore = new PostgresStore({
-      pool: db["$client"] as any, // Use the underlying pool connection
-      tableName: 'session',
-      createTableIfMissing: true,
-      pruneSessionInterval: 60 * 60 // Prune expired sessions every hour
+    // Initialize memory session store for simplicity
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
   }
 
