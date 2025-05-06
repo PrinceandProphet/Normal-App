@@ -80,7 +80,7 @@ function Router() {
       
       {/* Home Routes - Role Specific */}
       <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
-      <RoleBasedRoute path="/" component={Home} allowedRoles={["super_admin", "case_manager", "user"]} />
+      <RoleBasedRoute path="/" component={Home} allowedRoles={["super_admin", "case_manager", "user"]} userTypes={["survivor"]} />
       
       {/* Route accessible to both Super Admin and Admin */}
       <RoleBasedRoute 
