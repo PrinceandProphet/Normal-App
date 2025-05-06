@@ -129,7 +129,8 @@ export default function Sidebar() {
     : navItems;
   
   const handleLogout = () => {
-    logoutMutation.mutate();
+    // Use our forced-auth route for reliable logout
+    window.location.href = "/forced-auth";
   };
 
   // Helper function to render a navigation item

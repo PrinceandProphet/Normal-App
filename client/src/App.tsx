@@ -50,6 +50,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/logout" component={lazy(() => import("@/pages/logout"))} />
+      <Route path="/forced-auth" component={lazy(() => import("@/components/forced-auth"))} />
       
       {/* Shared Routes for All Users */}
       <RoleBasedRoute path="/action-plan" component={ActionPlan} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />

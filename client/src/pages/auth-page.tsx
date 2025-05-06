@@ -43,9 +43,18 @@ export default function AuthPage() {
   const [location, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   
-  // Check if there's a force=true parameter in the URL to override the automatic redirect
-  const params = new URLSearchParams(location.split('?')[1]);
-  const forceLogin = params.get('force') === 'true';
+  // Check if we're coming from forced-auth or if there's a force=true parameter
+  // This will override the automatic redirect if the user is already logged in
+  const params = new URLSearchParams(location.split('?')[1] || '');
+  const forceLogin = 
+    params.get('force') === 'true' || 
+    document.referrer.includes('/forced-auth') ||
+    sessionStorage.getItem('force_login') === 'true';
+    
+  // Store preference for this session
+  if (forceLogin) {
+    sessionStorage.setItem('force_login', 'true');
+  }
 
   // Use effect for navigation instead of during render
   useEffect(() => {
