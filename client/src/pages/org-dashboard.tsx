@@ -204,7 +204,7 @@ export default function OrgDashboard() {
               View All Clients
             </Link>
           </Button>
-
+          
           <Button asChild size="sm">
             <Link href="/add-client">
               <UserPlus className="h-4 w-4 mr-2" />
