@@ -200,12 +200,11 @@ export default function OrgDashboard() {
           </Button>
           {/* Removed "View All Clients" button as requested */}
           
-          <Button 
-            size="sm"
-            onClick={() => window.location.href = "/add-client"}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Client
+          <Button asChild size="sm">
+            <Link href="/add-client">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Client
+            </Link>
           </Button>
         </div>
       </div>
@@ -371,12 +370,11 @@ export default function OrgDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Clients</CardTitle>
-                <Button 
-                  size="sm"
-                  onClick={() => window.location.href = "/add-client"}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Client
+                <Button asChild size="sm">
+                  <Link href="/add-client">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Client
+                  </Link>
                 </Button>
               </div>
             </CardHeader>
@@ -412,8 +410,8 @@ export default function OrgDashboard() {
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground mb-6">No clients found</p>
-                  <Button onClick={() => window.location.href = "/add-client"}>
-                    Add Your First Client
+                  <Button asChild>
+                    <Link href="/add-client">Add Your First Client</Link>
                   </Button>
                 </div>
               )}

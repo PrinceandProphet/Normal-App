@@ -32,7 +32,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AddClientPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -75,9 +75,8 @@ export default function AddClientPage() {
         description: "The new client has been added to your organization.",
       });
       
-      // Redirect to all clients page using window.location for more reliable navigation
-      // This approach doesn't rely on wouter's navigate which can be affected by role-based access
-      window.location.href = "/all-clients";
+      // Redirect to all clients page
+      setLocation("/all-clients");
     } catch (error) {
       console.error("Error adding client:", error);
       toast({
@@ -93,14 +92,11 @@ export default function AddClientPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="mr-2"
-          onClick={() => window.location.href = "/all-clients"}
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+        <Button asChild variant="ghost" size="sm" className="mr-2">
+          <Link href="/all-clients">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Add New Client</h1>
       </div>

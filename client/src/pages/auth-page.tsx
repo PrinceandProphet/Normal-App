@@ -40,46 +40,23 @@ const registerSchema = insertUserSchema.extend({
 });
 
 export default function AuthPage() {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
-  
-  // Check if we're coming from forced-auth or if there's a force=true parameter
-  // This will override the automatic redirect if the user is already logged in
-  const params = new URLSearchParams(location.split('?')[1] || '');
-  const forceLogin = 
-    params.get('force') === 'true' || 
-    document.referrer.includes('/forced-auth') ||
-    sessionStorage.getItem('force_login') === 'true';
-    
-  // Store preference for this session
-  if (forceLogin) {
-    sessionStorage.setItem('force_login', 'true');
-  }
 
   // Use effect for navigation instead of during render
   useEffect(() => {
-    // If user is already logged in and we're not forcing the login page, redirect based on role
-    if (user && !forceLogin) {
-      console.log("Auth page: User is logged in, redirecting based on role", user);
-      
+    // If user is already logged in, redirect based on role
+    if (user) {
       // Super admins land on the Admin Dashboard
       if (user.role === 'super_admin') {
         navigate('/admin');
       } 
-      // Organization admins go to org dashboard
-      else if (user.role === 'admin') {
-        navigate('/org-dashboard');
-      }
-      // Case managers go to practitioner dashboard
-      else if (user.role === 'case_manager') {
-        navigate('/practitioner-dashboard');
-      }
       // Regular users and others go to home
       else {
         navigate('/');
       }
     }
-  }, [user, navigate, forceLogin]);
+  }, [user, navigate]);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({

@@ -39,8 +39,7 @@ const navigationConfig = {
   
   // Organization Admin navigation
   orgAdminNav: [
-    { name: "Org Dashboard", href: "/org-dashboard", icon: BarChart4 },
-    { name: "All Clients", href: "/all-clients", icon: Users },
+    { name: "Org Dashboard", href: "/org-admin", icon: BarChart4 },
     { name: "Organization Settings", href: "/organizations/:id/settings", icon: Building2, dynamicParam: true },
   ],
   
@@ -129,8 +128,7 @@ export default function Sidebar() {
     : navItems;
   
   const handleLogout = () => {
-    // Use our forced-auth route for reliable logout
-    window.location.href = "/forced-auth";
+    logoutMutation.mutate();
   };
 
   // Helper function to render a navigation item

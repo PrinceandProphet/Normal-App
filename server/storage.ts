@@ -284,19 +284,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteOrganization(id: number): Promise<void> {
-    try {
-      // First, set organizationId to null for all users associated with this organization
-      await db
-        .update(users)
-        .set({ organizationId: null })
-        .where(eq(users.organizationId, id));
-        
-      // Then, delete the organization
-      await db.delete(organizations).where(eq(organizations.id, id));
-    } catch (error) {
-      console.error("Error deleting organization:", error);
-      throw error;
-    }
+    await db.delete(organizations).where(eq(organizations.id, id));
   }
   
   async updateOrganizationSettings(id: number, settings: UpdateOrganizationSettings): Promise<Organization> {
