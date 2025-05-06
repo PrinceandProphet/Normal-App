@@ -40,15 +40,17 @@ const registerSchema = insertUserSchema.extend({
 });
 
 export default function AuthPage() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
+  
+  // Check if there's a force=true parameter in the URL to override the automatic redirect
+  const params = new URLSearchParams(location.split('?')[1]);
+  const forceLogin = params.get('force') === 'true';
 
   // Use effect for navigation instead of during render
   useEffect(() => {
-    // If user is already logged in, redirect based on role
-    // We'll only handle the initial redirect here, not after login/register 
-    // since those are handled in the mutations
-    if (user) {
+    // If user is already logged in and we're not forcing the login page, redirect based on role
+    if (user && !forceLogin) {
       console.log("Auth page: User is logged in, redirecting based on role", user);
       
       // Super admins land on the Admin Dashboard
@@ -68,7 +70,7 @@ export default function AuthPage() {
         navigate('/');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, forceLogin]);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({

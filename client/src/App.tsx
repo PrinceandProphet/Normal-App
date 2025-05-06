@@ -47,8 +47,9 @@ const LazyRouteComponent = ({ component: Component }: { component: React.Compone
 function Router() {
   return (
     <Switch>
-      {/* Public route - Auth page */}
+      {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/logout" component={lazy(() => import("@/pages/logout"))} />
       
       {/* Shared Routes for All Users */}
       <RoleBasedRoute path="/action-plan" component={ActionPlan} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />
