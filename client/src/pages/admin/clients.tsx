@@ -16,6 +16,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -203,6 +214,7 @@ export default function AllClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [showClientForm, setShowClientForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedClient, setSelectedClient] = useState<SurvivorData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [filteredClients, setFilteredClients] = useState<SurvivorData[]>([]);
@@ -661,9 +673,8 @@ export default function AllClientsPage() {
   });
   
   const handleDeleteClient = (client: SurvivorData) => {
-    if (confirm(`Are you sure you want to delete ${client.name}? This will permanently delete all associated data.`)) {
-      deleteClientMutation.mutate(client.id);
-    }
+    setSelectedClient(client);
+    setShowDeleteConfirm(true);
   };
 
   return (
@@ -1950,6 +1961,33 @@ export default function AllClientsPage() {
         </DialogContent>
       </Dialog>
             
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedClient?.name} and all associated data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (selectedClient) {
+                  deleteClientMutation.mutate(selectedClient.id);
+                  setShowDeleteConfirm(false);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Client Edit Dialog - Uses the same form as Add New Client */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
