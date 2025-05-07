@@ -545,7 +545,10 @@ export default function AllClientsPage() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  onClick={() => handleDeleteClient(client)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent row click from triggering
+                    handleDeleteClient(client);
+                  }}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -788,7 +791,11 @@ export default function AllClientsPage() {
               table.getRowModel().rows.map((row) => (
                 <TableRow 
                   key={row.id}
-                  onClick={() => handleClientDetails(row.original)}
+                  onClick={() => {
+                    if (!showDeleteConfirm) { // Only handle if we're not in delete mode
+                      handleClientDetails(row.original);
+                    }
+                  }}
                   className="cursor-pointer hover:bg-accent"
                 >
                   {row.getVisibleCells().map((cell) => (
