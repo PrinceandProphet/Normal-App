@@ -161,13 +161,29 @@ router.patch("/:id", canAccessSurvivor, async (req, res) => {
   }
 
   try {
-    // Only allow updating certain fields, and never allow changing userType from "survivor"
+    // Allow updating a wider range of fields, but never allow changing userType from "survivor"
     const allowedFields = [
       "firstName",
       "lastName",
+      "name",
       "email",
+      "phone",
+      "address",
       "password",
-      "isVerified"
+      "isVerified",
+      "organizationId",
+      "dateOfBirth",
+      "gender",
+      "pronouns",
+      "ssn",
+      "maritalStatus",
+      "primaryLanguage",
+      "race",
+      "ethnicity",
+      "citizenshipStatus",
+      "veteranStatus",
+      "disabilityStatus",
+      "status"
     ];
     
     const filteredData = Object.keys(req.body)
