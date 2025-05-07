@@ -230,4 +230,38 @@ router.get("/:survivorId/organizations", async (req, res) => {
   }
 });
 
+// Delete a survivor
+router.delete("/:id", canAccessSurvivor, async (req, res) => {
+  const survivorId = parseInt(req.params.id);
+  if (isNaN(survivorId)) {
+    return res.status(400).json({ message: "Invalid survivor ID" });
+  }
+
+  try {
+    // Verify that the survivor exists
+    const survivor = await storage.getUser(survivorId);
+    if (!survivor) {
+      return res.status(404).json({ message: "Survivor not found" });
+    }
+    
+    // Only admins, super_admins, or practitioners can delete survivors
+    if (
+      !req.user ||
+      (req.user.role !== "admin" && 
+      req.user.role !== "super_admin" && 
+      req.user.userType !== "practitioner")
+    ) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Delete the survivor
+    await storage.deleteUser(survivorId);
+    
+    return res.status(200).json({ message: "Survivor deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting survivor:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default router;

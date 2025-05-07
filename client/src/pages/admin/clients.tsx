@@ -315,14 +315,63 @@ export default function AllClientsPage() {
     },
   });
   
-  // Handle form submission
+  // Update client mutation
+  const updateClientMutation = useMutation({
+    mutationFn: async (data: { id: number, updateData: Partial<ClientFormValues> }) => {
+      // Format the update payload
+      const updatePayload = {
+        ...data.updateData,
+        name: `${data.updateData.firstName} ${data.updateData.lastName}`,
+      };
+      
+      const response = await apiRequest('PATCH', `/api/survivors/${data.id}`, updatePayload);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update client");
+      }
+      return await response.json();
+    },
+    onSuccess: (updatedClient) => {
+      // Clear form and close dialog
+      form.reset();
+      setOpen(false);
+      setSelectedClient(null);
+      
+      // Update the client in the existing list
+      queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
+      
+      // Show success message
+      toast({
+        title: "Client updated",
+        description: "The client was successfully updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating client",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle form submission - detects whether to create or update based on selectedClient
   const onSubmit = (data: ClientFormValues) => {
     // Add organization ID if selected
     if (selectedOrgId) {
       data.organizationId = selectedOrgId;
     }
     
-    createClientMutation.mutate(data);
+    if (selectedClient) {
+      // Update existing client
+      updateClientMutation.mutate({ 
+        id: selectedClient.id, 
+        updateData: data
+      });
+    } else {
+      // Create new client
+      createClientMutation.mutate(data);
+    }
   };
 
   // Fetch all clients/survivors
