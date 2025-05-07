@@ -333,8 +333,12 @@ export default function AllClientsPage() {
       // Format the update payload
       const updatePayload = {
         ...data.updateData,
-        name: `${data.updateData.firstName} ${data.updateData.lastName}`,
       };
+      
+      // Only add name if both firstName and lastName are present
+      if (data.updateData.firstName && data.updateData.lastName) {
+        updatePayload.name = `${data.updateData.firstName} ${data.updateData.lastName}`;
+      }
       
       const response = await apiRequest('PATCH', `/api/survivors/${data.id}`, updatePayload);
       if (!response.ok) {
@@ -659,6 +663,11 @@ export default function AllClientsPage() {
       return await response.json();
     },
     onSuccess: () => {
+      // Close the delete confirmation dialog
+      setShowDeleteConfirm(false);
+      setSelectedClient(null);
+      
+      // Update client list
       queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
       toast({
         title: "Client deleted",
@@ -666,6 +675,9 @@ export default function AllClientsPage() {
       });
     },
     onError: (error: any) => {
+      // Close the delete confirmation dialog even on error
+      setShowDeleteConfirm(false);
+      
       console.error("Failed to delete client:", error);
       toast({
         title: "Failed to delete client",
