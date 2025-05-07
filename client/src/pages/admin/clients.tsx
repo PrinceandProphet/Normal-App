@@ -636,7 +636,12 @@ export default function AllClientsPage() {
   // Client deletion mutation
   const deleteClientMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/survivors/${id}`);
+      const response = await apiRequest("DELETE", `/api/survivors/${id}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete client");
+      }
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/survivors'] });
