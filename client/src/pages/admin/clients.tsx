@@ -1984,7 +1984,6 @@ export default function AllClientsPage() {
               onClick={() => {
                 if (selectedClient) {
                   deleteClientMutation.mutate(selectedClient.id);
-                  setShowDeleteConfirm(false);
                 }
               }}
               className="bg-destructive hover:bg-destructive/90"
