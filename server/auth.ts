@@ -81,10 +81,18 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const user = await storage.createUser({
+      // Set default role to 'user' and userType to 'survivor' if not specified
+      // This ensures all newly registered users get restricted "survivor" access
+      const userData = {
         ...req.body,
+        role: req.body.role || 'user',
+        userType: req.body.userType || 'survivor',
         password: await hashPassword(req.body.password),
-      });
+      };
+
+      console.log("Registering new user with role:", userData.role, "and type:", userData.userType);
+      
+      const user = await storage.createUser(userData);
 
       req.login(user, (err) => {
         if (err) return next(err);
