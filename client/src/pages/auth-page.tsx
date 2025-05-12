@@ -323,27 +323,22 @@ export default function AuthPage() {
                 {!resetRequestSent ? (
                   <Form {...resetRequestForm}>
                     <form onSubmit={resetRequestForm.handleSubmit(onResetRequestSubmit)} className="space-y-4">
-                      <FormField
-                        control={resetRequestForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="email" 
-                                placeholder="Enter your email" 
-                                onChange={(e) => field.onChange(e.target.value)}
-                                value={field.value}
-                                name={field.name}
-                                onBlur={field.onBlur}
-                                ref={field.ref}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                      <div className="space-y-2">
+                        <label htmlFor="reset-email" className="text-sm font-medium">Email</label>
+                        <input
+                          id="reset-email"
+                          type="email"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Enter your email"
+                          value={resetRequestForm.getValues().email}
+                          onChange={(e) => resetRequestForm.setValue('email', e.target.value)}
+                        />
+                        {resetRequestForm.formState.errors.email && (
+                          <p className="text-sm font-medium text-destructive">
+                            {resetRequestForm.formState.errors.email.message}
+                          </p>
                         )}
-                      />
+                      </div>
 
                       <Button 
                         type="submit" 

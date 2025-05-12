@@ -39,8 +39,17 @@ export default function Home() {
   const { toast } = useToast();
   const { user } = useAuth();
   
+  // Add logging to verify the Home component is reached with the correct user data
+  console.log('🏠 Home component mounted for survivor dashboard, user:', { 
+    id: user?.id,
+    username: user?.username, 
+    role: user?.role, 
+    userType: user?.userType 
+  });
+  
   // Redirect case manager (practitioner) users to the appropriate dashboard
   if (user?.role === "case_manager") {
+    console.log('🔄 Redirecting case manager to practitioner dashboard');
     return <Redirect to="/practitioner-dashboard" />;
   }
   
