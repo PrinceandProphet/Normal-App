@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
+import { Link } from 'wouter';
+import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -50,6 +52,29 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetRequestSent, setResetRequestSent] = useState(false);
+  
+  // Reset password request mutation
+  const resetRequestMutation = useMutation({
+    mutationFn: async (data: { email: string }) => {
+      const res = await apiRequest("POST", "/api/reset-password-request", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setResetRequestSent(true);
+      toast({
+        title: "Reset link sent",
+        description: "If an account exists with this email, you'll receive a password reset link.",
+      });
+    },
+    onError: (error: Error) => {
+      // Even on error, show success to prevent email fishing
+      setResetRequestSent(true);
+      toast({
+        title: "Reset link sent",
+        description: "If an account exists with this email, you'll receive a password reset link.",
+      });
+    }
+  });
   
   // If user is already logged in, we handle that in the AuthContext
 
