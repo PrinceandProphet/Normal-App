@@ -321,42 +321,45 @@ export default function AuthPage() {
               /* Password Reset Request Form */
               <>
                 {!resetRequestSent ? (
-                  <Form {...resetRequestForm}>
-                    <form onSubmit={resetRequestForm.handleSubmit(onResetRequestSubmit)} className="space-y-4">
-                      <div className="space-y-2">
-                        <label htmlFor="reset-email" className="text-sm font-medium">Email</label>
-                        <input
-                          id="reset-email"
-                          type="email"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          placeholder="Enter your email"
-                          value={resetRequestForm.getValues().email}
-                          onChange={(e) => resetRequestForm.setValue('email', e.target.value)}
-                        />
-                        {resetRequestForm.formState.errors.email && (
-                          <p className="text-sm font-medium text-destructive">
-                            {resetRequestForm.formState.errors.email.message}
-                          </p>
-                        )}
-                      </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="reset-email" className="text-sm font-medium">Email</label>
+                      <input
+                        id="reset-email"
+                        type="email" 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Enter your email"
+                        autoComplete="email"
+                      />
+                    </div>
 
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                      >
-                        Send Reset Link
-                      </Button>
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        const emailInput = document.getElementById('reset-email') as HTMLInputElement;
+                        if (emailInput && emailInput.value) {
+                          resetRequestMutation.mutate({ email: emailInput.value });
+                        } else {
+                          toast({
+                            title: "Email required",
+                            description: "Please enter your email address",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
+                      Send Reset Link
+                    </Button>
                       
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => setShowForgotPassword(false)}
-                      >
-                        Back to Login
-                      </Button>
-                    </form>
-                  </Form>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setShowForgotPassword(false)}
+                    >
+                      Back to Login
+                    </Button>
+                  </div>
                 ) : (
                   <>
                     <Alert className="mb-4">
