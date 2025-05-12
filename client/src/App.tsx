@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,7 +20,7 @@ import FundingOpportunities from "@/pages/funding-opportunities";
 import OpportunityMatches from "@/pages/opportunity-matches";
 import AllClients from "@/pages/all-clients";
 import { lazy, Suspense } from "react";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ClientProvider } from "@/contexts/client-context";
 import { Loader2 } from "lucide-react";
 import { RoleBasedRoute } from "@/components/layout/role-based-route";
@@ -80,7 +80,39 @@ function Router() {
       
       {/* Home Routes - Role Specific */}
       <RoleBasedRoute path="/" component={OrgDashboard} allowedRoles={["admin"]} />
-      <RoleBasedRoute path="/" component={Home} allowedRoles={["super_admin", "case_manager", "user"]} />
+      {/* Explicitly define the survivor route to ensure they get priority */}
+      <Route path="/">
+        {() => {
+          const { user, isLoading } = useAuth();
+          
+          // If loading, show spinner
+          if (isLoading) {
+            return (
+              <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            );
+          }
+          
+          // Handle routing based on user type explicitly
+          if (user?.userType === 'survivor') {
+            console.log('🏠 Rendering home page for survivor');
+            return <Home />;
+          } else if (user?.role === 'super_admin') {
+            return <Redirect to="/admin" />;
+          } else if (user?.role === 'admin') {
+            return <Redirect to="/org-dashboard" />;
+          } else if (user?.role === 'case_manager') {
+            return <Redirect to="/practitioner-dashboard" />;
+          } else if (user) {
+            // Default case for users
+            return <Home />;
+          } else {
+            // Not logged in
+            return <Redirect to="/auth" />;
+          }
+        }}
+      </Route>
       
       {/* Route accessible to both Super Admin and Admin */}
       <RoleBasedRoute 
