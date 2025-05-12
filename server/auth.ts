@@ -126,4 +126,42 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     res.json(req.user);
   });
+  
+  // Password reset request endpoint
+  app.post("/api/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      // For security reasons, we always return success even if the email doesn't exist
+      // This prevents email fishing
+      
+      if (user) {
+        // In a real implementation, you would:
+        // 1. Generate a reset token and save it with an expiry time
+        // 2. Send an email with a link containing the token
+        console.log(`Password reset requested for user: ${user.id} (${user.email})`);
+        
+        // Send password reset email logic would go here
+        // await emailService.sendPasswordResetEmail(user.email, resetToken);
+      }
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "If an account exists with this email, a password reset link will be sent."
+      });
+    } catch (error) {
+      console.error("Error requesting password reset:", error);
+      // Still return success for security
+      return res.status(200).json({ 
+        success: true,
+        message: "If an account exists with this email, a password reset link will be sent."
+      });
+    }
+  });
 }

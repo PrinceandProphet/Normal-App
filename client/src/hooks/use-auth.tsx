@@ -48,13 +48,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
-        if (user.role === 'super_admin') {
+        // First check specific user types
+        if (user.userType === 'survivor') {
+          console.log('Routing survivor to home page');
+          setLocation('/');
+        } else if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
           setLocation('/practitioner-dashboard');
         } else {
+          // Fallback to role-based routing
           setLocation('/'); // Default for users/survivors
         }
         
@@ -89,13 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
-        if (user.role === 'super_admin') {
+        // First check specific user types
+        if (user.userType === 'survivor') {
+          console.log('Routing new survivor to home page');
+          setLocation('/');
+        } else if (user.role === 'super_admin') {
           setLocation('/admin');
         } else if (user.role === 'admin') {
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
           setLocation('/practitioner-dashboard');
         } else {
+          // Fallback to role-based routing
           setLocation('/'); // Default for users/survivors
         }
         
