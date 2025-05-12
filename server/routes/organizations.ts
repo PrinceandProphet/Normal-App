@@ -82,32 +82,51 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    console.log("Creating organization with data:", JSON.stringify(req.body, null, 2));
-    const validatedData = insertOrganizationSchema.parse(req.body);
-    const organization = await storage.createOrganization(validatedData);
+    console.log("[OrganizationAPI] Creating organization with data:", JSON.stringify(req.body, null, 2));
+    console.log("[OrganizationAPI] Environment:", process.env.NODE_ENV || "development");
     
-    // Send welcome email notification to the organization's admin email
-    if (organization.email) {
-      try {
-        await emailService.sendNewOrganizationWelcome(
-          organization.name,
-          organization.email
-        );
-        console.log(`Welcome email sent to organization admin: ${organization.email}`);
-      } catch (emailError) {
-        // Log the error but don't fail the request
-        console.error("Error sending organization welcome email:", emailError);
+    try {
+      const validatedData = insertOrganizationSchema.parse(req.body);
+      console.log("[OrganizationAPI] Validation succeeded:", JSON.stringify(validatedData, null, 2));
+      const organization = await storage.createOrganization(validatedData);
+    
+      // Send welcome email notification to the organization's admin email
+      if (organization.email) {
+        try {
+          await emailService.sendNewOrganizationWelcome(
+            organization.name,
+            organization.email
+          );
+          console.log(`Welcome email sent to organization admin: ${organization.email}`);
+        } catch (emailError) {
+          // Log the error but don't fail the request
+          console.error("Error sending organization welcome email:", emailError);
+        }
       }
+      
+      return res.status(201).json(organization);
+    } catch (validationError) {
+      console.error("[OrganizationAPI] Validation error:", validationError);
+      if (validationError instanceof z.ZodError) {
+        console.error("[OrganizationAPI] Validation error details:", JSON.stringify(validationError.errors, null, 2));
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.errors,
+          environment: process.env.NODE_ENV || "development" 
+        });
+      }
+      throw validationError;
     }
-    
-    return res.status(201).json(organization);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("Validation error details:", JSON.stringify(error.errors, null, 2));
+      console.error("[OrganizationAPI] Outer Validation error details:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
-    console.error("Error creating organization:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("[OrganizationAPI] Error creating organization:", error);
+    return res.status(500).json({ 
+      message: "Internal server error",
+      environment: process.env.NODE_ENV || "development" 
+    });
   }
 });
 
