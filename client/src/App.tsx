@@ -12,6 +12,7 @@ import CapitalSources from "@/pages/capital-sources";
 import ActionPlan from "@/pages/action-plan";
 import Household from "@/pages/household";
 import AuthPage from "@/pages/auth-page";
+import ResetPassword from "@/pages/reset-password";
 import AdminPage from "@/pages/admin";
 import OrgAdminPage from "@/pages/org-admin";
 import OrgDashboard from "@/pages/org-dashboard";
@@ -47,8 +48,9 @@ const LazyRouteComponent = ({ component: Component }: { component: React.Compone
 function Router() {
   return (
     <Switch>
-      {/* Public route - Auth page */}
+      {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/reset-password" component={ResetPassword} />
       
       {/* Shared Routes for All Users */}
       <RoleBasedRoute path="/action-plan" component={ActionPlan} allowedRoles={["super_admin", "admin", "case_manager", "user"]} />

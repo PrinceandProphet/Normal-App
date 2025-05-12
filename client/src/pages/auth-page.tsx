@@ -199,9 +199,9 @@ export default function AuthPage() {
                               variant="link" 
                               className="px-0 text-sm font-normal"
                               type="button"
-                              onClick={() => setShowForgotPassword(true)}
+                              asChild
                             >
-                              Forgot password?
+                              <Link href="/reset-password">Forgot password?</Link>
                             </Button>
                           </FormItem>
                         )}
