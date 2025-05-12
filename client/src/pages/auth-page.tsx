@@ -105,8 +105,12 @@ export default function AuthPage() {
   // Password reset request handler
   const onResetRequestSubmit = async (values: z.infer<typeof resetRequestSchema>) => {
     try {
+      console.log('📨 Submitting password reset request for:', values.email);
+      
       // Send password reset request
-      await apiRequest('POST', '/api/request-password-reset', { email: values.email });
+      const response = await apiRequest('POST', '/api/request-password-reset', { email: values.email });
+      console.log('✅ Password reset response:', response);
+      
       setResetRequestSent(true);
       toast({
         title: "Reset link sent",
@@ -114,12 +118,13 @@ export default function AuthPage() {
       });
     } catch (error) {
       // Even if there's an error, we still show success to prevent email fishing
+      console.error('❌ Password reset request error:', error);
+      
       setResetRequestSent(true);
       toast({
         title: "Reset link sent",
         description: "If an account exists with this email, you'll receive a password reset link.",
       });
-      console.error('Password reset request error:', error);
     }
   };
 

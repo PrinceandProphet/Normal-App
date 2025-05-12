@@ -76,8 +76,16 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("📝 Registration request received:", { 
+        username: req.body.username,
+        email: req.body.email,
+        role: req.body.role || '(not provided)',
+        userType: req.body.userType || '(not provided)'
+      });
+
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
+        console.log("❌ Registration failed: Username already exists");
         return res.status(400).json({ message: "Username already exists" });
       }
 
@@ -90,26 +98,57 @@ export function setupAuth(app: Express) {
         password: await hashPassword(req.body.password),
       };
 
-      console.log("Registering new user with role:", userData.role, "and type:", userData.userType);
+      console.log("✅ Creating new user with role:", userData.role, "and type:", userData.userType);
       
       const user = await storage.createUser(userData);
+      console.log("👤 User created successfully:", { 
+        id: user.id, 
+        username: user.username,
+        role: user.role,
+        userType: user.userType
+      });
 
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("❌ Login after registration failed:", err);
+          return next(err);
+        }
+        console.log("🚀 User authenticated after registration");
         res.status(201).json(user);
       });
     } catch (error) {
+      console.error("❌ Registration error:", error);
       next(error);
     }
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log("🔑 Login attempt for:", req.body.username);
+    
     passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: "Invalid username or password" });
+      if (err) {
+        console.error("❌ Login error:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("❌ Login failed for:", req.body.username, "- Invalid credentials");
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      console.log("✅ Login successful for user:", { 
+        id: user.id, 
+        username: user.username,
+        role: user.role,
+        userType: user.userType
+      });
       
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("❌ Session creation error:", err);
+          return next(err);
+        }
+        console.log("🚀 Session created successfully for:", user.username);
         res.status(200).json(user);
       });
     })(req, res, next);
@@ -130,11 +169,15 @@ export function setupAuth(app: Express) {
   // Password reset request endpoint
   app.post("/api/request-password-reset", async (req, res) => {
     try {
+      console.log("⚡️ Password reset request received:", req.body);
+      
       const { email } = req.body;
       if (!email) {
+        console.log("❌ Password reset failed: Email is required");
         return res.status(400).json({ message: "Email is required" });
       }
 
+      console.log(`🔍 Looking up user with email: ${email}`);
       // Find user by email
       const user = await storage.getUserByEmail(email);
       
@@ -142,21 +185,30 @@ export function setupAuth(app: Express) {
       // This prevents email fishing
       
       if (user) {
+        console.log(`✅ User found for password reset: ${user.id} (${user.email}), type: ${user.userType}, role: ${user.role}`);
+        
         // In a real implementation, you would:
         // 1. Generate a reset token and save it with an expiry time
         // 2. Send an email with a link containing the token
-        console.log(`Password reset requested for user: ${user.id} (${user.email})`);
+        
+        // This is where we would typically send an email with a reset link
+        // For now, we're just logging that it would happen
+        console.log(`📧 [EMAIL WOULD BE SENT] Password reset link for: ${user.email}`);
         
         // Send password reset email logic would go here
         // await emailService.sendPasswordResetEmail(user.email, resetToken);
+      } else {
+        console.log(`⚠️ No user found with email: ${email}`);
       }
       
+      // Always return success for security (prevents email fishing)
+      console.log(`🔄 Returning success response for password reset request`);
       return res.status(200).json({ 
         success: true,
         message: "If an account exists with this email, a password reset link will be sent."
       });
     } catch (error) {
-      console.error("Error requesting password reset:", error);
+      console.error("❌ Error requesting password reset:", error);
       // Still return success for security
       return res.status(200).json({ 
         success: true,

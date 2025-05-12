@@ -48,18 +48,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
+        console.log('🧭 Routing user after login/registration:', { 
+          id: user.id,
+          username: user.username,
+          role: user.role, 
+          userType: user.userType 
+        });
+
         // First check specific user types
         if (user.userType === 'survivor') {
-          console.log('Routing survivor to home page');
+          console.log('🏠 Routing survivor to home page');
           setLocation('/');
         } else if (user.role === 'super_admin') {
+          console.log('🛡️ Routing super admin to admin page');
           setLocation('/admin');
         } else if (user.role === 'admin') {
+          console.log('🏢 Routing admin to org dashboard');
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
+          console.log('👥 Routing case manager to practitioner dashboard');
           setLocation('/practitioner-dashboard');
         } else {
           // Fallback to role-based routing
+          console.log('⚠️ Using fallback routing to home page');
           setLocation('/'); // Default for users/survivors
         }
         
@@ -83,10 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
+      console.log('📝 Sending registration request for:', credentials.username);
       const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      console.log('✅ Registration successful, user data:', { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role, 
+        userType: user.userType 
+      });
+      
       queryClient.setQueryData(["/api/user"], user);
       
       // Set route changing flag to true to prevent flicker
@@ -94,18 +113,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use wouter's setLocation for smooth client-side navigation
       setTimeout(() => {
+        console.log('🧭 Routing user after registration:', { 
+          id: user.id,
+          username: user.username,
+          role: user.role, 
+          userType: user.userType 
+        });
+
         // First check specific user types
         if (user.userType === 'survivor') {
-          console.log('Routing new survivor to home page');
+          console.log('🏠 Routing new survivor to home page');
           setLocation('/');
         } else if (user.role === 'super_admin') {
+          console.log('🛡️ Routing super admin to admin page');
           setLocation('/admin');
         } else if (user.role === 'admin') {
+          console.log('🏢 Routing admin to org dashboard');
           setLocation('/org-dashboard'); // Redirect to the new Organization Admin dashboard
         } else if (user.role === 'case_manager') {
+          console.log('👥 Routing case manager to practitioner dashboard');
           setLocation('/practitioner-dashboard');
         } else {
           // Fallback to role-based routing
+          console.log('⚠️ Using fallback routing to home page');
           setLocation('/'); // Default for users/survivors
         }
         
