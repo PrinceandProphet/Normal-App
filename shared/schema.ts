@@ -585,7 +585,7 @@ export const insertUserSchema = createInsertSchema(users)
 export const insertOrganizationSchema = createInsertSchema(organizations)
   .extend({
     name: z.string().min(1, "Organization name is required"),
-    type: z.enum(["government", "non_profit", "private", "other"]),
+    type: z.enum(["government", "non_profit", "private", "other"]).or(z.string()),
     email: z.string().email("Please enter a valid email").optional(),
     // Email configuration fields
     emailDomain: z.string().optional(),
