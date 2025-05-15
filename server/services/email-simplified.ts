@@ -1,6 +1,9 @@
 import { db } from '../db';
 import { organizations } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { getEnvironment, isDevelopment } from '../config';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // Interface for email sender identity
 interface SenderIdentity {
@@ -8,10 +11,60 @@ interface SenderIdentity {
   name?: string;
 }
 
+// Interface for email error details
+interface EmailError {
+  timestamp: string;
+  errorType: string;
+  message: string;
+  code?: string;
+  details?: any;
+  request?: any;
+  recipient?: string;
+  stack?: string;
+}
+
 // Email service with simplified implementation
 class EmailService {
   private brevoApiAvailable: boolean;
   private defaultSender: SenderIdentity;
+  private logDirectory: string = 'logs';
+  
+  /**
+   * Log email errors to a file in development mode
+   * @param error The error details to log
+   */
+  private async logEmailError(error: EmailError): Promise<void> {
+    if (isDevelopment()) {
+      try {
+        // Create logs directory if it doesn't exist
+        try {
+          await fs.mkdir(this.logDirectory, { recursive: true });
+        } catch (e) {
+          // Directory might already exist, ignore this error
+        }
+        
+        // Create a log filename based on date
+        const date = new Date();
+        const logFilename = `email-errors-${date.getFullYear()}-${
+          date.getMonth() + 1
+        }-${date.getDate()}.log`;
+        
+        // Format the error as JSON with proper indentation
+        const errorLog = JSON.stringify(error, null, 2);
+        
+        // Append to the log file
+        await fs.appendFile(
+          path.join(this.logDirectory, logFilename),
+          `\n${errorLog}\n${'-'.repeat(80)}\n`,
+          'utf8'
+        );
+        
+        console.log(`📧 Error details logged to ${path.join(this.logDirectory, logFilename)}`);
+      } catch (err) {
+        console.error('❌ Failed to write to email error log:', err);
+      }
+    }
+  }
   
   constructor() {
     console.log('\n📧 === EMAIL SERVICE INITIALIZATION ===');
@@ -196,25 +249,72 @@ class EmailService {
             const errorText = await response.text();
             console.log(`📧 Raw error response: ${errorText}`);
             
+            // Create base error object
+            const errorDetails: EmailError = {
+              timestamp: new Date().toISOString(),
+              errorType: 'API_RESPONSE_ERROR',
+              message: `API returned status ${response.status} ${response.statusText}`,
+              request: {
+                url: 'https://api.brevo.com/v3/smtp/email',
+                method: 'POST',
+                headers: {
+                  'accept': 'application/json',
+                  'content-type': 'application/json',
+                  // Don't include the actual API key
+                  'api-key': '[REDACTED]'
+                },
+                payload: brevoPayload
+              },
+              recipient: to
+            };
+            
             try {
               const errorData = JSON.parse(errorText);
               console.error('❌ Brevo API error details:', JSON.stringify(errorData, null, 2));
               
+              // Add parsed error data to our error object
+              errorDetails.code = errorData.code;
+              errorDetails.details = errorData;
+              
               // Check for specific error types
               if (errorData.code === 'unauthorized') {
                 console.error('❌ Authentication error: API key may be invalid or IP not whitelisted');
+                errorDetails.errorType = 'AUTHENTICATION_ERROR';
+                
                 if (errorData.message && errorData.message.includes('unrecognised IP address')) {
                   console.error('❌ IP ADDRESS NEEDS WHITELISTING in Brevo admin panel');
                   console.error('❌ Follow the link in the error message to whitelist your IP');
+                  errorDetails.errorType = 'IP_WHITELIST_ERROR';
                 }
               } else if (errorData.code === 'invalid_parameter') {
                 console.error('❌ Invalid parameter error: Check sender email domain validity');
+                errorDetails.errorType = 'PARAMETER_ERROR';
               } else if (errorData.code === 'not_enough_credits') {
                 console.error('❌ Account has insufficient credits to send email');
+                errorDetails.errorType = 'CREDITS_ERROR';
+              } else if (errorData.code === 'domain_not_allowed') {
+                console.error('❌ Domain not authorized: Verify sender domain in Brevo');
+                errorDetails.errorType = 'DOMAIN_ERROR';
               }
+              
+              // Log to file in development mode
+              await this.logEmailError(errorDetails);
+              
             } catch (e) {
               console.error(`❌ Brevo API error: ${response.status} ${response.statusText}`);
               console.error(`❌ Response is not valid JSON: ${errorText}`);
+              
+              // Update error details with parsing error
+              errorDetails.errorType = 'INVALID_ERROR_RESPONSE';
+              errorDetails.details = { rawText: errorText };
+              
+              if (e instanceof Error) {
+                errorDetails.message = e.message;
+                errorDetails.stack = e.stack;
+              }
+              
+              // Log to file in development mode
+              await this.logEmailError(errorDetails);
             }
             
             // Continue without throwing error
