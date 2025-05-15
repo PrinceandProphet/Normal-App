@@ -14,17 +14,51 @@ class EmailService {
   private defaultSender: SenderIdentity;
   
   constructor() {
+    console.log('\n📧 === EMAIL SERVICE INITIALIZATION ===');
+    
     const brevoApiKey = process.env.BREVO_API_KEY;
     this.brevoApiAvailable = !!brevoApiKey;
     
+    if (this.brevoApiAvailable) {
+      console.log('✅ Brevo API key found in environment variables');
+      console.log(`✅ API key length: ${brevoApiKey!.length} characters`);
+      
+      // Check for suspicious API key formats
+      if (brevoApiKey!.length < 30) {
+        console.warn('❗ WARNING: Brevo API key seems unusually short. Verify it is correct.');
+      }
+      
+      // Log first and last 4 characters for verification without exposing the full key
+      const firstFour = brevoApiKey!.substring(0, 4);
+      const lastFour = brevoApiKey!.substring(brevoApiKey!.length - 4);
+      console.log(`✅ API key format check: ${firstFour}...${lastFour}`);
+    } else {
+      console.warn('⚠️ No Brevo API key found in environment variables');
+      console.warn('⚠️ Emails will be logged but NOT sent');
+      console.warn('⚠️ Set BREVO_API_KEY in your .env file to enable email sending');
+    }
+    
+    // Log sender configuration
     this.defaultSender = {
       email: process.env.FROM_EMAIL || 'noreply@normalrestored.com',
       name: process.env.FROM_NAME || 'Normal Restored',
     };
     
-    if (!this.brevoApiAvailable) {
-      console.warn('No Brevo API key found. Transactional emails will be logged but not sent.');
+    console.log(`📧 Default sender: ${this.defaultSender.name} <${this.defaultSender.email}>`);
+    
+    if (process.env.FROM_EMAIL) {
+      console.log('✅ Custom FROM_EMAIL found in environment variables');
+    } else {
+      console.log('ℹ️ Using default sender email: noreply@normalrestored.com');
     }
+    
+    if (process.env.FROM_NAME) {
+      console.log('✅ Custom FROM_NAME found in environment variables');
+    } else {
+      console.log('ℹ️ Using default sender name: Normal Restored');
+    }
+    
+    console.log('📧 === EMAIL SERVICE INITIALIZATION COMPLETED ===\n');
   }
 
   /**
@@ -32,32 +66,77 @@ class EmailService {
    * Falls back to the default sender if the organization doesn't have verified email settings
    */
   private async getOrganizationSender(organizationId?: number): Promise<SenderIdentity> {
+    console.log(`📧 Resolving sender identity for organizationId: ${organizationId || 'none'}`);
+    
     if (!organizationId) {
+      console.log(`📧 No organization ID provided, using default sender`);
       return this.defaultSender;
     }
 
     try {
+      console.log(`📧 Looking up organization ${organizationId} in database`);
       const [org] = await db.select().from(organizations).where(eq(organizations.id, organizationId));
       
+      if (!org) {
+        console.log(`❗ Organization ${organizationId} not found in database`);
+        console.log(`📧 Falling back to default sender`);
+        return this.defaultSender;
+      }
+      
+      console.log(`📧 Found organization: ${org.name} (ID: ${org.id})`);
+      console.log(`📧 Organization email settings:`);
+      console.log(`📧 - Domain verified: ${org.emailDomainVerified ? 'Yes' : 'No'}`);
+      console.log(`📧 - Sender email: ${org.emailSenderEmail || 'Not set'}`);
+      console.log(`📧 - Sender name: ${org.emailSenderName || 'Not set'}`);
+      
       // If the organization has verified email domain and sender settings, use those
-      if (org?.emailDomainVerified && org?.emailSenderEmail && org?.emailSenderName) {
+      if (org.emailDomainVerified && org.emailSenderEmail && org.emailSenderName) {
+        console.log(`✅ Using organization-specific sender: ${org.emailSenderName} <${org.emailSenderEmail}>`);
         return {
           email: org.emailSenderEmail,
           name: org.emailSenderName,
         };
       }
       
+      // Log the specific reason for fallback
+      if (!org.emailDomainVerified) {
+        console.log(`❗ Organization domain not verified, cannot use custom sender`);
+      } else if (!org.emailSenderEmail) {
+        console.log(`❗ Organization sender email not configured`);
+      } else if (!org.emailSenderName) {
+        console.log(`❗ Organization sender name not configured`);
+      }
+      
       // Otherwise, fall back to the system default
+      console.log(`📧 Falling back to default sender: ${this.defaultSender.name} <${this.defaultSender.email}>`);
       return this.defaultSender;
     } catch (error) {
-      console.error('Error fetching organization email settings:', error);
+      console.error('❌ Error fetching organization email settings:', error);
+      if (error instanceof Error) {
+        console.error(`❌ Error message: ${error.message}`);
+        console.error(`❌ Error stack: ${error.stack}`);
+      }
+      console.log(`📧 Falling back to default sender due to error`);
       return this.defaultSender;
     }
   }
 
   async sendEmail(to: string, subject: string, text: string, html?: string, organizationId?: number): Promise<boolean> {
+    console.log('\n📧 === EMAIL DELIVERY ATTEMPT STARTED ===');
+    console.log(`📧 Recipient: ${to}`);
+    console.log(`📧 Subject: ${subject}`);
+    
+    // Log origination context if any
+    const stack = new Error().stack;
+    if (stack) {
+      const callerLine = stack.split('\n')[2];
+      console.log(`📧 Called from: ${callerLine?.trim() || 'unknown'}`);
+    }
+    
     // Get sender identity (either organization-specific or default)
+    console.log(`📧 Getting sender for organizationId: ${organizationId || 'default'}`);
     const sender = await this.getOrganizationSender(organizationId);
+    console.log(`📧 Using sender: ${sender.name || 'No name'} <${sender.email}>`);
     
     const emailContent = {
       to,
@@ -69,7 +148,34 @@ class EmailService {
 
     try {
       if (this.brevoApiAvailable) {
+        console.log('📧 Brevo API key is available, attempting to send email');
+        
+        // Prepare request payload
+        const brevoPayload = {
+          sender: {
+            name: sender.name || 'Normal Restored',
+            email: sender.email,
+          },
+          to: [
+            {
+              email: to,
+              name: to.split('@')[0] // Use part before @ as name if no name provided
+            }
+          ],
+          subject: subject,
+          htmlContent: html || '',
+          textContent: text,
+          tags: ['transactional', 'normal-restored']
+        };
+        
+        console.log('📧 Brevo request payload:', JSON.stringify(brevoPayload, null, 2));
+        
         try {
+          // Record start time to measure API response time
+          const startTime = Date.now();
+          
+          console.log('📧 Sending request to Brevo API...');
+          
           // Send email using Brevo API
           const response = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
@@ -78,56 +184,86 @@ class EmailService {
               'api-key': process.env.BREVO_API_KEY!,
               'content-type': 'application/json'
             },
-            body: JSON.stringify({
-              sender: {
-                name: sender.name || 'Normal Restored',
-                email: sender.email,
-              },
-              to: [
-                {
-                  email: to,
-                  name: to.split('@')[0] // Use part before @ as name if no name provided
-                }
-              ],
-              subject: subject,
-              htmlContent: html || '',
-              textContent: text,
-              tags: ['transactional', 'normal-restored']
-            })
+            body: JSON.stringify(brevoPayload)
           });
+          
+          const responseTime = Date.now() - startTime;
+          console.log(`📧 Brevo API response received in ${responseTime}ms`);
+          console.log(`📧 Response status: ${response.status} ${response.statusText}`);
 
           if (!response.ok) {
+            console.error('❌ EMAIL DELIVERY FAILED');
             const errorText = await response.text();
+            console.log(`📧 Raw error response: ${errorText}`);
+            
             try {
               const errorData = JSON.parse(errorText);
-              console.error('Brevo API error:', errorData);
+              console.error('❌ Brevo API error details:', JSON.stringify(errorData, null, 2));
+              
+              // Check for specific error types
+              if (errorData.code === 'unauthorized') {
+                console.error('❌ Authentication error: API key may be invalid or IP not whitelisted');
+                if (errorData.message && errorData.message.includes('unrecognised IP address')) {
+                  console.error('❌ IP ADDRESS NEEDS WHITELISTING in Brevo admin panel');
+                  console.error('❌ Follow the link in the error message to whitelist your IP');
+                }
+              } else if (errorData.code === 'invalid_parameter') {
+                console.error('❌ Invalid parameter error: Check sender email domain validity');
+              } else if (errorData.code === 'not_enough_credits') {
+                console.error('❌ Account has insufficient credits to send email');
+              }
             } catch (e) {
-              console.error(`Brevo API error: ${response.status} ${response.statusText}`);
-              console.error(`Response text: ${errorText}`);
+              console.error(`❌ Brevo API error: ${response.status} ${response.statusText}`);
+              console.error(`❌ Response is not valid JSON: ${errorText}`);
             }
+            
             // Continue without throwing error
-            console.log('Email would have been sent:');
+            console.log('📧 Email would have been sent:');
             console.log(JSON.stringify(emailContent, null, 2));
+            
+            // Log entire HTTP request for debugging
+            console.log('📧 Complete request details for troubleshooting:');
+            console.log(`📧 URL: https://api.brevo.com/v3/smtp/email`);
+            console.log(`📧 Method: POST`);
+            console.log(`📧 Headers: accept: application/json, content-type: application/json, api-key: [REDACTED]`);
+            console.log(`📧 Body: ${JSON.stringify(brevoPayload, null, 2)}`);
           } else {
-            // Email sent successfully
-            console.log(`Email sent to ${to} from ${sender.name} <${sender.email}>`);
+            // Get the response body
+            const responseData = await response.json();
+            console.log('✅ EMAIL DELIVERY SUCCESSFUL');
+            console.log(`📧 Message ID: ${responseData.messageId || 'not provided'}`);
+            console.log(`📧 Email sent to ${to} from ${sender.name || 'No name'} <${sender.email}>`);
           }
           
+          console.log('📧 === EMAIL DELIVERY ATTEMPT COMPLETED ===\n');
           return true;
         } catch (error) {
-          console.error('Email API error:', error);
-          console.log('Would have sent email:');
+          console.error('❌ EMAIL DELIVERY FAILED - EXCEPTION THROWN');
+          console.error('❌ Error during API request:', error);
+          
+          // Check for specific error types
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            console.error('❌ Network error: Unable to connect to Brevo API');
+            console.error('❌ Check your internet connection or proxy settings');
+          }
+          
+          console.log('📧 Would have sent email:');
           console.log(JSON.stringify(emailContent, null, 2));
+          console.log('📧 === EMAIL DELIVERY ATTEMPT COMPLETED WITH ERRORS ===\n');
           return true; // Don't block operations
         }
       } else {
         // Log the email for debugging when no API key is available
-        console.log('MOCK EMAIL (no API key available):');
+        console.log('📧 MOCK EMAIL (no API key available):');
         console.log(JSON.stringify(emailContent, null, 2));
+        console.log('❗ Check your .env file - BREVO_API_KEY is not set');
+        console.log('📧 === EMAIL DELIVERY MOCK COMPLETED ===\n');
         return true;
       }
     } catch (error) {
-      console.error('Email sending error:', error);
+      console.error('❌ CRITICAL EMAIL SENDING ERROR');
+      console.error('❌ Unexpected error in email sending function:', error);
+      console.log('📧 === EMAIL DELIVERY ATTEMPT FAILED ===\n');
       return false;
     }
   }
