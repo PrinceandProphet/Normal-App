@@ -341,15 +341,91 @@ class EmailService {
           console.error('❌ EMAIL DELIVERY FAILED - EXCEPTION THROWN');
           console.error('❌ Error during API request:', error);
           
-          // Check for specific error types
-          if (error instanceof TypeError && error.message.includes('fetch')) {
-            console.error('❌ Network error: Unable to connect to Brevo API');
-            console.error('❌ Check your internet connection or proxy settings');
+          // Create error object for logging
+          const errorDetails: EmailError = {
+            timestamp: new Date().toISOString(),
+            errorType: 'NETWORK_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+            request: {
+              url: 'https://api.brevo.com/v3/smtp/email',
+              method: 'POST',
+              headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'api-key': '[REDACTED]'
+              },
+              payload: brevoPayload
+            },
+            recipient: to
+          };
+          
+          // Add stack trace if available
+          if (error instanceof Error) {
+            errorDetails.stack = error.stack;
+            
+            // Check for specific error types
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+              console.error('❌ Network error: Unable to connect to Brevo API');
+              console.error('❌ Check your internet connection or proxy settings');
+              errorDetails.errorType = 'FETCH_NETWORK_ERROR';
+              errorDetails.details = {
+                suggestion: 'Check network connectivity, proxy settings, or firewall rules'
+              };
+            } else if (error.message.includes('ENOTFOUND')) {
+              console.error('❌ DNS resolution error: Cannot resolve Brevo API hostname');
+              errorDetails.errorType = 'DNS_RESOLUTION_ERROR';
+              errorDetails.details = {
+                suggestion: 'Check DNS settings or internet connectivity'
+              };
+            } else if (error.message.includes('ECONNREFUSED')) {
+              console.error('❌ Connection refused: The Brevo API server refused the connection');
+              errorDetails.errorType = 'CONNECTION_REFUSED';
+              errorDetails.details = {
+                suggestion: 'Check if outbound connections to api.brevo.com are allowed by firewall'
+              };
+            } else if (error.message.includes('ETIMEDOUT')) {
+              console.error('❌ Connection timed out: The Brevo API server did not respond in time');
+              errorDetails.errorType = 'CONNECTION_TIMEOUT';
+              errorDetails.details = {
+                suggestion: 'Check network latency or increase the request timeout'
+              };
+            } else if (error.message.includes('certificate')) {
+              console.error('❌ SSL/TLS error: Issue with the Brevo API server certificate');
+              errorDetails.errorType = 'SSL_CERTIFICATE_ERROR';
+              errorDetails.details = {
+                suggestion: 'Check SSL/TLS configuration, certificates, or proxy settings'
+              };
+            }
           }
+          
+          // Additional environment-specific information
+          if (isDevelopment()) {
+            console.log(`📧 Current environment: ${getEnvironment()}`);
+            errorDetails.details = {
+              ...errorDetails.details,
+              environment: getEnvironment(),
+              nodeVersion: process.version,
+              platform: process.platform
+            };
+          }
+          
+          // Log error to file in development
+          await this.logEmailError(errorDetails);
           
           console.log('📧 Would have sent email:');
           console.log(JSON.stringify(emailContent, null, 2));
           console.log('📧 === EMAIL DELIVERY ATTEMPT COMPLETED WITH ERRORS ===\n');
+          
+          // In development, provide troubleshooting suggestions
+          if (isDevelopment()) {
+            console.log('📧 Troubleshooting suggestions:');
+            console.log('1. Verify your Brevo API key is correct');
+            console.log('2. Check if your server IP address is whitelisted in Brevo');
+            console.log('3. Ensure your sender domain is authorized in Brevo');
+            console.log('4. Check network connectivity and firewall rules');
+            console.log('5. View detailed logs in the logs directory');
+          }
+          
           return true; // Don't block operations
         }
       } else {
@@ -363,7 +439,65 @@ class EmailService {
     } catch (error) {
       console.error('❌ CRITICAL EMAIL SENDING ERROR');
       console.error('❌ Unexpected error in email sending function:', error);
+      
+      // Create an error object for logging
+      const errorDetails: EmailError = {
+        timestamp: new Date().toISOString(),
+        errorType: 'CRITICAL_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        recipient: to
+      };
+      
+      // Add stack trace if available
+      if (error instanceof Error) {
+        errorDetails.stack = error.stack;
+        
+        // Try to classify the error
+        if (error.message.includes('database') || error.message.includes('sql') || error.message.includes('query')) {
+          errorDetails.errorType = 'DATABASE_ERROR';
+          console.error('❌ Database related error detected');
+        } else if (error.message.includes('memory') || error.message.includes('heap')) {
+          errorDetails.errorType = 'MEMORY_ERROR';
+          console.error('❌ Memory allocation error detected');
+        } else if (error.message.includes('timeout') || error.message.includes('timed out')) {
+          errorDetails.errorType = 'TIMEOUT_ERROR';
+          console.error('❌ Timeout error detected');
+        }
+      }
+      
+      // Add environment context in development mode
+      if (isDevelopment()) {
+        errorDetails.details = {
+          environment: getEnvironment(),
+          nodeVersion: process.version,
+          platform: process.platform,
+          emailData: {
+            to,
+            subject,
+            sender: await this.getOrganizationSender(organizationId),
+            organizationId
+          }
+        };
+      }
+      
+      // Log the error to file in development
+      try {
+        await this.logEmailError(errorDetails);
+      } catch (logError) {
+        console.error('❌ Failed to log error to file:', logError);
+      }
+      
       console.log('📧 === EMAIL DELIVERY ATTEMPT FAILED ===\n');
+      
+      // In development mode, provide troubleshooting tips
+      if (isDevelopment()) {
+        console.log('📧 Critical error troubleshooting suggestions:');
+        console.log('1. Check the application logs for detailed error information');
+        console.log('2. Verify database connectivity if this is a database-related error');
+        console.log('3. Check system resources if experiencing memory or timeout issues');
+        console.log('4. Review the logs directory for detailed error logs');
+      }
+      
       return false;
     }
   }
