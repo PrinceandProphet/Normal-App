@@ -2,14 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { startMatchingService } from "./services/matchingService";
-import { loadEnvironment, getEnvironment } from "./config";
+import { loadEnvironment, getEnvironment, isProduction, isStaging } from "./config";
+import { initSentry, configureSentryForExpress, addSentryErrorHandler, captureException } from "./sentry";
 
 // Load environment variables based on NODE_ENV
 loadEnvironment();
 const currentEnv = getEnvironment();
 console.log(`Starting server in ${currentEnv} environment`);
 
+// Initialize Sentry for error tracking
+initSentry();
+
 const app = express();
+
+// Configure Sentry request handler
+configureSentryForExpress(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
