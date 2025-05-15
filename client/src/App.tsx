@@ -73,6 +73,11 @@ function Router() {
         component={lazy(() => import("@/pages/admin/clients"))} 
         allowedRoles={["super_admin"]} 
       />
+      <RoleBasedRoute 
+        path="/admin/email-test" 
+        component={lazy(() => import("@/pages/admin/email-test"))} 
+        allowedRoles={["super_admin"]} 
+      />
       
       {/* Admin Only Routes */}
       <RoleBasedRoute path="/org-admin" component={OrgAdminPage} allowedRoles={["admin"]} />

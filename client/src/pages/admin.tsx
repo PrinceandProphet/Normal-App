@@ -236,6 +236,16 @@ export default function AdminDashboard() {
             <CardDescription>Perform common tasks</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col space-y-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+              onClick={() => navigate('/admin/email-test')}
+            >
+              <span role="img" aria-label="Email" className="mr-2">📧</span>
+              Test Email System
+            </Button>
+            
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="default" size="sm" className="w-full">
