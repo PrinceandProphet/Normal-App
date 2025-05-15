@@ -207,7 +207,7 @@ router.post('/test-brevo-email', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error sending test email',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 });
