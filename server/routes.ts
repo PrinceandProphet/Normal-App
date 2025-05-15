@@ -33,6 +33,7 @@ import matchingRoutes from "./routes/matchingRoutes";
 import messageRoutes from "./routes/messages";
 import practitionerRoutes from "./routes/practitioners";
 import testEmailRoutes from "./routes/test-email";
+import brevoTestRoutes from "./routes/brevo-test";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -73,6 +74,7 @@ export async function registerRoutes(app: Express) {
   app.use("/api/messages", messageRoutes);
   app.use("/api", practitionerRoutes);
   app.use("/api", testEmailRoutes);
+  app.use("/api", brevoTestRoutes);
 
   // Documents
   app.get("/api/documents", async (req, res) => {
