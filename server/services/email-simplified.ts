@@ -1,9 +1,10 @@
 import { db } from '../db';
 import { organizations } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { getEnvironment, isDevelopment } from '../config';
+import { getEnvironment, isDevelopment, isProduction, isStaging } from '../config';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { captureException, captureMessage } from '../sentry';
 
 // Interface for email sender identity
 interface SenderIdentity {
@@ -69,6 +70,9 @@ class EmailService {
   constructor() {
     console.log('\n📧 === EMAIL SERVICE INITIALIZATION ===');
     
+    const environment = getEnvironment();
+    console.log(`📧 Initializing email service in ${environment} environment`);
+    
     const brevoApiKey = process.env.BREVO_API_KEY;
     this.brevoApiAvailable = !!brevoApiKey;
     
@@ -78,7 +82,15 @@ class EmailService {
       
       // Check for suspicious API key formats
       if (brevoApiKey!.length < 30) {
-        console.warn('❗ WARNING: Brevo API key seems unusually short. Verify it is correct.');
+        const warning = '❗ WARNING: Brevo API key seems unusually short. Verify it is correct.';
+        console.warn(warning);
+        
+        if (isProduction() || isStaging()) {
+          captureMessage(warning, 'warning', {
+            context: 'EmailService',
+            keyLength: brevoApiKey!.length
+          });
+        }
       }
       
       // Log first and last 4 characters for verification without exposing the full key
@@ -86,29 +98,45 @@ class EmailService {
       const lastFour = brevoApiKey!.substring(brevoApiKey!.length - 4);
       console.log(`✅ API key format check: ${firstFour}...${lastFour}`);
     } else {
-      console.warn('⚠️ No Brevo API key found in environment variables');
-      console.warn('⚠️ Emails will be logged but NOT sent');
+      const warning = '⚠️ No Brevo API key found in environment variables. Emails will be logged but NOT sent.';
+      console.warn(warning);
       console.warn('⚠️ Set BREVO_API_KEY in your .env file to enable email sending');
+      
+      if (isProduction() || isStaging()) {
+        captureMessage(warning, 'warning', {
+          context: 'EmailService',
+          environment
+        });
+      }
     }
     
-    // Log sender configuration
-    this.defaultSender = {
-      email: process.env.FROM_EMAIL || 'noreply@normalrestored.com',
-      name: process.env.FROM_NAME || 'Normal Restored',
-    };
+    // Configure default sender based on environment
+    if (isDevelopment()) {
+      // In development, use a test email address to prevent accidental sending to real users
+      this.defaultSender = {
+        email: process.env.DEV_EMAIL || 'dev-test@normalrestored.com',
+        name: process.env.DEV_NAME || 'Normal Restored (Development)',
+      };
+      console.log('ℹ️ Development mode: Using development sender identity');
+    } else {
+      // In production/staging, use the configured sender or default
+      this.defaultSender = {
+        email: process.env.FROM_EMAIL || 'noreply@normalrestored.com',
+        name: process.env.FROM_NAME || 'Normal Restored',
+      };
+    }
     
     console.log(`📧 Default sender: ${this.defaultSender.name} <${this.defaultSender.email}>`);
     
-    if (process.env.FROM_EMAIL) {
-      console.log('✅ Custom FROM_EMAIL found in environment variables');
-    } else {
-      console.log('ℹ️ Using default sender email: noreply@normalrestored.com');
-    }
-    
-    if (process.env.FROM_NAME) {
-      console.log('✅ Custom FROM_NAME found in environment variables');
-    } else {
-      console.log('ℹ️ Using default sender name: Normal Restored');
+    if (isDevelopment()) {
+      console.log('ℹ️ Development mode: Emails will be logged to console and files');
+      console.log('ℹ️ Set DEV_EMAIL in .env to change the development sender email');
+    } else if (isStaging()) {
+      console.log('ℹ️ Staging mode: Emails will be sent using staging sender identity');
+      console.log('ℹ️ Errors will be reported to Sentry if configured');
+    } else if (isProduction()) {
+      console.log('ℹ️ Production mode: Emails will be sent using production sender identity');
+      console.log('ℹ️ Errors will be reported to Sentry if configured');
     }
     
     console.log('📧 === EMAIL SERVICE INITIALIZATION COMPLETED ===\n');
@@ -297,6 +325,20 @@ class EmailService {
                 errorDetails.errorType = 'DOMAIN_ERROR';
               }
               
+              // Report to Sentry in production/staging
+              if (isProduction() || isStaging()) {
+                captureMessage(`Email delivery failed: ${errorDetails.errorType}`, 'error', {
+                  context: 'EmailService',
+                  errorDetails: {
+                    code: errorData.code,
+                    message: errorData.message,
+                    type: errorDetails.errorType,
+                    recipientDomain: to.split('@')[1],
+                    senderDomain: sender.email.split('@')[1]
+                  }
+                });
+              }
+              
               // Log to file in development mode
               await this.logEmailError(errorDetails);
               
@@ -313,20 +355,39 @@ class EmailService {
                 errorDetails.stack = e.stack;
               }
               
+              // Report to Sentry in production/staging
+              if (isProduction() || isStaging()) {
+                captureException(e, {
+                  context: 'EmailService',
+                  data: {
+                    statusCode: response.status,
+                    statusText: response.statusText,
+                    recipientDomain: to.split('@')[1],
+                    senderDomain: sender.email.split('@')[1]
+                  }
+                });
+              }
+              
               // Log to file in development mode
               await this.logEmailError(errorDetails);
             }
             
-            // Continue without throwing error
-            console.log('📧 Email would have been sent:');
-            console.log(JSON.stringify(emailContent, null, 2));
-            
-            // Log entire HTTP request for debugging
-            console.log('📧 Complete request details for troubleshooting:');
-            console.log(`📧 URL: https://api.brevo.com/v3/smtp/email`);
-            console.log(`📧 Method: POST`);
-            console.log(`📧 Headers: accept: application/json, content-type: application/json, api-key: [REDACTED]`);
-            console.log(`📧 Body: ${JSON.stringify(brevoPayload, null, 2)}`);
+            // Different behavior based on environment
+            if (isDevelopment()) {
+              // In development, log what would have been sent for debugging
+              console.log('📧 Email would have been sent:');
+              console.log(JSON.stringify(emailContent, null, 2));
+              
+              // Log entire HTTP request for debugging
+              console.log('📧 Complete request details for troubleshooting:');
+              console.log(`📧 URL: https://api.brevo.com/v3/smtp/email`);
+              console.log(`📧 Method: POST`);
+              console.log(`📧 Headers: accept: application/json, content-type: application/json, api-key: [REDACTED]`);
+              console.log(`📧 Body: ${JSON.stringify(brevoPayload, null, 2)}`);
+            } else {
+              // In production/staging, keep logs minimal and structured
+              console.error(`❌ Email delivery failed: ${errorDetails.errorType} - ${to}`);
+            }
           } else {
             // Get the response body
             const responseData = await response.json();
