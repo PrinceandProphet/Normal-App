@@ -391,9 +391,36 @@ class EmailService {
           } else {
             // Get the response body
             const responseData = await response.json();
-            console.log('✅ EMAIL DELIVERY SUCCESSFUL');
-            console.log(`📧 Message ID: ${responseData.messageId || 'not provided'}`);
-            console.log(`📧 Email sent to ${to} from ${sender.name || 'No name'} <${sender.email}>`);
+            
+            // Different logging behavior based on environment
+            if (isDevelopment()) {
+              // Verbose logging in development
+              console.log('✅ EMAIL DELIVERY SUCCESSFUL');
+              console.log(`📧 Message ID: ${responseData.messageId || 'not provided'}`);
+              console.log(`📧 Email sent to ${to} from ${sender.name || 'No name'} <${sender.email}>`);
+              console.log(`📧 Response time: ${Date.now() - startTime}ms`);
+              console.log(`📧 Full response: ${JSON.stringify(responseData, null, 2)}`);
+            } else if (isStaging()) {
+              // Moderate logging in staging
+              console.log(`✅ Email sent to ${to} (ID: ${responseData.messageId || 'unknown'})`);
+            } else {
+              // Minimal logging in production
+              console.log(`✅ Email sent to ${to.split('@')[0]}...@${to.split('@')[1]}`);
+            }
+            
+            // In production, log successful delivery rate metrics
+            if (isProduction()) {
+              // You could implement metrics collection here
+              // This is where you might increment a counter or log to a metrics service
+              captureMessage('Email delivered successfully', 'info', {
+                context: 'EmailService',
+                data: {
+                  messageId: responseData.messageId,
+                  recipientDomain: to.split('@')[1],
+                  deliveryTime: Date.now() - startTime
+                }
+              });
+            }
           }
           
           console.log('📧 === EMAIL DELIVERY ATTEMPT COMPLETED ===\n');
