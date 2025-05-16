@@ -400,7 +400,15 @@ class EmailService {
           return true;
         } catch (error) {
           console.error('❌ EMAIL DELIVERY FAILED - EXCEPTION THROWN');
-          console.error('❌ Error during API request:', error);
+          
+          // Different logging based on environment
+          if (isDevelopment()) {
+            // Detailed debug logging in development
+            console.error('❌ Detailed error during API request:', error);
+          } else {
+            // Minimal logging in production to avoid excessive log volume
+            console.error('❌ Email sending error:', error instanceof Error ? error.message : String(error));
+          }
           
           // Create error object for logging
           const errorDetails: EmailError = {
@@ -427,11 +435,14 @@ class EmailService {
             // Check for specific error types
             if (error instanceof TypeError && error.message.includes('fetch')) {
               console.error('❌ Network error: Unable to connect to Brevo API');
-              console.error('❌ Check your internet connection or proxy settings');
               errorDetails.errorType = 'FETCH_NETWORK_ERROR';
               errorDetails.details = {
                 suggestion: 'Check network connectivity, proxy settings, or firewall rules'
               };
+              
+              if (isDevelopment()) {
+                console.error('❌ Check your internet connection or proxy settings');
+              }
             } else if (error.message.includes('ENOTFOUND')) {
               console.error('❌ DNS resolution error: Cannot resolve Brevo API hostname');
               errorDetails.errorType = 'DNS_RESOLUTION_ERROR';
@@ -457,6 +468,19 @@ class EmailService {
                 suggestion: 'Check SSL/TLS configuration, certificates, or proxy settings'
               };
             }
+            
+            // Report to Sentry in production/staging
+            if (isProduction() || isStaging()) {
+              captureException(error, {
+                context: 'EmailService',
+                data: {
+                  errorType: errorDetails.errorType,
+                  recipient: to,
+                  recipientDomain: to.split('@')[1],
+                  senderDomain: sender.email.split('@')[1]
+                }
+              });
+            }
           }
           
           // Additional environment-specific information
@@ -468,13 +492,17 @@ class EmailService {
               nodeVersion: process.version,
               platform: process.platform
             };
+            
+            // In development, show the email that would have been sent
+            console.log('📧 Would have sent email:');
+            console.log(JSON.stringify(emailContent, null, 2));
           }
           
           // Log error to file in development
-          await this.logEmailError(errorDetails);
+          if (isDevelopment()) {
+            await this.logEmailError(errorDetails);
+          }
           
-          console.log('📧 Would have sent email:');
-          console.log(JSON.stringify(emailContent, null, 2));
           console.log('📧 === EMAIL DELIVERY ATTEMPT COMPLETED WITH ERRORS ===\n');
           
           // In development, provide troubleshooting suggestions
@@ -485,21 +513,64 @@ class EmailService {
             console.log('3. Ensure your sender domain is authorized in Brevo');
             console.log('4. Check network connectivity and firewall rules');
             console.log('5. View detailed logs in the logs directory');
+            
+            // In development, allow operations to continue
+            return true;
+          } else {
+            // In production, fail appropriately based on the error type
+            // For critical sending errors that might require manual intervention, return false
+            return false;
           }
-          
-          return true; // Don't block operations
         }
       } else {
-        // Log the email for debugging when no API key is available
-        console.log('📧 MOCK EMAIL (no API key available):');
-        console.log(JSON.stringify(emailContent, null, 2));
-        console.log('❗ Check your .env file - BREVO_API_KEY is not set');
-        console.log('📧 === EMAIL DELIVERY MOCK COMPLETED ===\n');
-        return true;
+        // Different behavior when API key is not available based on environment
+        if (isDevelopment()) {
+          // In development, log the email for debugging when no API key is available
+          console.log('📧 MOCK EMAIL (no API key available in development):');
+          console.log(JSON.stringify(emailContent, null, 2));
+          console.log('❗ Check your .env file - BREVO_API_KEY is not set');
+          console.log('📧 === EMAIL DELIVERY MOCK COMPLETED (DEVELOPMENT MODE) ===\n');
+          return true; // Allow operations to continue in development
+        } else if (isStaging()) {
+          // In staging, log warning but allow operations to continue for testing
+          console.warn('⚠️ EMAIL NOT SENT: No Brevo API key available in staging environment');
+          // Report to Sentry for monitoring
+          captureMessage('Email not sent: Missing API key in staging', 'warning', {
+            context: 'EmailService',
+            data: {
+              recipient: to,
+              subject: subject
+            }
+          });
+          return true; // Allow staging tests to continue
+        } else {
+          // In production, this is a critical error
+          console.error('❌ CRITICAL ERROR: No Brevo API key available in production environment');
+          // Report to Sentry
+          captureMessage('Critical: Email not sent due to missing API key in production', 'error', {
+            context: 'EmailService',
+            data: {
+              recipient: to,
+              subject: subject
+            }
+          });
+          return false; // Should fail in production to alert operators
+        }
       }
     } catch (error) {
       console.error('❌ CRITICAL EMAIL SENDING ERROR');
-      console.error('❌ Unexpected error in email sending function:', error);
+      
+      // Different logging behavior based on environment
+      if (isDevelopment()) {
+        // Detailed logging in development
+        console.error('❌ Detailed unexpected error in email sending function:', error);
+        if (error instanceof Error && error.stack) {
+          console.error('❌ Stack trace:', error.stack);
+        }
+      } else {
+        // Concise logging in production
+        console.error('❌ Email critical error:', error instanceof Error ? error.message : String(error));
+      }
       
       // Create an error object for logging
       const errorDetails: EmailError = {
@@ -524,6 +595,19 @@ class EmailService {
           errorDetails.errorType = 'TIMEOUT_ERROR';
           console.error('❌ Timeout error detected');
         }
+        
+        // Send error to Sentry in production/staging
+        if (isProduction() || isStaging()) {
+          captureException(error, {
+            context: 'EmailService',
+            data: {
+              errorType: errorDetails.errorType,
+              recipient: to,
+              subject: subject,
+              organizationId
+            }
+          });
+        }
       }
       
       // Add environment context in development mode
@@ -542,23 +626,37 @@ class EmailService {
       }
       
       // Log the error to file in development
-      try {
-        await this.logEmailError(errorDetails);
-      } catch (logError) {
-        console.error('❌ Failed to log error to file:', logError);
+      if (isDevelopment()) {
+        try {
+          await this.logEmailError(errorDetails);
+        } catch (logError) {
+          console.error('❌ Failed to log error to file:', logError);
+        }
       }
       
       console.log('📧 === EMAIL DELIVERY ATTEMPT FAILED ===\n');
       
-      // In development mode, provide troubleshooting tips
+      // In development mode, provide troubleshooting tips and continue operation
       if (isDevelopment()) {
         console.log('📧 Critical error troubleshooting suggestions:');
         console.log('1. Check the application logs for detailed error information');
         console.log('2. Verify database connectivity if this is a database-related error');
         console.log('3. Check system resources if experiencing memory or timeout issues');
         console.log('4. Review the logs directory for detailed error logs');
+        
+        // In development, log the email content that would have been sent
+        console.log('📧 Email would have been sent (development mode - continuing with operation):');
+        console.log(JSON.stringify({
+          to,
+          subject,
+          text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+          html: html ? (html.substring(0, 100) + (html.length > 100 ? '...' : '')) : undefined
+        }, null, 2));
+        
+        return true; // Allow operations to continue in development
       }
       
+      // In production, fail appropriately to ensure proper error handling by caller
       return false;
     }
   }
